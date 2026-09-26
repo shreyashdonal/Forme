@@ -1,0 +1,68 @@
+﻿{
+    "CourseId":  "87b88206-8b9f-4b43-ab53-60cf266ffcd6",
+    "LastSync":  "2026-09-26 00:43",
+    "ColumnMap":  {
+                      "RollNo":  "Enrollment Number",
+                      "Name":  "Name",
+                      "Email":  null,
+                      "Subject":  null,
+                      "IsEnrolled":  "Enrollment completed",
+                      "IsRegistered":  "Registration Done",
+                      "ProofUrl":  "Upload proof of registration",
+                      "Timestamp":  "Timestamp"
+                  },
+    "Students":  [
+                     {
+                         "RollNo":  "0801cs2211325",
+                         "Name":  "Vaibhav Singh",
+                         "Email":  "",
+                         "Subject":  "",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1fp4JiCmFljT0Kzhu6LY82oQY4Ew4KM31",
+                         "Timestamp":  "25/09/2026 18:34:11",
+                         "Raw":  {
+
+                                 }
+                     },
+                     {
+                         "RollNo":  "0801cs221151",
+                         "Name":  "Rahul Sharma",
+                         "Email":  "",
+                         "Subject":  "",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1VrwPNgn61K9s78ujnjNMHXCTpHTRwzjR",
+                         "Timestamp":  "25/09/2026 18:36:12",
+                         "Raw":  {
+
+                                 }
+                     },
+                     {
+                         "RollNo":  "0801cs221115",
+                         "Name":  "Priya Verma",
+                         "Email":  "",
+                         "Subject":  "",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1wQEoQTdp5fB_9nERwVpnyWgTHZYQyV5S",
+                         "Timestamp":  "25/09/2026 18:41:44",
+                         "Raw":  {
+
+                                 }
+                     },
+                     {
+                         "RollNo":  "0801cs2213",
+                         "Name":  "Sneha Gupta",
+                         "Email":  "",
+                         "Subject":  "",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1gVWBW-kpC8oyzBMPMCV6rusic0jbS7o8",
+                         "Timestamp":  "25/09/2026 18:44:11",
+                         "Raw":  {
+
+                                 }
+                     }
+                 ]
+}

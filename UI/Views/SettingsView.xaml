@@ -1,0 +1,72 @@
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="800" Margin="32,24,32,40" HorizontalAlignment="Center">
+            <!-- View Header -->
+            <StackPanel Margin="0,0,0,24">
+                <TextBlock Text="SYSTEM CONFIGURATION"
+                           FontFamily="IBM Plex Mono, Consolas"
+                           FontSize="11"
+                           FontWeight="Medium"
+                           Foreground="{DynamicResource AccentBrush}"
+                           Margin="0,0,0,4"/>
+                <TextBlock Text="Settings &amp; Data Feeds"
+                           FontFamily="IBM Plex Mono, Consolas"
+                           FontSize="24"
+                           FontWeight="Medium"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </StackPanel>
+
+            <!-- Card 1: Google Sheets Integration -->
+            <Border Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="24"
+                    Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Google Sheets Synchronization" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6"/>
+                    <TextBlock Text="Published CSV endpoint for live student response form submissions." FontSize="13" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,16"/>
+                    <TextBlock Text="CSV Endpoint URL" FontFamily="IBM Plex Mono" FontSize="11" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,6"/>
+                    <TextBox x:Name="TxtSettingsGoogleSheetsUrl"
+                             Style="{DynamicResource InputDark}"
+                             FontSize="12"
+                             Margin="0,0,0,16"/>
+                    <Button Content="Test Connection" Style="{DynamicResource BtnSecondary}" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Card 2: OCR Engine Setup -->
+            <Border Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="24">
+                <StackPanel>
+                    <TextBlock Text="Tesseract OCR Engine" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6"/>
+                    <TextBlock Text="Local optical character recognition binary for receipt PDF/image scanning." FontSize="13" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,16"/>
+                    <TextBlock Text="Binary Path" FontFamily="IBM Plex Mono" FontSize="11" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,6"/>
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TxtSettingsOcrPath"
+                                 Style="{DynamicResource InputDark}"
+                                 Grid.Column="0"
+                                 FontSize="12"/>
+                        <Button x:Name="BtnBrowseOcr"
+                                Grid.Column="2"
+                                Content="Browse File..."
+                                Style="{DynamicResource BtnSecondary}"
+                                Padding="14,8"/>
+                    </Grid>
+                    <Button Content="Verify OCR Engine" Style="{DynamicResource BtnSecondary}" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

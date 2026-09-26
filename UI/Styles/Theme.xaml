@@ -1,0 +1,202 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ======================================================== -->
+    <!-- TYPEE DESIGN TOKENS (Design.md)                          -->
+    <!-- ======================================================== -->
+
+    <!-- Surfaces & Backgrounds -->
+    <Color x:Key="ColorBg">#151513</Color>
+    <Color x:Key="ColorPanel">#1E1E1B</Color>
+    <Color x:Key="ColorPanel2">#202019</Color>
+    <Color x:Key="ColorPanelMod">#26261F</Color>
+
+    <!-- Foreground & Typography -->
+    <Color x:Key="ColorText">#EAE6DD</Color>
+    <Color x:Key="ColorMuted">#8A8578</Color>
+    <Color x:Key="ColorMuted2">#5F5E5A</Color>
+
+    <!-- Borders & Dividers -->
+    <Color x:Key="ColorBorder">#2A2A24</Color>
+    <Color x:Key="ColorBorderHover">#3A3A32</Color>
+
+    <!-- Accent & Status -->
+    <Color x:Key="ColorAccent">#E8B04B</Color>
+    <Color x:Key="ColorSage">#5B8C7B</Color>
+    <Color x:Key="ColorDanger">#E24B4A</Color>
+
+    <!-- SolidColorBrushes -->
+    <SolidColorBrush x:Key="BgBrush" Color="{StaticResource ColorBg}"/>
+    <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource ColorPanel}"/>
+    <SolidColorBrush x:Key="Panel2Brush" Color="{StaticResource ColorPanel2}"/>
+    <SolidColorBrush x:Key="PanelModBrush" Color="{StaticResource ColorPanelMod}"/>
+
+    <SolidColorBrush x:Key="TextBrush" Color="{StaticResource ColorText}"/>
+    <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource ColorMuted}"/>
+    <SolidColorBrush x:Key="Muted2Brush" Color="{StaticResource ColorMuted2}"/>
+
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource ColorBorder}"/>
+    <SolidColorBrush x:Key="BorderHoverBrush" Color="{StaticResource ColorBorderHover}"/>
+
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource ColorAccent}"/>
+    <SolidColorBrush x:Key="SageBrush" Color="{StaticResource ColorSage}"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource ColorDanger}"/>
+
+    <!-- Subtle Tint Overlays -->
+    <SolidColorBrush x:Key="DangerTintBrush" Color="#26E24B4A"/>
+    <SolidColorBrush x:Key="SageTintBrush" Color="#265B8C7B"/>
+    <SolidColorBrush x:Key="AccentTintBrush" Color="#1FE8B04B"/>
+
+    <!-- ======================================================== -->
+    <!-- REUSABLE CONTROL STYLES                                  -->
+    <!-- ======================================================== -->
+
+    <!-- Primary Amber CTA Button -->
+    <Style x:Key="BtnPrimary" TargetType="Button">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource BgBrush}"/>
+        <Setter Property="FontFamily" Value="IBM Plex Mono, Consolas, Segoe UI"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="18,10"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Opacity" Value="0.9"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Opacity" Value="0.75"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Secondary Ghost Button with 1px Border -->
+    <Style x:Key="BtnSecondary" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+        <Setter Property="FontFamily" Value="IBM Plex Mono, Consolas, Segoe UI"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="16,9"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderHoverBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource Panel2Brush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Navigation Tab Pill Button -->
+    <Style x:Key="BtnNav" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+        <Setter Property="FontFamily" Value="IBM Plex Mono, Consolas, Segoe UI"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Padding" Value="14,8"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource Panel2Brush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Active Navigation Tab Pill -->
+    <Style x:Key="BtnNavActive" TargetType="Button" BasedOn="{StaticResource BtnNav}">
+        <Setter Property="Background" Value="{DynamicResource Panel2Brush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- Standard Card Container -->
+    <Style x:Key="CardPanel" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="24"/>
+    </Style>
+
+    <!-- Dark Input Box -->
+    <Style x:Key="InputDark" TargetType="TextBox">
+        <Setter Property="Background" Value="{DynamicResource Panel2Brush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False" Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

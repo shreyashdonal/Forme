@@ -1,0 +1,83 @@
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="1040" Margin="32,32,32,60" HorizontalAlignment="Center">
+
+            <!-- Header -->
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="ACADEMIC SEMESTER"
+                               FontFamily="IBM Plex Mono, Consolas"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource AccentBrush}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="Managed Courses"
+                               FontFamily="IBM Plex Mono, Consolas"
+                               FontSize="26"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource TextBrush}"/>
+                </StackPanel>
+                <Button x:Name="BtnHeaderAddNewCourse"
+                        Grid.Column="1"
+                        Content="+ Add New Course"
+                        Style="{DynamicResource BtnPrimary}"
+                        VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- Dynamic Course Cards Host -->
+            <StackPanel x:Name="CoursesGridHost"/>
+
+            <!-- Empty State Container -->
+            <Border x:Name="CoursesEmptyState"
+                    Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="40,50">
+                <StackPanel HorizontalAlignment="Center" MaxWidth="500">
+                    <Border Background="{DynamicResource Panel2Brush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Width="44" Height="44"
+                            HorizontalAlignment="Center"
+                            Margin="0,0,0,16">
+                        <TextBlock Text="+"
+                                   FontFamily="IBM Plex Mono, Consolas"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="No Courses Added Yet"
+                               FontFamily="IBM Plex Mono, Consolas"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="You have not registered any NPTEL courses yet. Add your first course workspace with its enrollment and response spreadsheets to get started."
+                               FontSize="13"
+                               Foreground="{DynamicResource MutedBrush}"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               Margin="0,0,0,20"/>
+                    <Button x:Name="BtnEmptyStateAddCourse"
+                            Content="+ Add Your First Course"
+                            Style="{DynamicResource BtnPrimary}"
+                            HorizontalAlignment="Center"
+                            Padding="20,10"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

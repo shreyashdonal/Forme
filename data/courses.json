@@ -1,0 +1,74 @@
+﻿[
+    {
+        "Id":  "e53bbc27-724a-423a-a5fc-6b21b30fc3ab",
+        "Name":  "Course 1",
+        "Code":  "00001",
+        "Department":  "CSE",
+        "Semester":  "8",
+        "RegistrationSheet":  "D:\\Coding\\Project\\PDQA Project\\Original Sheet\\Introduction to Soft_Computing NPTEl enrollment and registration (Responses).xlsx",
+        "ExamResultsSheet":  "",
+        "Stage":  "Registration",
+        "Created":  "2026-09-23 22:56",
+        "VerificationSheet":  "D:\\Coding\\Project\\PDQA Project\\Original Sheet\\Course 1_Verification_Sheet.xlsx"
+    },
+    {
+        "Id":  "2a8225c5-4e7d-44f1-a2a9-eadafee91fcf",
+        "Name":  "NPTEL-1",
+        "Code":  "Cs2201",
+        "Department":  "CSE",
+        "Semester":  "8",
+        "RegistrationSheet":  "C:\\Users\\Asus\\Downloads\\New folder\\Test form 2  (Responses).xlsx",
+        "ExamResultsSheet":  "",
+        "Stage":  "Registration",
+        "Created":  "2026-09-23 23:03",
+        "VerificationSheet":  "C:\\Users\\Asus\\Downloads\\NPTEL-1_Verification_Sheet.xlsx"
+    },
+    {
+        "Id":  "87b88206-8b9f-4b43-ab53-60cf266ffcd6",
+        "Name":  "Course 3",
+        "Code":  "fsdfsfsdf",
+        "Department":  "CSE",
+        "Semester":  "8",
+        "RegistrationSheet":  "C:\\Users\\Asus\\Downloads\\Test Form for Registration (Responses).xlsx",
+        "ExamResultsSheet":  "",
+        "Stage":  "Registration",
+        "Created":  "2026-09-23 23:06",
+        "VerificationSheet":  "C:\\Users\\Asus\\Downloads\\Course 3_Verification_Sheet.xlsx"
+    },
+    {
+        "Id":  "d6de576a-fcb9-434b-97fb-8c7a76ef2781",
+        "Name":  "Soft computing",
+        "Code":  "CS22134",
+        "Department":  "CSE",
+        "Semester":  "8",
+        "RegistrationSheet":  "C:\\Users\\Asus\\Downloads\\Introduction to Soft_Computing NPTEl enrollment and registration (Responses).xlsx",
+        "ExamResultsSheet":  "",
+        "Stage":  "Registration",
+        "Created":  "2026-09-24 13:16",
+        "VerificationSheet":  ""
+    },
+    {
+        "Id":  "d0c71e6a-058e-4e9c-a959-f0b4b7ce5fdf",
+        "Name":  "Softcomputing",
+        "Code":  "CS22113",
+        "Department":  "CSE",
+        "Semester":  "8",
+        "RegistrationSheet":  "C:\\Users\\Asus\\Downloads\\New folder\\Test form 2  (Responses).xlsx",
+        "ExamResultsSheet":  "",
+        "Stage":  "Registration",
+        "Created":  "2026-09-24 13:54",
+        "VerificationSheet":  "C:\\Users\\Asus\\Downloads\\New folder\\Softcomputing_Verification_Sheet.xlsx"
+    },
+    {
+        "Id":  "36a4158e-903d-46ec-a0f3-af3134f564f9",
+        "Name":  "Helo",
+        "Code":  "2e12",
+        "Department":  "cse",
+        "Semester":  "8",
+        "RegistrationSheet":  "C:\\Users\\Asus\\Downloads\\New folder\\Test form 2  (Responses).xlsx",
+        "VerificationSheet":  "C:\\Users\\Asus\\Downloads\\New folder\\Helo_Verification_Sheet.xlsx",
+        "ExamResultsSheet":  "",
+        "Stage":  "Registration",
+        "Created":  "2026-09-26 00:46"
+    }
+]

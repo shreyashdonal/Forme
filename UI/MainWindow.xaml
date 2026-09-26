@@ -1,0 +1,145 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="NPTEL Operations Studio"
+        Width="1200" Height="820"
+        MinWidth="1000" MinHeight="680"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BgBrush}"
+        Foreground="{DynamicResource TextBrush}"
+        FontFamily="Inter, Segoe UI, sans-serif">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- 1. Header / Navigation Shell -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Main Page Host (Router Outlet) -->
+            <RowDefinition Height="*"/>
+            <!-- 3. Minimal Footer Bar -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ======================================================== -->
+        <!-- HEADER & NAVIGATION BAR                                  -->
+        <!-- ======================================================== -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource BgBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="32,20,32,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Brand / Logo -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource Panel2Brush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Width="34" Height="34"
+                            Margin="0,0,14,0">
+                        <TextBlock Text="N"
+                                   FontFamily="IBM Plex Mono, Consolas"
+                                   FontWeight="Bold"
+                                   FontSize="17"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="NPTEL STUDIO"
+                                   FontFamily="IBM Plex Mono, Consolas"
+                                   FontWeight="Bold"
+                                   FontSize="15"
+                                   Foreground="{DynamicResource TextBrush}"/>
+                        <TextBlock Text="Elective Verification &amp; Exceptions"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource MutedBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Navigation Tabs (Component Switchers) -->
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <Button x:Name="NavBtnHome"
+                            Content="Home"
+                            Style="{DynamicResource BtnNavActive}"
+                            Margin="4,0"/>
+                    <Button x:Name="NavBtnCourses"
+                            Content="Courses"
+                            Style="{DynamicResource BtnNav}"
+                            Margin="4,0"/>
+                    <Button x:Name="NavBtnSettings"
+                            Content="Settings"
+                            Style="{DynamicResource BtnNav}"
+                            Margin="4,0"/>
+                </StackPanel>
+
+                <!-- Header Actions (Sync Status & Quick Action) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource Panel2Brush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,6"
+                            Margin="0,0,12,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="{DynamicResource MutedBrush}" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="TxtStatusBadge"
+                                       Text="No Course Active"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource MutedBrush}"/>
+                        </StackPanel>
+                    </Border>
+                    <Button x:Name="BtnHeaderSync"
+                            Content="Sync Now"
+                            Style="{DynamicResource BtnSecondary}"
+                            Padding="14,6"
+                            FontSize="12"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ======================================================== -->
+        <!-- VIEW CONTAINER (ROUTER OUTLET)                           -->
+        <!-- Swapped dynamically in PowerShell controller             -->
+        <!-- ======================================================== -->
+        <ContentControl x:Name="ViewContainer"
+                        Grid.Row="1"
+                        Focusable="False"/>
+
+        <!-- ======================================================== -->
+        <!-- FOOTER BAR (Low-emphasis terminal metadata)              -->
+        <!-- ======================================================== -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource BgBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="32,10,32,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Text="NPTEL Automated Verification System - Zero Manual Routine Audits"
+                           FontFamily="IBM Plex Mono, Consolas"
+                           FontSize="11"
+                           Foreground="{DynamicResource Muted2Brush}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="v2.0 (Component Architecture) | Zinc Warm Dark"
+                           FontFamily="IBM Plex Mono, Consolas"
+                           FontSize="11"
+                           Foreground="{DynamicResource Muted2Brush}"
+                           VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

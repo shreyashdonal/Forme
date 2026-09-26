@@ -1,0 +1,385 @@
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="780" Margin="32,40,32,60" HorizontalAlignment="Center">
+
+            <!-- ======================================================== -->
+            <!-- STATE 1: HOME WELCOME / LAUNCHER (Default Visible)       -->
+            <!-- ======================================================== -->
+            <StackPanel x:Name="PanelHomeWelcome" Visibility="Visible">
+
+                <!-- Hero Section -->
+                <StackPanel Margin="0,0,0,36" HorizontalAlignment="Center">
+                    <TextBlock Text="NPTEL ELECTIVE OPERATIONS"
+                               FontFamily="IBM Plex Mono, Consolas"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource AccentBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,10"/>
+                    <TextBlock Text="Elective Management Studio"
+                               FontFamily="IBM Plex Mono, Consolas"
+                               FontSize="32"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource TextBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,12"/>
+                    <TextBlock Text="Automate routine student elective verification and streamline the full semester lifecycle from registration to final NPTEL exam results."
+                               FontSize="14"
+                               Foreground="{DynamicResource MutedBrush}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               MaxWidth="600"/>
+                </StackPanel>
+
+                <!-- Action Launch Cards (2 Options) -->
+                <Grid Margin="0,0,0,32">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Card 1: Register Course Action -->
+                    <Border Grid.Column="0"
+                            Background="{DynamicResource PanelBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="28">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Width="36" Height="36"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,0,16">
+                                <TextBlock Text="+"
+                                           FontFamily="IBM Plex Mono, Consolas"
+                                           FontSize="20"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+
+                            <TextBlock Grid.Row="1"
+                                       Text="Register New Course"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+
+                            <TextBlock Grid.Row="2"
+                                       Text="Start a course workspace by uploading the student registration sheet. Auto-verify course choices and fee receipts immediately."
+                                       FontSize="13"
+                                       Foreground="{DynamicResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,24"/>
+
+                            <Button x:Name="BtnStartRegistration"
+                                    Grid.Row="3"
+                                    Content="+ Register Course"
+                                    Style="{DynamicResource BtnPrimary}"
+                                    Padding="18,11"
+                                    HorizontalAlignment="Stretch"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Card 2: View Existing Courses -->
+                    <Border Grid.Column="2"
+                            Background="{DynamicResource PanelBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="28">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Width="36" Height="36"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,0,16">
+                                <TextBlock Text="&gt;"
+                                           FontFamily="IBM Plex Mono, Consolas"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource MutedBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+
+                            <TextBlock Grid.Row="1"
+                                       Text="Managed Courses"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+
+                            <TextBlock Grid.Row="2"
+                                       Text="Browse all active courses, review student discrepancies, or upload exam results when published after 5-6 months."
+                                       FontSize="13"
+                                       Foreground="{DynamicResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,24"/>
+
+                            <Button x:Name="BtnBrowseCoursesFromHome"
+                                    Grid.Row="3"
+                                    Content="View Courses -&gt;"
+                                    Style="{DynamicResource BtnSecondary}"
+                                    Padding="18,11"
+                                    HorizontalAlignment="Stretch"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Two-Stage Semester Lifecycle Banner -->
+                <Border Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="24">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="1"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Stage 1 -->
+                        <Border Grid.Column="0" Padding="14,4">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Border Background="{DynamicResource AccentTintBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                        <TextBlock Text="STAGE 1: NOW" FontFamily="IBM Plex Mono" FontSize="10" Foreground="{DynamicResource AccentBrush}"/>
+                                    </Border>
+                                    <TextBlock Text="Registration &amp; Verification" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
+                                <TextBlock Text="Upload the initial student registration sheet to verify elective choices, payment receipts, and flag mismatches."
+                                           FontSize="12"
+                                           Foreground="{DynamicResource MutedBrush}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Background="{DynamicResource BorderBrush}"/>
+
+                        <!-- Stage 2 -->
+                        <Border Grid.Column="2" Padding="18,4">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Border Background="{DynamicResource Panel2Brush}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                        <TextBlock Text="STAGE 2: IN 5-6 MONTHS" FontFamily="IBM Plex Mono" FontSize="10" Foreground="{DynamicResource MutedBrush}"/>
+                                    </Border>
+                                    <TextBlock Text="Exam Results &amp; Credits" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
+                                <TextBlock Text="After students take the NPTEL exam, upload the official results sheet to auto-generate the college credit &amp; grade sheet."
+                                           FontSize="12"
+                                           Foreground="{DynamicResource MutedBrush}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <!-- ======================================================== -->
+            <!-- STATE 2: REGISTRATION FORM (Initial Phase: 1 Sheet)      -->
+            <!-- ======================================================== -->
+            <StackPanel x:Name="PanelRegisterForm" Visibility="Collapsed">
+
+                <!-- Back Navigation Header -->
+                <Grid Margin="0,0,0,24">
+                    <Button x:Name="BtnBackFromRegister"
+                            Content="&lt;- Back to Home"
+                            Style="{DynamicResource BtnSecondary}"
+                            Padding="12,6"
+                            FontSize="12"
+                            HorizontalAlignment="Left"/>
+                    <TextBlock Text="Register New Course"
+                               FontFamily="IBM Plex Mono, Consolas"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextBrush}"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- Form Card -->
+                <Border Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="32"
+                        Margin="0,0,0,20">
+                    <StackPanel>
+                        <!-- Section A: Course Details -->
+                        <TextBlock Text="COURSE DETAILS"
+                                   FontFamily="IBM Plex Mono, Consolas"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   Margin="0,0,0,16"/>
+
+                        <!-- Course Title -->
+                        <TextBlock Text="Course Title"
+                                   FontSize="13"
+                                   FontWeight="Medium"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox x:Name="TxtCourseName"
+                                 Style="{DynamicResource InputDark}"
+                                 Margin="0,0,0,16"/>
+
+                        <!-- Course Code -->
+                        <TextBlock Text="NPTEL Course Code / ID"
+                                   FontSize="13"
+                                   FontWeight="Medium"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox x:Name="TxtCourseCode"
+                                 Style="{DynamicResource InputDark}"
+                                 FontFamily="IBM Plex Mono, Consolas"
+                                 Margin="0,0,0,16"/>
+
+                        <!-- Department & Semester -->
+                        <Grid Margin="0,0,0,24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Department"
+                                           FontSize="13"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,6"/>
+                                <TextBox x:Name="TxtDepartment"
+                                         Style="{DynamicResource InputDark}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Semester / Academic Term"
+                                           FontSize="13"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,6"/>
+                                <TextBox x:Name="TxtSemester"
+                                         Style="{DynamicResource InputDark}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Divider -->
+                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,24"/>
+
+                        <!-- Section B: Initial Single Sheet Upload -->
+                        <TextBlock Text="STUDENT REGISTRATION SPREADSHEET"
+                                   FontFamily="IBM Plex Mono, Consolas"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock Text="Attach the initial student registration sheet to begin verifying choices and payment receipts."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource MutedBrush}"
+                                   Margin="0,0,0,18"/>
+
+                        <!-- Single Sheet Picker -->
+                        <StackPanel Margin="0,0,0,20">
+                            <TextBlock Text="Student Enrollment &amp; Registration Sheet (Excel / CSV)"
+                                       FontSize="13"
+                                       FontWeight="Medium"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="Google Form responses or college enrollment sheet with Roll No, Course, and Receipt proof."
+                                       FontSize="11"
+                                       Foreground="{DynamicResource Muted2Brush}"
+                                       Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TxtRegistrationSheetPath"
+                                         Style="{DynamicResource InputDark}"
+                                         Grid.Column="0"
+                                         FontSize="12"/>
+                                <Button x:Name="BtnBrowseRegistrationSheet"
+                                        Grid.Column="2"
+                                        Content="Browse File..."
+                                        Style="{DynamicResource BtnSecondary}"
+                                        Padding="14,8"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Notice about Exam Results in 5-6 Months -->
+                        <Border Background="{DynamicResource Panel2Brush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="16,14"
+                                Margin="0,0,0,24">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="i" FontFamily="IBM Plex Mono" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="Looking for Exam Results? NPTEL exam results will be uploaded later inside this course workspace after students write exams in 5-6 months."
+                                           FontSize="12"
+                                           Foreground="{DynamicResource MutedBrush}"
+                                           TextWrapping="Wrap"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Form Buttons -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="BtnCreateCourse"
+                                    Grid.Column="0"
+                                    Content="+ Add Course &amp; Start Verification"
+                                    Style="{DynamicResource BtnPrimary}"
+                                    Padding="22,12"
+                                    FontSize="13"/>
+                            <Button x:Name="BtnCancelRegister"
+                                    Grid.Column="2"
+                                    Content="Cancel"
+                                    Style="{DynamicResource BtnSecondary}"
+                                    Padding="20,12"
+                                    FontSize="13"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,2266 @@
+﻿{
+    "CourseId":  "e53bbc27-724a-423a-a5fc-6b21b30fc3ab",
+    "LastSync":  "2026-09-25 21:51",
+    "ColumnMap":  {
+                      "RollNo":  "Enrollment Number",
+                      "Name":  "Name",
+                      "Email":  "Email Address",
+                      "Subject":  "Subject",
+                      "IsEnrolled":  "Enrollnment completed",
+                      "IsRegistered":  "Registration Done",
+                      "ProofUrl":  "Upload proof of registration",
+                      "Timestamp":  "Timestamp"
+                  },
+    "Students":  [
+                     {
+                         "RollNo":  "0801CS221013",
+                         "Name":  "Akshat jain",
+                         "Email":  "sngtc79@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1yCy1CUfy2PaIdHd3afajK4GRIfTQmQjN",
+                         "Timestamp":  "13/01/2026 16:25:27",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221152",
+                         "Name":  "Vaibhav Singh",
+                         "Email":  "vs027794@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1VhGtcq3NbeXKkPYpr1SCz_Z6DcTWKLTK",
+                         "Timestamp":  "13/01/2026 16:38:44",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221088",
+                         "Name":  "Mayank Piplodiya",
+                         "Email":  "mayankpiplodiya10@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1xInzwzrR7eNuCenp--rSGZJTdwyFoUz1",
+                         "Timestamp":  "13/01/2026 18:36:19",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221107",
+                         "Name":  "Payal Badal",
+                         "Email":  "0801cs221107@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1ybc4b6La4UjQOGEByVjKsGyZ7M9ptU1J",
+                         "Timestamp":  "13/01/2026 21:20:50",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221011",
+                         "Name":  "Akanksha Choudhary",
+                         "Email":  "18akankshachoudhary@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1vAxvhfNrvCno733gJSWlT4_tgsZIVeo3",
+                         "Timestamp":  "13/01/2026 22:22:59",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221141",
+                         "Name":  "Sulabh kumawat",
+                         "Email":  "sulabhkumawat747060@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=10lb2XaTjb8RB3VOdbqgRjMzyBCb2b9lz",
+                         "Timestamp":  "13/01/2026 22:44:57",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221072",
+                         "Name":  "Jitendra Mondloi",
+                         "Email":  "mandloijit2003@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=16th1wHFVH7c0oTcRhBeEOA70EVEQbTSf",
+                         "Timestamp":  "13/01/2026 23:04:57",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221035",
+                         "Name":  "Arjun Pratap Singh Devara",
+                         "Email":  "arjun.psd1115@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=17PRUfsOLBs9ne8IKm7C1uKUbZO-AwmZu",
+                         "Timestamp":  "13/01/2026 23:31:01",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221133",
+                         "Name":  "Shivkumar Rawat",
+                         "Email":  "0801cs221133@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1_6CblSM3zj_dYFRn-d8_F9OVltwwpgld",
+                         "Timestamp":  "13/01/2026 23:37:34",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS233D03",
+                         "Name":  "Devidas Hirve",
+                         "Email":  "0801cs233d03@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1nxAiOlj01pWSDRHJ94bynbg9OmR3pA-R",
+                         "Timestamp":  "13/01/2026 23:40:10",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221118",
+                         "Name":  "Rishabh Jain",
+                         "Email":  "rishabjain1307@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=16grLasEPCFz06FAbQcKmFNaa_68aPjph",
+                         "Timestamp":  "14/01/2026 00:59:32",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221041",
+                         "Name":  "Bhagyadeep Mahawar",
+                         "Email":  "bhagyadeepmahawar13@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1iPx2amW3K--0INWaigofeAZfZ9KlGCR1",
+                         "Timestamp":  "14/01/2026 01:24:18",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221095",
+                         "Name":  "Nandini Patel",
+                         "Email":  "0801cs221095@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1R8hm9efkt8Zp83YzLR_k_-rvfy_-9Tl7",
+                         "Timestamp":  "14/01/2026 14:16:48",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221112",
+                         "Name":  "Praveen Agariya",
+                         "Email":  "praveenagariya1@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1W5RE91OPSAHKxEFIlma4rxOAg_W5TBfY",
+                         "Timestamp":  "14/01/2026 19:58:42",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801EI221065",
+                         "Name":  "Naziya Bano",
+                         "Email":  "0801ei221065@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1k1YdmYghtppzR2H8HvkJu7mfvAmdEEeF",
+                         "Timestamp":  "15/01/2026 00:37:49",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221022",
+                         "Name":  "Anany Sharma",
+                         "Email":  "ananysharma04@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1kpAlX9dZFX1kLq7sWJJS2XBlg_KOi1RA",
+                         "Timestamp":  "15/01/2026 09:35:36",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221032",
+                         "Name":  "Aradhna Prajapati",
+                         "Email":  "aradhnaprajapati6261@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1ocaOb1bpFSwK82CkMsSncqR2cZPnfUZh",
+                         "Timestamp":  "15/01/2026 12:47:15",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221080",
+                         "Name":  "Lokesh Waghe",
+                         "Email":  "oplokesh8@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1zUDLXxcZYCAlng6rWKUKzhF-ScZF_wvJ",
+                         "Timestamp":  "15/01/2026 13:15:50",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221167",
+                         "Name":  "Daksh Baxi",
+                         "Email":  "baxidaksh2004@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1O-fWdfwG0SpSTvRWXmeyk4C92f5uwwcQ",
+                         "Timestamp":  "15/01/2026 13:20:55",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221023",
+                         "Name":  "Anish Agrawal",
+                         "Email":  "anishagrawal467@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1mYqzdYpTQUegz4N8A1_31v7BwYs2u4xn",
+                         "Timestamp":  "15/01/2026 18:32:04",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221052",
+                         "Name":  "Divyanshi Tumramey",
+                         "Email":  "divyanshitumramey@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1Y7F00kPpQ2eNzsWNeMgJpMfG07NAjBeV",
+                         "Timestamp":  "15/01/2026 18:51:24",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221001",
+                         "Name":  "Aakash Chouhan",
+                         "Email":  "chouhanaakash1452@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1PWs-yp9NcdM3RTDAgUBaiAcjUBAdV5sp",
+                         "Timestamp":  "15/01/2026 18:58:27",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221004",
+                         "Name":  "Abhinav Dave",
+                         "Email":  "mr.abhidave@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1jhPZa0aFkou1sjRr04r2hsBRhiN9SjLN",
+                         "Timestamp":  "15/01/2026 19:01:20",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221143",
+                         "Name":  "Swapnil Joshi",
+                         "Email":  "joshiswapnil2004@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1CR1SRwfGg6PenkaCT1FFJzUyxZIXq5lf",
+                         "Timestamp":  "15/01/2026 19:40:24",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221036",
+                         "Name":  "Ashu Singh",
+                         "Email":  "ashusinghtamra@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1uVKjSQmy-6QJRGMzRXlUxklIby4TGa4t",
+                         "Timestamp":  "15/01/2026 23:32:46",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221098",
+                         "Name":  "Neeraj Patidar",
+                         "Email":  "neerajpatidar2307@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1QKCFTbWU1TcLFVw6zL5j7g8J3hjWNz_Q",
+                         "Timestamp":  "16/01/2026 02:33:10",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS233D12",
+                         "Name":  "Yogesh Sahu",
+                         "Email":  "yogeshsahu0582@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1b7UertPZzNG3jZxkjM-ZNvXmq7-OYxvg",
+                         "Timestamp":  "16/01/2026 12:20:03",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221029",
+                         "Name":  "Anshika Chhirolya",
+                         "Email":  "anshikachhirolya1006@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1li3CsslDvwnVL_lwlmOMQ3gWAYeM9-jx",
+                         "Timestamp":  "16/01/2026 13:22:02",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221002",
+                         "Name":  "Abhay Bamboriya",
+                         "Email":  "bamboriya09@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1N9SP-2WeINH44CdA1mJh6M_nllXw36zk",
+                         "Timestamp":  "16/01/2026 15:57:37",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221122",
+                         "Name":  "Sameeksha Suryawanshi",
+                         "Email":  "samikshasuryawanshi13@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1LNEguIFXtqOsm2nzwuOafGXteyCP1cbQ",
+                         "Timestamp":  "16/01/2026 17:09:36",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221045",
+                         "Name":  "Chirayu Trivedi",
+                         "Email":  "chirayu2trivedi@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=16Z9M1SRSbkTwv3J90PStkq0MDxIAadiQ",
+                         "Timestamp":  "16/01/2026 19:53:15",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221155",
+                         "Name":  "Vikas Kasera",
+                         "Email":  "vikaskasera005@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1ucwNZorHfgwuyrkHD6WwXEplTWusHOuG",
+                         "Timestamp":  "16/01/2026 21:50:27",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221083",
+                         "Name":  "Maganpreet Singh Narang",
+                         "Email":  "0801cs221083@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1nkV5En5j31uj7eGWVGxB12fCAI81uCiH",
+                         "Timestamp":  "16/01/2026 22:45:06",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs233d09",
+                         "Name":  "Shreyash Tiwari",
+                         "Email":  "tiwarishreyashji@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1dsgirkOuzqsSRQu6fQrspOlg_NROGrwv",
+                         "Timestamp":  "16/01/2026 22:51:37",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221016",
+                         "Name":  "Akshay Kumar Verma",
+                         "Email":  "akshayvermaakv07@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1PuG2OW25PKMC57u84Xzh71mbDiDHu5WC",
+                         "Timestamp":  "16/01/2026 23:50:38",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221145",
+                         "Name":  "Tanishq Sharma",
+                         "Email":  "0801cs221145@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1F7WU63HENgSXckhDkEhsu6DClTV47oTY",
+                         "Timestamp":  "17/01/2026 10:57:20",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221050",
+                         "Name":  "Dhansingh Singar",
+                         "Email":  "0801cs221050@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1trNRtb4I32lGsYJohLuVn_C100xS7j0_",
+                         "Timestamp":  "17/01/2026 11:14:29",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221165",
+                         "Name":  "Nabannita Debnath",
+                         "Email":  "nabannitadebnath2004@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1-L4w6l1-AMCDE7hjaAv_3iXf_bdBzo-n",
+                         "Timestamp":  "17/01/2026 11:39:46",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221153",
+                         "Name":  "Vanshika Sahu",
+                         "Email":  "0801cs221153@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1Tj3pHSeaIw21jQfrKTQMHN2VR6El4q1n",
+                         "Timestamp":  "17/01/2026 11:42:46",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221014",
+                         "Name":  "Akshat Pandya",
+                         "Email":  "akshatpandya27072004@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1vZizlu62yaIOOuCj1n8Rl4yTVqzc57Oi",
+                         "Timestamp":  "17/01/2026 14:01:29",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221070",
+                         "Name":  "JAYESH AMODE",
+                         "Email":  "0801cs221070@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1tZ41Bzj8gXfwluP3k-f03GHAKMOQlrfr",
+                         "Timestamp":  "17/01/2026 14:19:04",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS22043",
+                         "Name":  "Bhavesh Gehlot",
+                         "Email":  "piyush.bhavesh.2004@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=14XAdLbq-m1jEaFh3oROUEvmMBLqcnguG",
+                         "Timestamp":  "17/01/2026 16:13:34",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221008",
+                         "Name":  "Adarsh Raghuwanshi",
+                         "Email":  "adarshraghuwanshi072@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=179v_MIYDyw8JIP-JTyKGYF7-KC9h1KYd",
+                         "Timestamp":  "17/01/2026 21:40:51",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221089",
+                         "Name":  "Mehak Gupta",
+                         "Email":  "0801cs221089@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1rH2I0sOOp5nto1CLG3pd4f2LMk7YUhFa",
+                         "Timestamp":  "18/01/2026 22:59:11",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221135",
+                         "Name":  "Shravani Sthapak",
+                         "Email":  "shravanisthapak@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1p-ZP-dMFNxY-qIU-zhIrtKikzRuLiFIg",
+                         "Timestamp":  "18/01/2026 23:46:54",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221147",
+                         "Name":  "Tanu Sharma",
+                         "Email":  "tanu702428@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1mZLRiLdNFtxYAM426jhae1mHyUcr6woz",
+                         "Timestamp":  "19/01/2026 11:58:20",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221104",
+                         "Name":  "Palak Choudhary",
+                         "Email":  "0801cs221104@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1aG67W6I0s9QdTaAcrTSojvwXttmhOzvX",
+                         "Timestamp":  "19/01/2026 12:00:57",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221162",
+                         "Name":  "Yukta Tumbekar",
+                         "Email":  "yukta310tumbekar@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1GmIZMbrc2j26wMCiVJWZ-BUEAKG-IfWJ",
+                         "Timestamp":  "19/01/2026 13:20:25",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221151",
+                         "Name":  "Vaibhav Sharma",
+                         "Email":  "0801cs221151@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1p3FQw7EP6oHkNcQlYg5Qaz9AYhAmTJ1d",
+                         "Timestamp":  "19/01/2026 14:02:00",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221090",
+                         "Name":  "Mehvish Hasan",
+                         "Email":  "mehvishhasan0173@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1c52vOHsRcA-tBnc9kG1-afUmn6R56yLM",
+                         "Timestamp":  "19/01/2026 14:05:03",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221030",
+                         "Name":  "Anshika Sharma",
+                         "Email":  "0801cs221030@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1EcUP2CyAtc8eighVBDiqolW2AwBXq6sN",
+                         "Timestamp":  "19/01/2026 14:31:41",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221067",
+                         "Name":  "Jay Nahata",
+                         "Email":  "nahatajay6@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1fic73Xk-sMZrnAaWZ9OJeBMizsRw3kmA",
+                         "Timestamp":  "19/01/2026 14:34:16",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221113",
+                         "Name":  "Prince parte",
+                         "Email":  "princepparte@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=16Syx8Ltp1gkBzLdle-3nKXe4iUqtbK-L",
+                         "Timestamp":  "19/01/2026 14:35:05",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221136",
+                         "Name":  "Shreyash Donal",
+                         "Email":  "0801cs221136@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1z2F1AyhUJ4jyHiYuz3d7Rpm_zjJq_WxY",
+                         "Timestamp":  "19/01/2026 14:35:26",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221140",
+                         "Name":  "Suhani Gupta",
+                         "Email":  "guptasuhani837@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  false,
+                         "ProofUrl":  "https://drive.google.com/open?id=1SKJkopaxAaGx_DJlF2skyTjvtlWAp_pl",
+                         "Timestamp":  "19/01/2026 14:37:24",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Did Not Register",
+                         "VerificationRemarks":  "Student opted out of exam"
+                     },
+                     {
+                         "RollNo":  "0801CS221058",
+                         "Name":  "Geetansh Gandhi",
+                         "Email":  "geetansh.gandhi2504@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1j3vM3J7SVqACE0YwpncHXn_paSaLu43b",
+                         "Timestamp":  "19/01/2026 14:42:03",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221130",
+                         "Name":  "Shivank",
+                         "Email":  "0801cs221130@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1PF8_NFkEIMvDhVKCLunNDrVK_UWyn0B9",
+                         "Timestamp":  "19/01/2026 15:08:20",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221121",
+                         "Name":  "Sahil Ajmeri",
+                         "Email":  "sahilajmeri005@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1sK4JgWiEILVW3jm5fuPxaCmvt4-34lSY",
+                         "Timestamp":  "19/01/2026 15:18:22",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS181047",
+                         "Name":  "Nayan sastiya",
+                         "Email":  "sastiyanayan@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  false,
+                         "ProofUrl":  "https://drive.google.com/open?id=175yNr451iHaZOHiCS7eYrVPbTh9kVjR3",
+                         "Timestamp":  "19/01/2026 16:45:25",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Did Not Register",
+                         "VerificationRemarks":  "Student opted out of exam"
+                     },
+                     {
+                         "RollNo":  "0801CS233D02",
+                         "Name":  "Chiya Dolli Shrivastava",
+                         "Email":  "shrivastavachiya99@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1-HmUNlj9hhudxrwg1dZZtr0MwalNi7rW",
+                         "Timestamp":  "19/01/2026 17:06:37",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS233D10",
+                         "Name":  "Sushant Bhourjar",
+                         "Email":  "0801cs233d10@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  false,
+                         "ProofUrl":  "https://drive.google.com/open?id=1Zgybr5pMa7Dx6m0N6n2P3MgDIsDPhVfH",
+                         "Timestamp":  "19/01/2026 17:40:48",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Did Not Register",
+                         "VerificationRemarks":  "Student opted out of exam"
+                     },
+                     {
+                         "RollNo":  "0801CS221020",
+                         "Name":  "Aman Jain",
+                         "Email":  "amanjainj938@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=10lAKCMzoW7-vVuwMKC8mcB_E_m1FlmJa",
+                         "Timestamp":  "19/01/2026 18:17:03",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221047",
+                         "Name":  "Devansh Pandey",
+                         "Email":  "0801cs221047@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1L_Xtf_uscSNBZsSOXaM1fkoKlIMoiq7f",
+                         "Timestamp":  "19/01/2026 19:08:42",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221096",
+                         "Name":  "Narendra Kori",
+                         "Email":  "0801cs221096@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1LPKa2SMtgktBNYbL-_6NlS2tMH_FVBQ6",
+                         "Timestamp":  "19/01/2026 20:09:27",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221010",
+                         "Name":  "Aditya Sharma",
+                         "Email":  "sharmaji2401@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1DgQBQB-6fqLbb_2ZauG9PdvS7_pssgh6",
+                         "Timestamp":  "19/01/2026 20:38:12",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221082",
+                         "Name":  "Madhavendra Singh",
+                         "Email":  "0801cs221082@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1z-u_ybftAurTpx_BvA97yCpNScu9yPgL",
+                         "Timestamp":  "19/01/2026 21:03:29",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221018",
+                         "Name":  "Aman Agrawal",
+                         "Email":  "0801cs221018@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1DWVb9E92FZqCd9aE3v8AW8t2UBKVEf2T",
+                         "Timestamp":  "19/01/2026 21:07:39",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221134",
+                         "Name":  "Shiwang Sharma",
+                         "Email":  "0801cs221134@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1utmqlu83gw4RprRx_10sMj6t-ahmBMnI",
+                         "Timestamp":  "19/01/2026 22:19:43",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801Cs221148",
+                         "Name":  "Tarun Parmar",
+                         "Email":  "0801cs221148@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  false,
+                         "ProofUrl":  "https://drive.google.com/open?id=1hWS0uHL0DZuuG2sJqQ9wt2dVi4wHTjRW",
+                         "Timestamp":  "19/01/2026 23:32:08",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Did Not Register",
+                         "VerificationRemarks":  "Student opted out of exam"
+                     },
+                     {
+                         "RollNo":  "0801CS221120",
+                         "Name":  "Rishita Sharma",
+                         "Email":  "0801cs221120@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1zMPbQjHJ7vNpPcgYo_cA2x3giuZxjO5X",
+                         "Timestamp":  "19/01/2026 23:33:51",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221105",
+                         "Name":  "Pankaj Koshti",
+                         "Email":  "pankajkoshti000@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1FN0hPimmpd_Yo_p2IxO_kN-G1iIPIpEE",
+                         "Timestamp":  "19/01/2026 23:41:38",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801ME221096",
+                         "Name":  "Sonu Rawat",
+                         "Email":  "0801me221096@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1wr9Y8j_4rKPrIfd2U675LdZwfLmXzx5J",
+                         "Timestamp":  "20/01/2026 11:04:31",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221099",
+                         "Name":  "Neha Patel",
+                         "Email":  "nehapatel5018@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  false,
+                         "ProofUrl":  "https://drive.google.com/open?id=1cNRTioy_PFP7Wt2Zr9TqF4fgXx3MOESC",
+                         "Timestamp":  "20/01/2026 14:18:00",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Did Not Register",
+                         "VerificationRemarks":  "Student opted out of exam"
+                     },
+                     {
+                         "RollNo":  "0801CS221139",
+                         "Name":  "Stuti Badola",
+                         "Email":  "0801cs221139@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1SM9wkfrVVt8XakBplbMhZjU8S-E4aI0k",
+                         "Timestamp":  "20/01/2026 14:28:38",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221081",
+                         "Name":  "Madhav Patel",
+                         "Email":  "madhavs1824@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1GP60NSqaqyBqneXyN5faGp0WBEn0YJx-",
+                         "Timestamp":  "20/01/2026 15:16:51",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221009",
+                         "Name":  "Aditya Mandloi",
+                         "Email":  "adityamandloi1654@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1I91032hWv7L5BEW8xmHZpNNCV54v-hgB",
+                         "Timestamp":  "20/01/2026 16:47:30",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221086",
+                         "Name":  "Manisha Badole",
+                         "Email":  "0801cs221086@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1wFlQGR_q5cY7dwpAd0gkmic-S4HN3j7u",
+                         "Timestamp":  "20/01/2026 17:21:13",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221166",
+                         "Name":  "Chitransh Guha",
+                         "Email":  "0801cs221166@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=10k8mb1JhB3LjgKdVazd9vtQD2U8Bi3V1",
+                         "Timestamp":  "20/01/2026 19:26:25",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221111",
+                         "Name":  "Prateek Khandekar",
+                         "Email":  "prateekkhandekar01@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1iyf-iODhZRKF-zCUp5RqVz23NcCpiyYS",
+                         "Timestamp":  "20/01/2026 19:27:51",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221034",
+                         "Name":  "Arin Jain",
+                         "Email":  "arinjain1610@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=15edQTMVhgpwnYwetUU0ro-18SZs-fMdY",
+                         "Timestamp":  "20/01/2026 21:15:25",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221085",
+                         "Name":  "Manas Maheshwari",
+                         "Email":  "manasmaheshwari2004@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1c24fdHluFBCeCERTzCGhoNWKci2aCo9n",
+                         "Timestamp":  "20/01/2026 21:16:24",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221101",
+                         "Name":  "Nishant Gupta",
+                         "Email":  "nishantguptang824@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1fGorHdb6U4XasGX1UGBliUrLHY9iYqqD",
+                         "Timestamp":  "20/01/2026 23:25:28",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221059",
+                         "Name":  "Goutam Jat",
+                         "Email":  "goutamjat12@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1XKxcsYfZX9_6S9JVH-QSAQfiOuk6B6oT",
+                         "Timestamp":  "21/01/2026 00:12:54",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221006",
+                         "Name":  "Abhishek Kanade",
+                         "Email":  "abhishekkanade9102@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1ciwFGhlT1JI9-CDwOYKv8te4RMtoKOuL",
+                         "Timestamp":  "21/01/2026 08:50:08",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221042",
+                         "Name":  "Bharti Dawar",
+                         "Email":  "bhartidawardawar@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1pSZ7Y0T8hXgpTCKbqoTkblAj4jZzDuGu",
+                         "Timestamp":  "21/01/2026 10:59:07",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221114",
+                         "Name":  "Purvi Porwal",
+                         "Email":  "purviporwal1812@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1tvG4qw5d5a6YHj5VBwRuJT5pCG5IOiTf",
+                         "Timestamp":  "21/01/2026 11:40:06",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221003",
+                         "Name":  "Abhigyan Sharma",
+                         "Email":  "abhigyansharma.hhh@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1EK55gCffcQtexbsGp2WHPxQqPk-dNCHk",
+                         "Timestamp":  "21/01/2026 13:32:25",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221066",
+                         "Name":  "Jatin Upadhayay",
+                         "Email":  "0801cs221066@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1d13pUCQA7p5tsVN1RbZWdkmzDHbfvSpz",
+                         "Timestamp":  "21/01/2026 18:34:24",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221110",
+                         "Name":  "Pranav Sodani",
+                         "Email":  "sodanipranav2004@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1Bs_z-DPQXC5SLa0Edcj--Q3CdfO1r-lG",
+                         "Timestamp":  "21/01/2026 18:56:50",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221171",
+                         "Name":  "Pranav Sharma",
+                         "Email":  "pranavsharma12355@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1a31WSPCBkLTjauzGhnPA7-eRJz5Jejpf",
+                         "Timestamp":  "21/01/2026 18:57:40",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221054",
+                         "Name":  "Drashti Agrawal",
+                         "Email":  "drashtiagrawal46@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1_uJAmvSBUqRaz03PwdyTfKceP04VJ88U",
+                         "Timestamp":  "21/01/2026 20:27:37",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221039",
+                         "Name":  "Ayush koge",
+                         "Email":  "ayushkoge380@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1Ic89UMo_YlqHU7wqhpHdFDAP4CwoBHpO",
+                         "Timestamp":  "21/01/2026 21:56:29",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221065",
+                         "Name":  "Jatan Tandon",
+                         "Email":  "0801cs221065@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1N2DbbLFgjQb9-PXs5GasVyZV2k0kMaCP",
+                         "Timestamp":  "21/01/2026 23:15:54",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221007",
+                         "Name":  "Adarsh Dwivedi",
+                         "Email":  "adarshdwivedi315@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1BAjbmYVIeGI_Gj_n69uAHsA7v4J2EyQP",
+                         "Timestamp":  "22/01/2026 01:07:29",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221073",
+                         "Name":  "Keshav Agarwal",
+                         "Email":  "keshavagarwal2004@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=14gU_pY70tFb-Jvlkt5MpWcM9q3gv-FOs",
+                         "Timestamp":  "22/01/2026 10:29:27",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221131",
+                         "Name":  "Shivansh",
+                         "Email":  "0801cs221131@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1dkR6R7Swl0jxc1IFUGp5YW4Ygd-PNmK2",
+                         "Timestamp":  "22/01/2026 12:04:32",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221055",
+                         "Name":  "Gajanana baghel",
+                         "Email":  "gajananabaghel07@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1GCuDGLhQn0MtfoxGSvLP656OzOTEeHlb",
+                         "Timestamp":  "22/01/2026 13:26:45",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221075",
+                         "Name":  "Kritika Sharma",
+                         "Email":  "kritika9636@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=13QygP08447NMx3DM2QHDLYaAK-tspO3G",
+                         "Timestamp":  "22/01/2026 14:32:46",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221092",
+                         "Name":  "Mugdha Deoskar",
+                         "Email":  "0801cs221092@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=11gA49MtU9nodswkza1WxFO5wj8G73SBv",
+                         "Timestamp":  "22/01/2026 14:47:07",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221044",
+                         "Name":  "Chahat Garg",
+                         "Email":  "chahatgarg1116@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1fcHJMWado_flQsX37kPTX-mAPjwZKxMM",
+                         "Timestamp":  "22/01/2026 15:55:46",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS211098",
+                         "Name":  "Vijay suryavanshi",
+                         "Email":  "vijaysuryavanshi6261@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1zMtK3Ev21qkUkh_3Oyy_vERNfVLtQHQY",
+                         "Timestamp":  "22/01/2026 16:36:59",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS233D08",
+                         "Name":  "Shivani Choudhary",
+                         "Email":  "0801cs233d08@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1CPmmz3V4kZPeFcIXASyXtyzC6IcR-Eb_",
+                         "Timestamp":  "22/01/2026 18:00:35",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221124",
+                         "Name":  "Sarthak Agrawal",
+                         "Email":  "0801cs221124@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1Yljc1oPCVFQKQjjk0rM2vNHrFScXfo3q",
+                         "Timestamp":  "22/01/2026 19:04:09",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221048",
+                         "Name":  "Devashish Singh Rajput",
+                         "Email":  "devashishrajput01@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1O_OUZVBc2nOjjhmG7acnRkPSiy8csPrb",
+                         "Timestamp":  "22/01/2026 22:42:32",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221071",
+                         "Name":  "Jigyasa Dhok",
+                         "Email":  "jigyasadhok9@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1wCGH_uEG6ac-zhZJQDmhdhC1fIAHPhnw",
+                         "Timestamp":  "23/01/2026 00:39:35",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221017",
+                         "Name":  "Akshita Sinha",
+                         "Email":  "akshitasinha09@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1CJpPjiVIc4vjRzyzP-917bVWQWmKY2BM",
+                         "Timestamp":  "23/01/2026 17:12:17",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801EE221087",
+                         "Name":  "Rahul Bamaniya",
+                         "Email":  "rahul.bamaniya0907@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1C6owQTEoDuJtz5wmdQvMnZ4-w6-zNHJH",
+                         "Timestamp":  "23/01/2026 18:59:33",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221079",
+                         "Name":  "Kushagra Saxena",
+                         "Email":  "kushagrasaxena760@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1Ti8bLPogiOtz3WtDO1WrCvW0ChbhlN_O",
+                         "Timestamp":  "23/01/2026 19:32:38",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221169",
+                         "Name":  "Kshitij Edlabadkar",
+                         "Email":  "kshitijed317@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1KaZ9RrObFg4J1NjjZuzY_v8m-5AAee01",
+                         "Timestamp":  "23/01/2026 20:00:28",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221068",
+                         "Name":  "Jay Patel",
+                         "Email":  "0801cs221068@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1S1M9XS2sLghcVI1RozSUzLaN9cBOGJo2",
+                         "Timestamp":  "24/01/2026 12:54:55",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221163",
+                         "Name":  "Yusuf Bohara",
+                         "Email":  "yusufbohara78@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  false,
+                         "ProofUrl":  "https://drive.google.com/open?id=1EGzT_zvhXW1SMHQMRYs7kmGcOAQJ7n9K",
+                         "Timestamp":  "24/01/2026 16:23:56",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Did Not Register",
+                         "VerificationRemarks":  "Student opted out of exam"
+                     },
+                     {
+                         "RollNo":  "0801CS221027",
+                         "Name":  "Ansh Bairagi",
+                         "Email":  "0801cs221027@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1F0wvrg9bCYL5RkCJJ_jg4iKfWLn1zYsd",
+                         "Timestamp":  "25/01/2026 15:18:43",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221146",
+                         "Name":  "Tanmay Zitshi",
+                         "Email":  "tanmayzitshi2004@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1PVRvNFtGlcX7sik-XW-rhQRdHIenKM4W",
+                         "Timestamp":  "26/01/2026 00:38:42",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS233D05",
+                         "Name":  "Mohan Manjhi",
+                         "Email":  "mohanmanjhi1315@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1-OsHPMwqt_zYdqGSD4NzrFgbdzkSTXDG",
+                         "Timestamp":  "26/01/2026 07:15:11",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221046",
+                         "Name":  "Deval Jain",
+                         "Email":  "devaljain525@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1aVdHuyGSqBxPqZSqwtyK-LwplZCXInF9",
+                         "Timestamp":  "26/01/2026 10:27:49",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS233D01",
+                         "Name":  "Anushtha Singh Kushwah",
+                         "Email":  "0801cs233d01@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1Ov1sU0zMXLWZliUnZZUE9qOW6EphNve1",
+                         "Timestamp":  "26/01/2026 14:14:31",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS233D11",
+                         "Name":  "Yashmin Mohare",
+                         "Email":  "yashminmohare2005@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1ivJ_hSgH-nTILEowRObQ36a9hdB8vr8a",
+                         "Timestamp":  "26/01/2026 14:23:41",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221160",
+                         "Name":  "Yash Jatav",
+                         "Email":  "yashjatav12465@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1MoNNIcVMmB7HAgHFY8ruK7wPTOmYnEyy",
+                         "Timestamp":  "26/01/2026 14:30:10",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221040",
+                         "Name":  "Ayushi Shrivastava",
+                         "Email":  "ayushishrivastava0810@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1SK0oswjVRWveU-D6L9FcklbLIGEXugyQ",
+                         "Timestamp":  "26/01/2026 14:39:49",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221078",
+                         "Name":  "Kushagra Garg",
+                         "Email":  "kushagragarg250404@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1lK9LfHjRYWE9O22y0CrgyJQSHJd2X1gz",
+                         "Timestamp":  "26/01/2026 15:27:25",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221149",
+                         "Name":  "Titikshit Sumbria",
+                         "Email":  "titikshit@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1WvA5FWOIcE7yoDykHyzGOLrlnF9OGFxp",
+                         "Timestamp":  "26/01/2026 16:19:56",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801ME221003",
+                         "Name":  "Aditi Parteti",
+                         "Email":  "aditiparteti8@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1wSk6Zo8Vc-z-W_1J91aDRQq4dqqWpEOm",
+                         "Timestamp":  "26/01/2026 16:40:14",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221060",
+                         "Name":  "Govind Singh Kushwaha",
+                         "Email":  "govindkushwaha6263@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1wl_fS-tv6ahx8a0s_RUi0NcXIA3wAlxH",
+                         "Timestamp":  "26/01/2026 18:35:19",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221049",
+                         "Name":  "Devesh Sharma",
+                         "Email":  "deveshsharmadks02@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=17Bdo0xPDCVuwAZpFMFvQduB_FDvYTQcj",
+                         "Timestamp":  "26/01/2026 19:31:17",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221019",
+                         "Name":  "Aman Girwal",
+                         "Email":  "amangirwal3@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1WfGW33ua89zt56UYqNGedKLnFrm5eNeo",
+                         "Timestamp":  "26/01/2026 19:43:41",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221132",
+                         "Name":  "Shiven Sharma",
+                         "Email":  "0801cs221132@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=10d58_5Bqte_RezQpEQ7zksWImFRt6OyS",
+                         "Timestamp":  "26/01/2026 19:48:10",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221164",
+                         "Name":  "Amardip gupta",
+                         "Email":  "0801cs221164@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1HlfXM8FLghsdLLV1AzmUQoymbRr42_aT",
+                         "Timestamp":  "26/01/2026 20:25:06",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221037",
+                         "Name":  "Atharva Maddhav",
+                         "Email":  "0801cs221037@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=17sCt_Lwv93GsAFORhA34AV1wqMiSbLTu",
+                         "Timestamp":  "26/01/2026 21:43:49",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221021",
+                         "Name":  "Amay Malviya",
+                         "Email":  "0801cs221021@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1KdAaNbXURcA2Ts3w-3FyARxw39D46Y-w",
+                         "Timestamp":  "26/01/2026 23:08:11",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221117",
+                         "Name":  "Ravinder kumar Namdev",
+                         "Email":  "0801cs221117@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1kl9Uoje8Epi0akqoeV0eU-CKRwDuX2qX",
+                         "Timestamp":  "27/01/2026 15:16:48",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221172",
+                         "Name":  "Tanya Agrawal",
+                         "Email":  "0801cs221172@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=123V8Hc036mKssXyLHfHpBWXJkcfu8otP",
+                         "Timestamp":  "27/01/2026 21:00:46",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221087",
+                         "Name":  "Mansi Kushwah",
+                         "Email":  "0801cs221087@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1MW930lCs5WplXKlXXE3aYwxvBEMpkMIj",
+                         "Timestamp":  "27/01/2026 22:25:36",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221056",
+                         "Name":  "Gauri Ullas Pramanik",
+                         "Email":  "0801cs221056@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1rAyX1LMGT5T7-Pypu_hVzueQMqcPYbuD",
+                         "Timestamp":  "27/01/2026 23:31:03",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221170",
+                         "Name":  "Prakhar Gupta",
+                         "Email":  "0801cs221170@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1DqPLgffAgoYP65FZwio06_RNRe508YWC",
+                         "Timestamp":  "28/01/2026 15:20:25",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221093",
+                         "Name":  "Mustafa Kasubhaiwala",
+                         "Email":  "0801cs221093@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1ZQRqOMg0V1Jsb1FYkYCZdVrHaF6c_NLK",
+                         "Timestamp":  "29/01/2026 14:14:38",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221150",
+                         "Name":  "Uday Kumar Bhilme",
+                         "Email":  "udaykbhilme22@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1RSqjFv9df5k_2n2T3VFkrz2taWOguMKc",
+                         "Timestamp":  "29/01/2026 19:32:04",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221161",
+                         "Name":  "Yugaank Pathak",
+                         "Email":  "0801cs221161@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1EImPyvh9bhtbdnmsaXY3vATHq7LgrbWN",
+                         "Timestamp":  "30/01/2026 08:45:02",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221109",
+                         "Name":  "Prakhar Dangolia",
+                         "Email":  "prakhardangolia@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1YRuKWTxgZ0wcH0nXuccSZbsJ5LqgYsMS",
+                         "Timestamp":  "30/01/2026 17:15:39",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221119",
+                         "Name":  "Rishika Panth",
+                         "Email":  "rishikapanth02@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1sD5yyK5aDNBd_LB0svz8DdcbWuxzdYXY",
+                         "Timestamp":  "30/01/2026 17:16:51",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221158",
+                         "Name":  "Vishesh Vaidya",
+                         "Email":  "visheshvaidya618@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1nU98UObtJSsY5KYWjKwXGz4FdSr94iSw",
+                         "Timestamp":  "01/02/2026 10:42:17",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS211069",
+                         "Name":  "Pratik Parmar",
+                         "Email":  "pratikparmar2k3@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=17s6U7LGR-XftKt-tDW_eB3lFAkfr7cP6",
+                         "Timestamp":  "04/02/2026 13:08:56",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS233D04",
+                         "Name":  "Harshita Bamniya",
+                         "Email":  "harshitabamniya9017@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1tHcJVT_nS6HQ6IHO5-uZnrXKa9xoOxBM",
+                         "Timestamp":  "04/02/2026 14:49:56",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221094",
+                         "Name":  "Mustafa Sadriwala",
+                         "Email":  "0801cs221094@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1HAIJNDevoEfIXoH5SrTn_Dg4wPxeIsFG",
+                         "Timestamp":  "04/02/2026 17:47:35",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221057",
+                         "Name":  "Gautam Pandya",
+                         "Email":  "gautam.pandya511@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1Ep2dVHk2lZYYo5LrPJfR8MgYQm_IN1va",
+                         "Timestamp":  "05/02/2026 16:48:23",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221064",
+                         "Name":  "Hussain Shajapur Wala",
+                         "Email":  "shajapurwalahussain2107@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1h3tpe-XyJkmYcLC12sFZvMGhsLDIi6dJ",
+                         "Timestamp":  "09/02/2026 15:07:55",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs201081",
+                         "Name":  "Sanjay kanesh",
+                         "Email":  "sanjaykanesh83@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=18ZtcFpXZSURVR8bBlVwJZMa8Tn47jknz",
+                         "Timestamp":  "09/02/2026 15:22:34",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221142",
+                         "Name":  "Sumit Mahajan",
+                         "Email":  "0801cs221142@sgsits.ac.in",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1FfdCGkPsLWp68_MWvVQvGRbt7j24gvhD",
+                         "Timestamp":  "09/02/2026 17:06:59",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221108",
+                         "Name":  "Piyush Bidwal",
+                         "Email":  "bidwalpiyushish@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1jZRamldBWTBJSCoIp9eBcGi-0Uu_IsVo",
+                         "Timestamp":  "09/02/2026 22:21:29",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801CS221168",
+                         "Name":  "Devraj Parmar",
+                         "Email":  "devrajparmar232@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1rmvtxlKM1I94IeLzNyI4Elq-5MoE-Kng",
+                         "Timestamp":  "11/02/2026 13:39:12",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     },
+                     {
+                         "RollNo":  "0801cs221125",
+                         "Name":  "Satish Mandloi",
+                         "Email":  "satishmandloi301@gmail.com",
+                         "Subject":  "Introduction to Soft_Computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1MjI0JMDu19jZy-PlUuceLtyV0yDGY8bZ",
+                         "Timestamp":  "16/02/2026 11:00:33",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Pending",
+                         "VerificationRemarks":  "Awaiting Verification"
+                     }
+                 ]
+}
