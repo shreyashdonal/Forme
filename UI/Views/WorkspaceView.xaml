@@ -1,0 +1,277 @@
+<UserControl
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="1040" Margin="32,32,32,60" HorizontalAlignment="Center">
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 Breadcrumb & Title
+                 ══════════════════════════════════════════════════════════════ -->
+            <TextBlock x:Name="TxtBreadcrumbCourse"
+                       Text="COURSES  ›  HELO"
+                       FontFamily="IBM Plex Mono, Consolas"
+                       FontSize="11"
+                       Foreground="{DynamicResource AccentBrush}"
+                       Margin="0,0,0,8"/>
+
+            <TextBlock x:Name="TxtCourseDashboardTitle"
+                       Text="Helo — Workspace"
+                       FontFamily="IBM Plex Mono, Consolas"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource TextBrush}"/>
+
+            <TextBlock x:Name="TxtCourseDashboardSubtitle"
+                       Text=""
+                       FontSize="13"
+                       Foreground="{DynamicResource MutedBrush}"
+                       Margin="0,4,0,0"/>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 Stats Bar
+                 ══════════════════════════════════════════════════════════════ -->
+            <Border Background="{DynamicResource BorderBrush}"
+                    CornerRadius="10"
+                    Margin="0,28,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="1"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="1"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="1"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Stat 0: Total Registered -->
+                    <Border Grid.Column="0"
+                            Background="{DynamicResource PanelBrush}"
+                            CornerRadius="9,0,0,9"
+                            Padding="20,18">
+                        <StackPanel>
+                            <TextBlock Text="TOTAL REGISTERED"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBlock x:Name="TxtStatEnrolled"
+                                       Text="—"
+                                       FontSize="26"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,6,0,0"/>
+                            <TextBlock Text="From Google Form"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource Muted2Brush}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Divider 1 -->
+                    <Border Grid.Column="1" Background="{DynamicResource BorderBrush}"/>
+
+                    <!-- Stat 2: Exam Registered -->
+                    <Border Grid.Column="2"
+                            Background="{DynamicResource PanelBrush}"
+                            Padding="20,18">
+                        <StackPanel>
+                            <TextBlock Text="EXAM REGISTERED"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SageBrush}"/>
+                            <TextBlock x:Name="TxtStatExamRegistered"
+                                       Text="—"
+                                       FontSize="26"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource SageBrush}"
+                                       Margin="0,6,0,0"/>
+                            <TextBlock Text="Fee / Form Confirmed"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource Muted2Brush}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Divider 3 -->
+                    <Border Grid.Column="3" Background="{DynamicResource BorderBrush}"/>
+
+                    <!-- Stat 4: Action Needed -->
+                    <Border Grid.Column="4"
+                            Background="{DynamicResource PanelBrush}"
+                            Padding="20,18">
+                        <StackPanel>
+                            <TextBlock Text="ACTION NEEDED"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AccentBrush}"/>
+                            <TextBlock x:Name="TxtStatActionNeeded"
+                                       Text="—"
+                                       FontSize="26"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       Margin="0,6,0,0"/>
+                            <TextBlock Text="Enrolled, No Exam Fee"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource Muted2Brush}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Divider 5 -->
+                    <Border Grid.Column="5" Background="{DynamicResource BorderBrush}"/>
+
+                    <!-- Stat 6: Results -->
+                    <Border Grid.Column="6"
+                            Background="{DynamicResource PanelBrush}"
+                            CornerRadius="0,9,9,0"
+                            Padding="20,18">
+                        <StackPanel>
+                            <TextBlock Text="STAGE 2: RESULTS"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource MutedBrush}"/>
+                            <TextBlock x:Name="TxtStatExamResults"
+                                       Text="Pending"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource MutedBrush}"
+                                       Margin="0,6,0,0"/>
+                            <TextBlock Text="In 5-6 Months"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource Muted2Brush}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 Stage Cards
+                 ══════════════════════════════════════════════════════════════ -->
+            <Grid Margin="0,24,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Stage 1 Card -->
+                <Border x:Name="CardStage1"
+                        Grid.Column="0"
+                        Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="28"
+                        Cursor="Hand">
+                    <StackPanel>
+                        <!-- Badge -->
+                        <Border Background="{DynamicResource Panel2Brush}"
+                                CornerRadius="4"
+                                Padding="8,3"
+                                HorizontalAlignment="Left">
+                            <TextBlock Text="STAGE 1"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AccentBrush}"/>
+                        </Border>
+
+                        <!-- Title -->
+                        <TextBlock Text="Student Registration"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,12,0,0"/>
+
+                        <!-- Description -->
+                        <TextBlock Text="Manage registration spreadsheet, run sheet health checks, and verify student exam receipts via OCR."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource MutedBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,6,0,0"/>
+
+                        <!-- Status Badge -->
+                        <Border x:Name="BadgeStage1Status"
+                                Background="{DynamicResource Panel2Brush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10,5"
+                                HorizontalAlignment="Left"
+                                Margin="0,16,0,0">
+                            <TextBlock x:Name="TxtStage1Status"
+                                       Text="In Progress"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AccentBrush}"/>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Stage 2 Card -->
+                <Border x:Name="CardStage2"
+                        Grid.Column="2"
+                        Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="28"
+                        Cursor="Hand">
+                    <StackPanel>
+                        <!-- Badge -->
+                        <Border Background="{DynamicResource Panel2Brush}"
+                                CornerRadius="4"
+                                Padding="8,3"
+                                HorizontalAlignment="Left">
+                            <TextBlock Text="STAGE 2"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource MutedBrush}"/>
+                        </Border>
+
+                        <!-- Title -->
+                        <TextBlock Text="Examination Result"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,12,0,0"/>
+
+                        <!-- Description -->
+                        <TextBlock Text="Upload official NPTEL exam results and generate the final college credit reconciliation sheet."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource MutedBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,6,0,0"/>
+
+                        <!-- Status Badge -->
+                        <Border x:Name="BadgeStage2Status"
+                                Background="{DynamicResource Panel2Brush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10,5"
+                                HorizontalAlignment="Left"
+                                Margin="0,16,0,0">
+                            <TextBlock x:Name="TxtStage2Status"
+                                       Text="Pending"
+                                       FontFamily="IBM Plex Mono, Consolas"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource MutedBrush}"/>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

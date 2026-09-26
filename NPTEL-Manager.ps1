@@ -370,6 +370,7 @@ $StatusDot = $window.FindName("StatusDot")
 
 # 8. View Caching & Navigation Router
 $script:views = @{}
+$script:currentView = ""
 
 function Get-OrCreateView {
     param([string]$ViewName)
@@ -490,7 +491,10 @@ function Refresh-CourseLists {
 }
 
 function Select-Course {
-    param($Course)
+    param(
+        $Course,
+        [string]$TargetView = $null
+    )
     if (-not $Course) { return }
     $script:activeCourse = $Course
 
@@ -509,13 +513,49 @@ function Select-Course {
         $StatusDot.Fill = [System.Windows.Application]::Current.FindResource("SageBrush")
     }
 
-    # Update Dashboard View
-    $dashView = Get-OrCreateView "DashboardView"
-    if ($dashView) {
-        $breadcrumb = $dashView.FindName("TxtBreadcrumbCourse")
-        $title = $dashView.FindName("TxtCourseDashboardTitle")
-        $subtitle = $dashView.FindName("TxtCourseDashboardSubtitle")
-        $statResults = $dashView.FindName("TxtStatExamResults")
+    # 1. Retrieve Course Student Store & Metrics
+    $store = Get-CourseStudentStore -CourseId $Course.Id -RegistrationSheet $Course.RegistrationSheet
+    $students = @($store.Students)
+    $colMap = $store.ColumnMap
+
+    $totalCount = $students.Count
+    $regCount = @($students | Where-Object { $_.IsRegistered -eq $true }).Count
+    $actionCount = @($students | Where-Object { $_.IsRegistered -eq $false }).Count
+
+    # Compute verification status metrics
+    $verifiedCount = 0
+    $reviewCount = 0
+    $unregCount = 0
+
+    foreach ($st in $students) {
+        $vStatus = if ($st.PSObject.Properties['VerificationStatus']) { [string]$st.VerificationStatus } else { "" }
+        $isReg = if ($st.PSObject.Properties['IsRegistered']) { $st.IsRegistered } else { $null }
+
+        if ($vStatus -eq "Verified") {
+            $verifiedCount++
+        } elseif ($vStatus -eq "Under Review") {
+            $reviewCount++
+        } elseif ($vStatus -eq "Did Not Register" -or $isReg -eq $false) {
+            $unregCount++
+        }
+    }
+
+    $vSheetPath = if ($Course.PSObject.Properties['VerificationSheet']) { [string]$Course.VerificationSheet } else { $null }
+    $vSheetExists = $vSheetPath -and (Test-Path -LiteralPath $vSheetPath)
+
+    $sageBrush = [System.Windows.Application]::Current.FindResource("SageBrush")
+    $accentBrush = [System.Windows.Application]::Current.FindResource("AccentBrush")
+    $mutedBrush = [System.Windows.Application]::Current.FindResource("MutedBrush")
+    $textBrush = [System.Windows.Application]::Current.FindResource("TextBrush")
+    $borderBrush = [System.Windows.Application]::Current.FindResource("BorderBrush")
+
+    # ── Update Workspace View (Overview) ──
+    $wsView = Get-OrCreateView "WorkspaceView"
+    if ($wsView) {
+        $breadcrumb = $wsView.FindName("TxtBreadcrumbCourse")
+        $title = $wsView.FindName("TxtCourseDashboardTitle")
+        $subtitle = $wsView.FindName("TxtCourseDashboardSubtitle")
+        $statResults = $wsView.FindName("TxtStatExamResults")
 
         if ($breadcrumb) {
             $codeStr = if ($cCode) { " ($cCode)" } else { "" }
@@ -523,60 +563,90 @@ function Select-Course {
             $breadcrumb.Text = "COURSES > $upperName$codeStr"
         }
         if ($title) {
-            $title.Text = "$cName - Course Dashboard"
+            $title.Text = "$cName " + [char]0x2014 + " Workspace"
         }
         if ($subtitle) {
             $deptStr = if ($cDept) { "$cDept - " } else { "" }
             $semStr = if ($cSem) { "$cSem" } else { "" }
-            $subtitle.Text = "$deptStr$semStr - Automated verification workspace"
+            $subtitle.Text = "$deptStr$semStr"
         }
         if ($statResults) {
             if ($Course.ExamResultsSheet) {
                 $statResults.Text = "Uploaded"
-                $statResults.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+                $statResults.Foreground = $sageBrush
             } else {
                 $statResults.Text = "Pending"
-                $statResults.Foreground = [System.Windows.Application]::Current.FindResource("MutedBrush")
+                $statResults.Foreground = $mutedBrush
             }
         }
-        $sheetPathLabel = $dashView.FindName("TxtDashboardSheetPath")
+
+        # Bind Top Metric Cards
+        $statEnrolled = $wsView.FindName("TxtStatEnrolled")
+        if ($statEnrolled) { $statEnrolled.Text = [string]$totalCount }
+
+        $statExamReg = $wsView.FindName("TxtStatExamRegistered")
+        if ($statExamReg) { $statExamReg.Text = [string]$regCount }
+
+        $statAction = $wsView.FindName("TxtStatActionNeeded")
+        if ($statAction) { $statAction.Text = [string]$actionCount }
+
+        # Stage 1 Status Badge
+        $txtStage1Status = $wsView.FindName("TxtStage1Status")
+        $badgeStage1 = $wsView.FindName("BadgeStage1Status")
+        if ($txtStage1Status) {
+            if ($regCount -gt 0 -and $verifiedCount -eq $regCount) {
+                $txtStage1Status.Text = "Complete " + [char]0x2713
+                $txtStage1Status.Foreground = $sageBrush
+                if ($badgeStage1) { $badgeStage1.BorderBrush = $sageBrush }
+            } else {
+                $txtStage1Status.Text = "In Progress"
+                $txtStage1Status.Foreground = $accentBrush
+                if ($badgeStage1) { $badgeStage1.BorderBrush = $accentBrush }
+            }
+        }
+
+        # Stage 2 Status Badge
+        $txtStage2Status = $wsView.FindName("TxtStage2Status")
+        $badgeStage2 = $wsView.FindName("BadgeStage2Status")
+        if ($txtStage2Status) {
+            if ($Course.ExamResultsSheet) {
+                $txtStage2Status.Text = "Complete " + [char]0x2713
+                $txtStage2Status.Foreground = $sageBrush
+                if ($badgeStage2) { $badgeStage2.BorderBrush = $sageBrush }
+            } else {
+                $txtStage2Status.Text = "Pending"
+                $txtStage2Status.Foreground = $mutedBrush
+                if ($badgeStage2) { $badgeStage2.BorderBrush = $borderBrush }
+            }
+        }
+    }
+
+    # ── Update Stage 1 View (Registration & Verification) ──
+    $s1View = Get-OrCreateView "Stage1View"
+    if ($s1View) {
+        # Breadcrumb
+        $s1Breadcrumb = $s1View.FindName("TxtStage1Breadcrumb")
+        if ($s1Breadcrumb) {
+            $codeStr = if ($cCode) { " ($cCode)" } else { "" }
+            $upperName = $cName.ToUpper()
+            $s1Breadcrumb.Text = "COURSES > $upperName$codeStr > STAGE 1"
+        }
+
+        # Registration Sheet Path
+        $sheetPathLabel = $s1View.FindName("TxtDashboardSheetPath")
         if ($sheetPathLabel) {
             $sheetPathLabel.Text = if ($Course.RegistrationSheet) { [string]$Course.RegistrationSheet } else { "No registration sheet linked." }
         }
 
-        # 1. Retrieve Course Student Store & Metrics
-        $store = Get-CourseStudentStore -CourseId $Course.Id -RegistrationSheet $Course.RegistrationSheet
-        $students = @($store.Students)
-        $colMap = $store.ColumnMap
-
-        $totalCount = $students.Count
-        $regCount = @($students | Where-Object { $_.IsRegistered -eq $true }).Count
-        $actionCount = @($students | Where-Object { $_.IsRegistered -eq $false }).Count
-
-        # Bind Top Metric Cards
-        $statEnrolled = $dashView.FindName("TxtStatEnrolled")
-        if ($statEnrolled) { $statEnrolled.Text = [string]$totalCount }
-
-        $statExamReg = $dashView.FindName("TxtStatExamRegistered")
-        if ($statExamReg) { $statExamReg.Text = [string]$regCount }
-
-        $statAction = $dashView.FindName("TxtStatActionNeeded")
-        if ($statAction) { $statAction.Text = [string]$actionCount }
-
         # Bind Registration Sheet Health Basic Metrics Strip
-        $hTotal = $dashView.FindName("TxtHealthTotalStudents")
-        $hExamReg = $dashView.FindName("TxtHealthExamRegistered")
-        $hOther = $dashView.FindName("TxtHealthOtherStudents")
+        $hTotal = $s1View.FindName("TxtHealthTotalStudents")
+        $hExamReg = $s1View.FindName("TxtHealthExamRegistered")
+        $hOther = $s1View.FindName("TxtHealthOtherStudents")
         if ($hTotal) { $hTotal.Text = [string]$totalCount }
         if ($hExamReg) { $hExamReg.Text = [string]$regCount }
         if ($hOther) { $hOther.Text = [string]$actionCount }
 
-        # 2. Update Registration Sheet Health Column Badges
-        $sageBrush = [System.Windows.Application]::Current.FindResource("SageBrush")
-        $accentBrush = [System.Windows.Application]::Current.FindResource("AccentBrush")
-        $textBrush = [System.Windows.Application]::Current.FindResource("TextBrush")
-        $borderBrush = [System.Windows.Application]::Current.FindResource("BorderBrush")
-
+        # Update Registration Sheet Health Column Badges
         $colKeys = @(
             @{ Key = 'RollNo';       Label = 'Roll No';           Card = 'CardColRollNo';       Icon = 'IconColRollNo';       Txt = 'TxtColRollNo' },
             @{ Key = 'Name';         Label = 'Name';              Card = 'CardColName';         Icon = 'IconColName';         Txt = 'TxtColName' },
@@ -598,9 +668,9 @@ function Select-Course {
                 }
             }
 
-            $cCard = $dashView.FindName($item.Card)
-            $cIcon = $dashView.FindName($item.Icon)
-            $cTxt = $dashView.FindName($item.Txt)
+            $cCard = $s1View.FindName($item.Card)
+            $cIcon = $s1View.FindName($item.Icon)
+            $cTxt = $s1View.FindName($item.Txt)
 
             if ($mappedHeader) {
                 if ($cIcon) { $cIcon.Text = [string][char]0x2713; $cIcon.Foreground = $sageBrush }
@@ -614,11 +684,11 @@ function Select-Course {
             }
         }
 
-        # 3. Overall Health & Missing Column Warning Banner
-        $panelWarn = $dashView.FindName("PanelColumnWarning")
-        $txtWarnMsg = $dashView.FindName("TxtColumnWarningMessage")
-        $badgeHealth = $dashView.FindName("BadgeOverallHealth")
-        $txtHealth = $dashView.FindName("TxtOverallHealth")
+        # Overall Health & Missing Column Warning Banner
+        $panelWarn = $s1View.FindName("PanelColumnWarning")
+        $txtWarnMsg = $s1View.FindName("TxtColumnWarningMessage")
+        $badgeHealth = $s1View.FindName("BadgeOverallHealth")
+        $txtHealth = $s1View.FindName("TxtOverallHealth")
 
         if ($missingCols.Count -gt 0) {
             if ($panelWarn) { $panelWarn.Visibility = [System.Windows.Visibility]::Visible }
@@ -637,54 +707,33 @@ function Select-Course {
             if ($badgeHealth) { $badgeHealth.BorderBrush = $sageBrush }
         }
 
-        # 4. Summary Text
-        $txtSummary = $dashView.FindName("TxtSheetAuditSummary")
+        # Summary Text
+        $txtSummary = $s1View.FindName("TxtSheetAuditSummary")
         if ($txtSummary) {
             $detectedCount = 7 - $missingCols.Count
             $txtSummary.Text = "$totalCount Total Students | $detectedCount/7 Standard Columns Detected"
         }
-        $txtSyncTime = $dashView.FindName("TxtSheetAuditTimestamp")
+        $txtSyncTime = $s1View.FindName("TxtSheetAuditTimestamp")
         if ($txtSyncTime) {
             $syncDate = if ($store.LastSync) { [string]$store.LastSync } else { (Get-Date).ToString("yyyy-MM-dd HH:mm") }
             $txtSyncTime.Text = "Synced: $syncDate"
         }
 
-        # 5. Verification Sheet Panel State & Mini Dashboard Metrics
-        $panelPrompt = $dashView.FindName("PanelVerificationSheetPrompt")
-        $panelActive = $dashView.FindName("PanelVerificationSheetActive")
-        $badgeVerSheet = $dashView.FindName("BadgeVerificationSheetStatus")
-        $txtVerPath = $dashView.FindName("TxtVerificationSheetPath")
-        $txtVerSummary = $dashView.FindName("TxtVerificationSheetSummary")
-        $txtVerTime = $dashView.FindName("TxtVerificationSheetTimestamp")
+        # Verification Sheet Panel State & Mini Dashboard Metrics
+        $panelPrompt = $s1View.FindName("PanelVerificationSheetPrompt")
+        $panelActive = $s1View.FindName("PanelVerificationSheetActive")
+        $badgeVerSheet = $s1View.FindName("BadgeVerificationSheetStatus")
+        $txtVerPath = $s1View.FindName("TxtVerificationSheetPath")
+        $txtVerSummary = $s1View.FindName("TxtVerificationSheetSummary")
+        $txtVerTime = $s1View.FindName("TxtVerificationSheetTimestamp")
 
-        $txtVerStatVerified = $dashView.FindName("TxtVerStatVerified")
-        $txtVerStatReview   = $dashView.FindName("TxtVerStatReview")
-        $txtVerStatUnreg    = $dashView.FindName("TxtVerStatUnreg")
-
-        # Compute verification status metrics
-        $verifiedCount = 0
-        $reviewCount = 0
-        $unregCount = 0
-
-        foreach ($st in $students) {
-            $vStatus = if ($st.PSObject.Properties['VerificationStatus']) { [string]$st.VerificationStatus } else { "" }
-            $isReg = if ($st.PSObject.Properties['IsRegistered']) { $st.IsRegistered } else { $null }
-
-            if ($vStatus -eq "Verified") {
-                $verifiedCount++
-            } elseif ($vStatus -eq "Under Review") {
-                $reviewCount++
-            } elseif ($vStatus -eq "Did Not Register" -or $isReg -eq $false) {
-                $unregCount++
-            }
-        }
+        $txtVerStatVerified = $s1View.FindName("TxtVerStatVerified")
+        $txtVerStatReview   = $s1View.FindName("TxtVerStatReview")
+        $txtVerStatUnreg    = $s1View.FindName("TxtVerStatUnreg")
 
         if ($txtVerStatVerified) { $txtVerStatVerified.Text = $verifiedCount.ToString() }
         if ($txtVerStatReview)   { $txtVerStatReview.Text = $reviewCount.ToString() }
         if ($txtVerStatUnreg)    { $txtVerStatUnreg.Text = $unregCount.ToString() }
-
-        $vSheetPath = if ($Course.PSObject.Properties['VerificationSheet']) { [string]$Course.VerificationSheet } else { $null }
-        $vSheetExists = $vSheetPath -and (Test-Path -LiteralPath $vSheetPath)
 
         if ($vSheetExists) {
             if ($panelPrompt) { $panelPrompt.Visibility = [System.Windows.Visibility]::Collapsed }
@@ -706,7 +755,33 @@ function Select-Course {
         }
     }
 
-    Navigate-To "DashboardView"
+    # ── Update Stage 2 View (Exam Results) ──
+    $s2View = Get-OrCreateView "Stage2View"
+    if ($s2View) {
+        $s2Breadcrumb = $s2View.FindName("TxtStage2Breadcrumb")
+        if ($s2Breadcrumb) {
+            $codeStr = if ($cCode) { " ($cCode)" } else { "" }
+            $upperName = $cName.ToUpper()
+            $s2Breadcrumb.Text = "COURSES > $upperName$codeStr > STAGE 2"
+        }
+
+        $panelResultsActive = $s2View.FindName("PanelExamResultsActive")
+        $txtResultsPath = $s2View.FindName("TxtExamResultsPath")
+        if ($Course.ExamResultsSheet -and (Test-Path -LiteralPath $Course.ExamResultsSheet -ErrorAction SilentlyContinue)) {
+            if ($panelResultsActive) { $panelResultsActive.Visibility = [System.Windows.Visibility]::Visible }
+            if ($txtResultsPath) { $txtResultsPath.Text = [string]$Course.ExamResultsSheet }
+        } else {
+            if ($panelResultsActive) { $panelResultsActive.Visibility = [System.Windows.Visibility]::Collapsed }
+        }
+    }
+
+    if ($TargetView) {
+        Navigate-To $TargetView
+    } elseif ($script:currentView -eq "Stage1View" -or $script:currentView -eq "Stage2View") {
+        # Already inside the Stage detail view; keep user on the active view
+    } else {
+        Navigate-To "WorkspaceView"
+    }
 }
 
 # 10. Wire Events per View (Using dynamic lookups to prevent scope closure loss)
@@ -884,7 +959,33 @@ function Wire-ViewEvents {
             Refresh-CourseLists
         }
 
-        "DashboardView" {
+        "WorkspaceView" {
+            # Stage 1 Card Click -> Navigate to Stage1View
+            $cardStage1 = $viewObj.FindName("CardStage1")
+            if ($cardStage1) {
+                $cardStage1.Add_MouseLeftButtonUp({
+                    Navigate-To "Stage1View"
+                })
+            }
+
+            # Stage 2 Card Click -> Navigate to Stage2View
+            $cardStage2 = $viewObj.FindName("CardStage2")
+            if ($cardStage2) {
+                $cardStage2.Add_MouseLeftButtonUp({
+                    Navigate-To "Stage2View"
+                })
+            }
+        }
+
+        "Stage1View" {
+            # Back to Workspace
+            $btnBack = $viewObj.FindName("BtnBackToWorkspace")
+            if ($btnBack) {
+                $btnBack.Add_Click({
+                    Navigate-To "WorkspaceView"
+                })
+            }
+
             # Open Sheet in Windows default application (Excel/LibreOffice/etc.)
             $btnOpenSheet = $viewObj.FindName("BtnOpenRegistrationSheet")
             if ($btnOpenSheet) {
@@ -916,7 +1017,7 @@ function Wire-ViewEvents {
                         return
                     }
 
-                    $dv = $script:views["DashboardView"]
+                    $dv = $script:views["Stage1View"]
                     if (-not $dv) { return }
 
                     $modal = $dv.FindName("SheetPreviewModal")
@@ -956,7 +1057,7 @@ function Wire-ViewEvents {
             $btnCloseX = $viewObj.FindName("BtnClosePreviewX")
             if ($btnCloseX) {
                 $btnCloseX.Add_Click({
-                    $dv = $script:views["DashboardView"]
+                    $dv = $script:views["Stage1View"]
                     if ($dv) {
                         $modal = $dv.FindName("SheetPreviewModal")
                         if ($modal) { $modal.Visibility = [System.Windows.Visibility]::Collapsed }
@@ -967,7 +1068,7 @@ function Wire-ViewEvents {
             $btnClose = $viewObj.FindName("BtnClosePreview")
             if ($btnClose) {
                 $btnClose.Add_Click({
-                    $dv = $script:views["DashboardView"]
+                    $dv = $script:views["Stage1View"]
                     if ($dv) {
                         $modal = $dv.FindName("SheetPreviewModal")
                         if ($modal) { $modal.Visibility = [System.Windows.Visibility]::Collapsed }
@@ -1001,7 +1102,7 @@ function Wire-ViewEvents {
                     # Force re-ingestion from disk and update store
                     $null = Get-CourseStudentStore -CourseId $script:activeCourse.Id -RegistrationSheet $sheetPath -Force
 
-                    # Refresh Dashboard with updated store and health badges
+                    # Refresh views with updated store and health badges
                     Select-Course $script:activeCourse
 
                     [System.Windows.MessageBox]::Show("Registration sheet health rechecked and updated successfully.", "Health Rechecked", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
@@ -1021,7 +1122,7 @@ function Wire-ViewEvents {
                         # Force re-ingestion and rebuild store for the newly attached spreadsheet
                         $null = Get-CourseStudentStore -CourseId $script:activeCourse.Id -RegistrationSheet $selected -Force
 
-                        # Refresh Dashboard with updated store and health badges
+                        # Refresh views with updated store and health badges
                         Select-Course $script:activeCourse
 
                         [System.Windows.MessageBox]::Show("Registration sheet updated and health verified for '$($script:activeCourse.Name)'.", "Sheet Updated", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
@@ -1079,7 +1180,7 @@ function Wire-ViewEvents {
                         return
                     }
 
-                    $dv = $script:views["DashboardView"]
+                    $dv = $script:views["Stage1View"]
                     if (-not $dv) { return }
 
                     $modal = $dv.FindName("SheetPreviewModal")
@@ -1198,7 +1299,7 @@ function Wire-ViewEvents {
 
                         # 4. Run Pipeline with Wait Cursor & Visual Feedback
                         $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
-                        $dv = $script:views["DashboardView"]
+                        $dv = $script:views["Stage1View"]
                         $btn = if ($dv) { $dv.FindName("BtnVerifyAll") } else { $null }
                         $origContent = if ($btn) { $btn.Content } else { "▶ Verify All (OCR)" }
                         try {
@@ -1211,7 +1312,7 @@ function Wire-ViewEvents {
                             $dDir = if ($script:dataDir) { $script:dataDir } else { (Join-Path $script:appRoot "data") }
                             $summary = Invoke-CourseVerificationPipeline -Course $script:activeCourse -DataDir $dDir
 
-                            # Refresh dashboard and mini cards
+                            # Refresh views and mini cards
                             Select-Course $script:activeCourse
 
                             $vFileName = if ($script:activeCourse.VerificationSheet) { [System.IO.Path]::GetFileName($script:activeCourse.VerificationSheet) } else { "Verification Sheet" }
@@ -1249,7 +1350,7 @@ function Wire-ViewEvents {
             $cardVerified = $viewObj.FindName("CardVerStatVerified")
             if ($cardVerified) {
                 $cardVerified.Add_MouseLeftButtonUp({
-                    $dv = $script:views["DashboardView"]
+                    $dv = $script:views["Stage1View"]
                     $txt = if ($dv) { $dv.FindName("TxtVerStatVerified") } else { $null }
                     $count = if ($txt) { $txt.Text } else { "0" }
                     [System.Windows.MessageBox]::Show(
@@ -1264,7 +1365,7 @@ function Wire-ViewEvents {
             $cardReview = $viewObj.FindName("CardVerStatReview")
             if ($cardReview) {
                 $cardReview.Add_MouseLeftButtonUp({
-                    $dv = $script:views["DashboardView"]
+                    $dv = $script:views["Stage1View"]
                     $txt = if ($dv) { $dv.FindName("TxtVerStatReview") } else { $null }
                     $count = if ($txt) { $txt.Text } else { "0" }
                     [System.Windows.MessageBox]::Show(
@@ -1279,7 +1380,7 @@ function Wire-ViewEvents {
             $cardUnreg = $viewObj.FindName("CardVerStatUnreg")
             if ($cardUnreg) {
                 $cardUnreg.Add_MouseLeftButtonUp({
-                    $dv = $script:views["DashboardView"]
+                    $dv = $script:views["Stage1View"]
                     $txt = if ($dv) { $dv.FindName("TxtVerStatUnreg") } else { $null }
                     $count = if ($txt) { $txt.Text } else { "0" }
                     [System.Windows.MessageBox]::Show(
@@ -1288,6 +1389,16 @@ function Wire-ViewEvents {
                         [System.Windows.MessageBoxButton]::OK,
                         [System.Windows.MessageBoxImage]::Information
                     )
+                })
+            }
+        }
+
+        "Stage2View" {
+            # Back to Workspace
+            $btnBack = $viewObj.FindName("BtnBackToWorkspace")
+            if ($btnBack) {
+                $btnBack.Add_Click({
+                    Navigate-To "WorkspaceView"
                 })
             }
 
@@ -1305,14 +1416,9 @@ function Wire-ViewEvents {
                         $script:activeCourse.Stage = "ResultsUploaded"
                         Save-Courses
 
-                        $dv = $script:views["DashboardView"]
-                        if ($dv) {
-                            $statRes = $dv.FindName("TxtStatExamResults")
-                            if ($statRes) {
-                                $statRes.Text = "Uploaded"
-                                $statRes.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
-                            }
-                        }
+                        # Refresh all views with updated state
+                        Select-Course $script:activeCourse
+
                         [System.Windows.MessageBox]::Show("Exam results spreadsheet attached for '$($script:activeCourse.Name)'.`nReady for grade & credit reconciliation!", "Results Uploaded", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
                     }
                 })
@@ -1328,6 +1434,8 @@ function Navigate-To {
     $viewControl = Get-OrCreateView $ViewName
     if (-not $viewControl) { return }
 
+    $script:currentView = $ViewName
+
     # Swap active view in the ContentControl outlet
     $ViewContainer.Content = $viewControl
 
@@ -1336,7 +1444,7 @@ function Navigate-To {
     $defaultStyle = [System.Windows.Application]::Current.FindResource("BtnNav")
 
     if ($NavBtnHome) { $NavBtnHome.Style = if ($ViewName -eq "HomeView") { $activeStyle } else { $defaultStyle } }
-    if ($NavBtnCourses) { $NavBtnCourses.Style = if ($ViewName -eq "CoursesView" -or $ViewName -eq "DashboardView") { $activeStyle } else { $defaultStyle } }
+    if ($NavBtnCourses) { $NavBtnCourses.Style = if ($ViewName -eq "CoursesView" -or $ViewName -eq "WorkspaceView" -or $ViewName -eq "Stage1View" -or $ViewName -eq "Stage2View") { $activeStyle } else { $defaultStyle } }
     if ($NavBtnSettings) { $NavBtnSettings.Style = if ($ViewName -eq "SettingsView") { $activeStyle } else { $defaultStyle } }
 
     Refresh-CourseLists

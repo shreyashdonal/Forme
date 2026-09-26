@@ -35,7 +35,10 @@ PDQA Project/
 │   └── Views/
 │       ├── HomeView.xaml          # Welcome launcher + toggleable course setup form
 │       ├── CoursesView.xaml       # Managed courses library & card grid
-│       ├── DashboardView.xaml     # Active course dashboard (Stage 1 & Stage 2)
+│       ├── WorkspaceView.xaml     # Course workspace landing page (metrics & interactive stage cards)
+│       ├── Stage1View.xaml        # Stage 1 Student Registration & Verification command center
+│       ├── Stage2View.xaml        # Stage 2 Post-Exam Results & reconciliation workspace
+│       ├── DashboardView.xaml     # Legacy course dashboard (preserved for fallback)
 │       ├── ReviewView.xaml        # Discrepancy review & receipt comparison (staged for Phase E)
 │       ├── SettingsView.xaml      # Google Sheets & Tesseract OCR paths
 │       └── StudentListView.xaml   # Full student roster view (staged for Phase F)
@@ -54,7 +57,8 @@ PDQA Project/
 │   ├── Branch_2(Session_3).md     # Web dev guide & notes for Branch 2 Session 3
 │   ├── Branch_2(Session_4).md     # Web dev guide & notes for Branch 2 Session 4
 │   ├── Branch_3(Session_1).md     # Notes for Branch 3 Session 1 (Phases A, B, C & Data Restructure)
-│   └── Branch_3(Session_2).md     # Notes for Branch 3 Session 2 (Phase D: 5-Rule Matcher & Delta Sync)
+│   ├── Branch_3(Session_2).md     # Notes for Branch 3 Session 2 (Phase D: 5-Rule Matcher & Delta Sync)
+│   └── Branch_3(Session_3).md     # Notes for Branch 3 Session 3 (Stage-Based Workspace & Router)
 ├── NPTEL-Manager.ps1              # Main WPF application runner & router controller
 ├── build.ps1                      # ps2exe compilation script
 ├── test_parse.ps1                 # XAML and script syntax validator
@@ -66,7 +70,7 @@ PDQA Project/
 └── Progress.md                    # This active tracking file
 ```
 
-**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md`, `Branch_2(Session_2).md`, `Branch_2(Session_3).md`, `Branch_2(Session_4).md`, `Branch_3(Session_1).md`, `Branch_3(Session_2).md`.
+**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md`, `Branch_2(Session_2).md`, `Branch_2(Session_3).md`, `Branch_2(Session_4).md`, `Branch_3(Session_1).md`, `Branch_3(Session_2).md`, `Branch_3(Session_3).md`.
 
 ---
 
@@ -188,6 +192,10 @@ PDQA Project/
 - [x] Relocate `students.json` database inside course folders (`data/Courses/<CourseName>/students.json`) with legacy auto-migration `[Session 1]`
 - [x] Implement Smart Delta Response Synchronization (`Sync-CourseResponses`) with receipt link change invalidation and rich report dialog `[Session 2]`
 - [x] Add `[ 🔄 Sync Responses ]` button to Stage 1 attachment bar in `DashboardView.xaml` `[Session 2]`
+- [x] Stage-Based Course Workspace Redesign: Split monolithic DashboardView into WorkspaceView, Stage1View, and Stage2View `[Session 3]`
+- [x] Dynamic Stage Status Badges: Real-time calculation and display of 'In Progress' vs 'Complete ✓' on Workspace cards `[Session 3]`
+- [x] Cross-Version Unicode Hardening: Replaced unsupported PowerShell 7 escape sequences with runtime [char] tokens for cross-version em-dash and checkmarks `[Session 3]`
+- [x] Context-Aware Navigation State: Implemented $script:currentView tracking so in-stage actions (OCR Verify All, Health Recheck, Replace Sheet) stay on the active stage view `[Session 3]`
 
 ---
 
@@ -363,6 +371,31 @@ NPTEL-Manager.ps1 (Wired [ 🔄 Sync Responses ] with dual file-source prompts a
 - *Smart Delta Response Sync (`Sync-CourseResponses`)*: Separate hard file replacement (`[ Replace Sheet... ]`) from incremental Google Form merges (`[ 🔄 Sync Responses ]`).
 - *Evidence-Based Re-verification*: If an existing student (even if previously "Verified") submits a new Google Drive link, the old receipt cache is purged and their status resets to "Pending" with an explicit alert in the sync report dialog.
 - *Simultaneous Dual Persistence*: Both verification and delta sync pipelines update `data/Courses/<CourseName>/students.json` and `<CourseName>_Verification_Sheet.xlsx` simultaneously.
+
+**Known issues / TODO carried forward**
+```
+- Completed Phase D, 5-Rule Matcher, and Smart Delta Response Sync in Session 2.
+```
+
+### Session 3 (Branch 3 (Student Verification System)) — Stage-Based Workspace Redesign, Multi-Page Router & Navigation Hardening
+
+**Files created/updated**
+```
+UI/Views/WorkspaceView.xaml (New workspace overview landing page with breadcrumb, title, 4-column metric bar, and side-by-side interactive Stage 1 & Stage 2 cards with status badges)
+UI/Views/Stage1View.xaml (Decoupled Stage 1 detail workspace with back navigation, linked sheet bar, sheet health panel, verification command center, 3 mini-dashboard cards, automated OCR bar, and in-app preview modal)
+UI/Views/Stage2View.xaml (Dedicated Stage 2 detail workspace with back navigation, results upload card, active results state, and credit mapping placeholder)
+NPTEL-Manager.ps1 (Refactored Select-Course to populate WorkspaceView, Stage1View, Stage2View; wired stage card navigation; separated Wire-ViewEvents per view; added $script:currentView tracking; fixed Unicode escape sequences with [char]0x2014 and [char]0x2713; guarded Select-Course against unwanted view switching on in-stage operations)
+notes/Branch_3(Session_3).md (Web developer notes on stage pipeline UI architecture, SPA view lifecycle, cross-version PowerShell encoding traps, and context-aware state retention)
+Progress.md (Recorded Session 3 completion, updated repo layout, added Branch 3 extra tasks, and updated session log)
+```
+
+**Decisions made this session**
+- *Pipeline Stage Decoupling*: Decomposed the 700+ line monolithic `DashboardView.xaml` into a dedicated workspace hub (`WorkspaceView.xaml`) and focused stage-specific child views (`Stage1View.xaml` and `Stage2View.xaml`), matching the coordinator's mental model of the semester lifecycle.
+- *Workspace Overview as Mission Control*: The top 4-column metrics bar (Total Registered, Exam Registered, Action Needed, Stage 2 Results) remains prominent on the Workspace landing page, while actionable sheets and heavy tooling (OCR, Health Check, Preview Modal) are neatly tucked inside their respective stages.
+- *Dynamic Stage Status Computation*: Stage 1 card automatically displays `Complete ✓` (Sage Green) if all registered students have been verified, or `In Progress` (Warm Amber) if audits or receipts remain unverified. Stage 2 displays `Complete ✓` once official results are uploaded, otherwise `Pending`.
+- *Cross-Version Character Robustness*: Replaced PowerShell 7-only `\u{...}` / `` `u{...} `` escape strings with native `[char]0x2014` (em-dash `—`) and `[char]0x2713` (checkmark `✓`), resolving raw `u{2014}` / `u{2713}` rendering bugs on Windows PowerShell 5.1 without requiring BOM encoding.
+- *Context-Aware View Retention*: Introduced `$script:currentView` state tracking in `Navigate-To`. Enhanced `Select-Course` so in-stage actions (e.g. `[ ▶ Verify All (OCR) ]`, `[ Recheck Health ]`, `[ Replace Sheet... ]`) update all UI bindings in-place and keep the coordinator on their active stage view rather than jarringly routing back to the Workspace cards.
+- *Preserved Legacy Compatibility*: Retained `DashboardView.xaml` safely on disk while cleanly redirecting all application routes and event listeners to the new decoupled view architecture.
 
 **Known issues / TODO carried forward**
 ```

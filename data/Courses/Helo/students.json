@@ -1,6 +1,6 @@
 ﻿{
     "CourseId":  "36a4158e-903d-46ec-a0f3-af3134f564f9",
-    "LastSync":  "2026-09-26 01:05",
+    "LastSync":  "2026-09-26 09:17",
     "ColumnMap":  {
                       "RollNo":  "Enrollment Number",
                       "Name":  "Name",
@@ -23,7 +23,9 @@
                          "Timestamp":  "25/09/2026 19:15:19",
                          "Raw":  {
 
-                                 }
+                                 },
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
                      },
                      {
                          "RollNo":  "0801cs221137",
@@ -36,7 +38,9 @@
                          "Timestamp":  "25/09/2026 21:00:24",
                          "Raw":  {
 
-                                 }
+                                 },
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
                      },
                      {
                          "RollNo":  "0801cs221138",
@@ -49,7 +53,9 @@
                          "Timestamp":  "25/09/2026 21:08:32",
                          "Raw":  {
 
-                                 }
+                                 },
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
                      },
                      {
                          "RollNo":  "0801cs22113",
@@ -62,7 +68,9 @@
                          "Timestamp":  "25/09/2026 21:11:50",
                          "Raw":  {
 
-                                 }
+                                 },
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
                      }
                  ]
 }

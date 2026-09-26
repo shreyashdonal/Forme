@@ -1,0 +1,146 @@
+<UserControl
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="1040" Margin="32,32,32,60" HorizontalAlignment="Center">
+
+            <!-- ═══ A. Back Button & Header ═══ -->
+            <Button x:Name="BtnBackToWorkspace"
+                    Content="← Back to Workspace"
+                    Style="{DynamicResource BtnSecondary}"
+                    Padding="12,7"
+                    Margin="0,0,0,16"
+                    HorizontalAlignment="Left"/>
+
+            <TextBlock x:Name="TxtStage2Breadcrumb"
+                       Text="COURSES &gt; HELO &gt; STAGE 2"
+                       FontFamily="IBM Plex Mono, Consolas"
+                       FontSize="11"
+                       Foreground="{DynamicResource AccentBrush}"
+                       Margin="0,0,0,6"/>
+
+            <TextBlock Text="Examination Result"
+                       FontFamily="IBM Plex Mono, Consolas"
+                       FontSize="28"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource TextBrush}"
+                       Margin="0,0,0,6"/>
+
+            <TextBlock Text="Upload official NPTEL exam results and generate the final college credit reconciliation sheet."
+                       FontSize="13"
+                       Foreground="{DynamicResource MutedBrush}"
+                       Margin="0,0,0,24"/>
+
+            <!-- ═══ B. Upload Exam Results Card ═══ -->
+            <Border Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="24"
+                    Margin="0,0,0,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left content -->
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Border Background="{DynamicResource Panel2Brush}"
+                                    CornerRadius="4"
+                                    Padding="6,2"
+                                    Margin="0,0,8,0"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="STAGE 2: POST-EXAM"
+                                           FontFamily="IBM Plex Mono, Consolas"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                            </Border>
+                            <TextBlock Text="NPTEL Examination Results"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="Once students write their exams (in 5-6 months), attach the official NPTEL results sheet here to generate the final college credit sheet."
+                                   FontSize="13"
+                                   Foreground="{DynamicResource MutedBrush}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <!-- Right button -->
+                    <Button x:Name="BtnUploadExamResults"
+                            Grid.Column="2"
+                            Content="+ Upload Exam Results Sheet"
+                            Style="{DynamicResource BtnSecondary}"
+                            Padding="16,10"
+                            VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- ═══ C. Results Status Card (shows after upload) ═══ -->
+            <Border x:Name="PanelExamResultsActive"
+                    Visibility="Collapsed"
+                    Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="24"
+                    Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="RESULTS SHEET ATTACHED"
+                               FontFamily="IBM Plex Mono, Consolas"
+                               FontSize="11"
+                               Foreground="{DynamicResource SageBrush}"
+                               Margin="0,0,0,6"/>
+
+                    <TextBlock x:Name="TxtExamResultsPath"
+                               Text=""
+                               FontFamily="IBM Plex Mono, Consolas"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextBrush}"
+                               Margin="0,0,0,10"/>
+
+                    <Border Background="{DynamicResource Panel2Brush}"
+                            CornerRadius="6"
+                            Padding="14,10">
+                        <TextBlock x:Name="TxtExamResultsSummary"
+                                   Text="Results sheet uploaded. Ready for credit reconciliation."
+                                   FontFamily="IBM Plex Mono, Consolas"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextBrush}"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ D. Placeholder / Coming Soon Card ═══ -->
+            <Border Background="{DynamicResource Panel2Brush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="32"
+                    Margin="0,0,0,20">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="🔮 Coming Soon"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource MutedBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Credit reconciliation, grade mapping, and certificate generation features will be available in a future update."
+                               FontSize="12"
+                               Foreground="{DynamicResource Muted2Brush}"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               MaxWidth="500"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

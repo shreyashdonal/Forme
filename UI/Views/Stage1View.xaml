@@ -1,0 +1,800 @@
+<UserControl
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
+
+    <Grid>
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- MAIN SCROLLABLE CONTENT                                       -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel MaxWidth="1040" Margin="32,32,32,60" HorizontalAlignment="Center">
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- A. BACK BUTTON & HEADER                                -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <Button x:Name="BtnBackToWorkspace"
+                        Content="← Back to Workspace"
+                        Style="{DynamicResource BtnSecondary}"
+                        Padding="12,7"
+                        Margin="0,0,0,16"
+                        HorizontalAlignment="Left"/>
+
+                <TextBlock x:Name="TxtStage1Breadcrumb"
+                           Text="COURSES &gt; HELO &gt; STAGE 1"
+                           FontFamily="IBM Plex Mono"
+                           FontSize="11"
+                           Foreground="{DynamicResource AccentBrush}"
+                           Margin="0,0,0,6"/>
+
+                <TextBlock Text="Student Registration"
+                           FontFamily="IBM Plex Mono"
+                           FontSize="28"
+                           FontWeight="Medium"
+                           Foreground="{DynamicResource TextBrush}"
+                           Margin="0,0,0,6"/>
+
+                <TextBlock Text="Manage registration data, verify sheet health, and run automated receipt verification."
+                           FontSize="13"
+                           Foreground="{DynamicResource MutedBrush}"
+                           Margin="0,0,0,24"/>
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- B. LINKED REGISTRATION SHEET CARD                      -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="24"
+                        Margin="0,0,0,20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: Sheet info -->
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="STAGE 1 ATTACHMENT"
+                                       FontFamily="IBM Plex Mono"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="Student Registration Spreadsheet"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,6"/>
+                            <TextBlock x:Name="TxtDashboardSheetPath"
+                                       Text="No registration sheet linked."
+                                       FontFamily="IBM Plex Mono"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource MutedBrush}"/>
+                        </StackPanel>
+
+                        <!-- Right: Action buttons -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="BtnPreviewRegistrationSheet"
+                                    Content="Preview Sheet"
+                                    Style="{DynamicResource BtnPrimary}"
+                                    Padding="14,8"
+                                    Margin="0,0,8,0"/>
+                            <Button x:Name="BtnOpenRegistrationSheet"
+                                    Content="Open File"
+                                    Style="{DynamicResource BtnSecondary}"
+                                    Padding="14,8"
+                                    Margin="0,0,8,0"/>
+                            <Button x:Name="BtnChangeRegistrationSheet"
+                                    Content="Replace Sheet..."
+                                    Style="{DynamicResource BtnSecondary}"
+                                    Padding="14,8"
+                                    ToolTip="Replace or re-link the registration spreadsheet."/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- C. REGISTRATION SHEET HEALTH PANEL                     -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="24"
+                        Margin="0,0,0,20">
+                    <StackPanel>
+
+                        <!-- Header Grid -->
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Registration Sheet Health"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="Column detection and data integrity summary."
+                                           FontSize="12"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border x:Name="BadgeOverallHealth"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource SageBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="12,5">
+                                    <TextBlock x:Name="TxtOverallHealth"
+                                               Text="7/7 Columns Detected ✓"
+                                               FontFamily="IBM Plex Mono"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource SageBrush}"/>
+                                </Border>
+                                <Button x:Name="BtnRecheckSheetHealth"
+                                        Content="Recheck Health"
+                                        Style="{DynamicResource BtnSecondary}"
+                                        Padding="10,5"
+                                        FontSize="11"
+                                        Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Basic Sheet Numbers Strip -->
+                        <Border Background="{DynamicResource Panel2Brush}"
+                                CornerRadius="6"
+                                Padding="16,10"
+                                Margin="0,0,0,16">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" VerticalAlignment="Center">
+                                    <Run Text="Total Students: " Foreground="{DynamicResource MutedBrush}"/>
+                                    <Run x:Name="TxtHealthTotalStudents" Text="—" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"/>
+                                </TextBlock>
+
+                                <TextBlock Grid.Column="1" VerticalAlignment="Center">
+                                    <Run Text="Exam Registered: " Foreground="{DynamicResource MutedBrush}"/>
+                                    <Run x:Name="TxtHealthExamRegistered" Text="—" FontWeight="Bold" Foreground="{DynamicResource SageBrush}"/>
+                                </TextBlock>
+
+                                <TextBlock Grid.Column="2" VerticalAlignment="Center">
+                                    <Run Text="Other / Not Registered: " Foreground="{DynamicResource MutedBrush}"/>
+                                    <Run x:Name="TxtHealthOtherStudents" Text="—" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+
+                        <!-- Missing Column Warning Banner -->
+                        <Border x:Name="PanelColumnWarning"
+                                Visibility="Collapsed"
+                                Background="#2A2215"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="16,12"
+                                Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="⚠️ ATTENTION REQUIRED"
+                                           FontFamily="IBM Plex Mono"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentBrush}"
+                                           Margin="0,0,0,6"/>
+                                <TextBlock x:Name="TxtColumnWarningMessage"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Column Detection Badges -->
+                        <WrapPanel Margin="0,0,0,16">
+                            <!-- RollNo -->
+                            <Border x:Name="CardColRollNo"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="IconColRollNo" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="RollNo" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock x:Name="TxtColRollNo" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Name -->
+                            <Border x:Name="CardColName"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="IconColName" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Name" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock x:Name="TxtColName" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Email -->
+                            <Border x:Name="CardColEmail"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="IconColEmail" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Email" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock x:Name="TxtColEmail" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Subject -->
+                            <Border x:Name="CardColSubject"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="IconColSubject" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Subject" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock x:Name="TxtColSubject" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- IsEnrolled -->
+                            <Border x:Name="CardColIsEnrolled"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="IconColIsEnrolled" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="IsEnrolled" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock x:Name="TxtColIsEnrolled" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- IsRegistered -->
+                            <Border x:Name="CardColIsRegistered"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="IconColIsRegistered" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="IsRegistered" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock x:Name="TxtColIsRegistered" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ProofUrl -->
+                            <Border x:Name="CardColProofUrl"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="IconColProofUrl" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="ProofUrl" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock x:Name="TxtColProofUrl" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </WrapPanel>
+
+                        <!-- Summary Footer Strip -->
+                        <Border Background="{DynamicResource Panel2Brush}"
+                                CornerRadius="6"
+                                Padding="14,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock x:Name="TxtSheetAuditSummary"
+                                           Grid.Column="0"
+                                           FontFamily="IBM Plex Mono"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           VerticalAlignment="Center"/>
+
+                                <TextBlock x:Name="TxtSheetAuditTimestamp"
+                                           Grid.Column="1"
+                                           FontFamily="IBM Plex Mono"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource MutedBrush}"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </Border>
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- D. VERIFICATION SHEET PANEL                            -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="24"
+                        Margin="0,0,0,20">
+                    <StackPanel>
+
+                        <!-- Header Grid -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Verification Sheet"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="Generate and manage the automated verification spreadsheet."
+                                           FontSize="12"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                            </StackPanel>
+
+                            <Border x:Name="BadgeVerificationSheetStatus"
+                                    Grid.Column="1"
+                                    Visibility="Collapsed"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource SageBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="12,5"
+                                    VerticalAlignment="Center">
+                                <TextBlock x:Name="TxtVerificationSheetStatus"
+                                           Text="Sheet Ready ✓"
+                                           FontFamily="IBM Plex Mono"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SageBrush}"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- State A: Prompt (no verification sheet yet) -->
+                        <Border x:Name="PanelVerificationSheetPrompt"
+                                Background="{DynamicResource Panel2Brush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="20">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="No verification sheet generated yet"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               Margin="0,0,0,4"/>
+                                    <TextBlock Text="Generate a verification sheet to begin automated receipt checking and OCR processing."
+                                               FontSize="12"
+                                               Foreground="{DynamicResource MutedBrush}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <Button x:Name="BtnGenerateVerificationSheet"
+                                        Grid.Column="1"
+                                        Content="+ Generate Verification Sheet"
+                                        Style="{DynamicResource BtnPrimary}"
+                                        Padding="16,9"
+                                        VerticalAlignment="Center"
+                                        Margin="16,0,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- State B: Active (verification sheet exists) -->
+                        <StackPanel x:Name="PanelVerificationSheetActive" Visibility="Collapsed">
+
+                            <!-- File Location Bar -->
+                            <Border Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="16,12"
+                                    Margin="0,0,0,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock x:Name="TxtVerificationSheetPath"
+                                               Grid.Column="0"
+                                               FontFamily="IBM Plex Mono"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource MutedBrush}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <Button x:Name="BtnPreviewVerificationSheet"
+                                                Content="Preview Sheet"
+                                                Style="{DynamicResource BtnPrimary}"
+                                                Padding="14,8"
+                                                Margin="0,0,8,0"/>
+                                        <Button x:Name="BtnOpenVerificationSheet"
+                                                Content="Open File"
+                                                Style="{DynamicResource BtnSecondary}"
+                                                Padding="14,8"
+                                                Margin="0,0,8,0"/>
+                                        <Button x:Name="BtnRecreateVerificationSheet"
+                                                Content="Recreate Sheet..."
+                                                Style="{DynamicResource BtnSecondary}"
+                                                Padding="14,8"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Automated Engine Bar -->
+                            <Border Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="16,14"
+                                    Margin="0,0,0,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="AUTOMATED ENGINE"
+                                                   FontFamily="IBM Plex Mono"
+                                                   FontSize="10"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AccentBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="Receipt Verification &amp; OCR Engine"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="Automatically download, OCR-parse, and cross-verify payment receipts against registration data."
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+
+                                    <Button x:Name="BtnVerifyAll"
+                                            Grid.Column="1"
+                                            Content="▶ Verify All (OCR)"
+                                            Style="{DynamicResource BtnPrimary}"
+                                            Padding="16,9"
+                                            VerticalAlignment="Center"
+                                            Margin="16,0,0,0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Verification Status Mini Dashboard -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Card: VERIFIED -->
+                                <Border x:Name="CardVerStatVerified"
+                                        Grid.Column="0"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16,14"
+                                        Cursor="Hand">
+                                    <StackPanel>
+                                        <TextBlock Text="VERIFIED"
+                                                   FontFamily="IBM Plex Mono"
+                                                   FontSize="10"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource SageBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtVerStatVerified"
+                                                   Text="0"
+                                                   FontSize="24"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource SageBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="Passed all 5 checks"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   Margin="0,0,0,8"/>
+                                        <Border Background="{DynamicResource PanelBrush}"
+                                                CornerRadius="4"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Left">
+                                            <TextBlock Text="✓ Clean"
+                                                       FontFamily="IBM Plex Mono"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource SageBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Card: UNDER REVIEW -->
+                                <Border x:Name="CardVerStatReview"
+                                        Grid.Column="2"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16,14"
+                                        Cursor="Hand">
+                                    <StackPanel>
+                                        <TextBlock Text="UNDER REVIEW"
+                                                   FontFamily="IBM Plex Mono"
+                                                   FontSize="10"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AccentBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtVerStatReview"
+                                                   Text="0"
+                                                   FontSize="24"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AccentBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="Mismatches or issues flagged"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   Margin="0,0,0,8"/>
+                                        <Border Background="{DynamicResource PanelBrush}"
+                                                CornerRadius="4"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Left">
+                                            <TextBlock Text="⚠️ Attention"
+                                                       FontFamily="IBM Plex Mono"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource AccentBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Card: DID NOT REGISTER -->
+                                <Border x:Name="CardVerStatUnreg"
+                                        Grid.Column="4"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16,14"
+                                        Cursor="Hand">
+                                    <StackPanel>
+                                        <TextBlock Text="DID NOT REGISTER"
+                                                   FontFamily="IBM Plex Mono"
+                                                   FontSize="10"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtVerStatUnreg"
+                                                   Text="0"
+                                                   FontSize="24"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="Opted out or unconfirmed"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource Muted2Brush}"
+                                                   Margin="0,0,0,8"/>
+                                        <Border Background="{DynamicResource PanelBrush}"
+                                                CornerRadius="4"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Left">
+                                            <TextBlock Text="— No Exam"
+                                                       FontFamily="IBM Plex Mono"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource MutedBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Verification Summary Strip -->
+                            <Border Background="{DynamicResource Panel2Brush}"
+                                    CornerRadius="6"
+                                    Padding="14,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock x:Name="TxtVerificationSheetSummary"
+                                               Grid.Column="0"
+                                               FontFamily="IBM Plex Mono"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                    <TextBlock x:Name="TxtVerificationSheetTimestamp"
+                                               Grid.Column="1"
+                                               FontFamily="IBM Plex Mono"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource MutedBrush}"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                        </StackPanel>
+
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- E. SHEET PREVIEW MODAL OVERLAY                                -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <Grid x:Name="SheetPreviewModal" Visibility="Collapsed" Background="#D0151513">
+            <Border Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    MaxWidth="980"
+                    MaxHeight="620"
+                    Margin="32"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Row 0: Header -->
+                    <Grid Grid.Row="0" Margin="20,16,20,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtPreviewSheetTitle"
+                                       Text="Sheet Preview"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,2"/>
+                            <TextBlock x:Name="TxtPreviewSheetSubtitle"
+                                       Text=""
+                                       FontFamily="IBM Plex Mono"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource MutedBrush}"/>
+                        </StackPanel>
+
+                        <Button x:Name="BtnClosePreviewX"
+                                Grid.Column="1"
+                                Content="✕"
+                                Style="{DynamicResource BtnSecondary}"
+                                FontSize="14"
+                                Padding="8,4"
+                                VerticalAlignment="Top"/>
+                    </Grid>
+
+                    <!-- Row 1: DataGrid -->
+                    <Border Grid.Row="1"
+                            Margin="20,0,20,0"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            ClipToBounds="True">
+                        <DataGrid x:Name="DataGridSheetPreview"
+                                  AutoGenerateColumns="True"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                                  Background="{DynamicResource Panel2Brush}"
+                                  Foreground="{DynamicResource TextBrush}"
+                                  RowBackground="{DynamicResource Panel2Brush}"
+                                  AlternatingRowBackground="{DynamicResource PanelBrush}"
+                                  BorderThickness="0"
+                                  FontSize="12"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="{DynamicResource Panel2Brush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+                                    <Setter Property="FontFamily" Value="IBM Plex Mono"/>
+                                    <Setter Property="FontSize" Value="11"/>
+                                    <Setter Property="Padding" Value="10,8"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Padding" Value="10,6"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="DataGridCell">
+                                                <Border Padding="{TemplateBinding Padding}"
+                                                        Background="{TemplateBinding Background}">
+                                                    <ContentPresenter VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DataGrid.CellStyle>
+                        </DataGrid>
+                    </Border>
+
+                    <!-- Row 2: Footer -->
+                    <Grid Grid.Row="2" Margin="20,12,20,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="TxtPreviewFooterNote"
+                                   Grid.Column="0"
+                                   FontFamily="IBM Plex Mono"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource MutedBrush}"
+                                   VerticalAlignment="Center"/>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button x:Name="BtnPreviewOpenSystem"
+                                    Content="Open in Excel"
+                                    Style="{DynamicResource BtnSecondary}"
+                                    Padding="14,8"
+                                    Margin="0,0,8,0"/>
+                            <Button x:Name="BtnClosePreview"
+                                    Content="Close Preview"
+                                    Style="{DynamicResource BtnSecondary}"
+                                    Padding="14,8"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+    </Grid>
+</UserControl>
