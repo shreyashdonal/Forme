@@ -70,5 +70,17 @@
         "ExamResultsSheet":  "",
         "Stage":  "Registration",
         "Created":  "2026-09-26 00:46"
+    },
+    {
+        "Id":  "2f2bdcf0-edf9-4569-a8c1-0c4eef0399f5",
+        "Name":  "Soft Computing",
+        "Code":  "CS221108",
+        "Department":  "CSE",
+        "Semester":  "8",
+        "RegistrationSheet":  "C:\\Users\\Asus\\Downloads\\Test form 2  (Responses).xlsx",
+        "VerificationSheet":  "C:\\Users\\Asus\\Downloads\\Soft Computing_Verification_Sheet.xlsx",
+        "ExamResultsSheet":  "",
+        "Stage":  "Registration",
+        "Created":  "2026-09-27 23:47"
     }
 ]

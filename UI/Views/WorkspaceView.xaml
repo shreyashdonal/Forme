@@ -16,18 +16,35 @@
                        Foreground="{DynamicResource AccentBrush}"
                        Margin="0,0,0,8"/>
 
-            <TextBlock x:Name="TxtCourseDashboardTitle"
-                       Text="Helo — Workspace"
-                       FontFamily="IBM Plex Mono, Consolas"
-                       FontSize="28"
-                       FontWeight="Bold"
-                       Foreground="{DynamicResource TextBrush}"/>
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <TextBlock x:Name="TxtCourseDashboardSubtitle"
-                       Text=""
-                       FontSize="13"
-                       Foreground="{DynamicResource MutedBrush}"
-                       Margin="0,4,0,0"/>
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="TxtCourseDashboardTitle"
+                               Text="Helo — Workspace"
+                               FontFamily="IBM Plex Mono, Consolas"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource TextBrush}"/>
+
+                    <TextBlock x:Name="TxtCourseDashboardSubtitle"
+                               Text=""
+                               FontSize="13"
+                               Foreground="{DynamicResource MutedBrush}"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <Button x:Name="BtnDeleteCourseFromWorkspace"
+                        Grid.Column="1"
+                        Content="Delete Course"
+                        Style="{DynamicResource BtnSecondary}"
+                        Foreground="{DynamicResource DangerBrush}"
+                        VerticalAlignment="Center"
+                        Padding="14,8"/>
+            </Grid>
 
             <!-- ══════════════════════════════════════════════════════════════
                  Stats Bar

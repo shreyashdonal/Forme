@@ -58,7 +58,8 @@ PDQA Project/
 │   ├── Branch_2(Session_4).md     # Web dev guide & notes for Branch 2 Session 4
 │   ├── Branch_3(Session_1).md     # Notes for Branch 3 Session 1 (Phases A, B, C & Data Restructure)
 │   ├── Branch_3(Session_2).md     # Notes for Branch 3 Session 2 (Phase D: 5-Rule Matcher & Delta Sync)
-│   └── Branch_3(Session_3).md     # Notes for Branch 3 Session 3 (Stage-Based Workspace & Router)
+│   ├── Branch_3(Session_3).md     # Notes for Branch 3 Session 3 (Stage-Based Workspace & Router)
+│   └── Branch_3(Session_4).md     # Notes for Branch 3 Session 4 (Review Workspace, Zoomable Viewer & Course Deletion)
 ├── NPTEL-Manager.ps1              # Main WPF application runner & router controller
 ├── build.ps1                      # ps2exe compilation script
 ├── test_parse.ps1                 # XAML and script syntax validator
@@ -70,7 +71,7 @@ PDQA Project/
 └── Progress.md                    # This active tracking file
 ```
 
-**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md`, `Branch_2(Session_2).md`, `Branch_2(Session_3).md`, `Branch_2(Session_4).md`, `Branch_3(Session_1).md`, `Branch_3(Session_2).md`, `Branch_3(Session_3).md`.
+**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md`, `Branch_2(Session_2).md`, `Branch_2(Session_3).md`, `Branch_2(Session_4).md`, `Branch_3(Session_1).md`, `Branch_3(Session_2).md`, `Branch_3(Session_3).md`, `Branch_3(Session_4).md`.
 
 ---
 
@@ -175,8 +176,8 @@ PDQA Project/
 - [x] Write verification results back to both `data/Courses/<CourseName>/students.json` and `<CourseName>_Verification_Sheet.xlsx` `[Session 2]`
 
 #### Phase E — Review & Discrepancy Queue (`ReviewView.xaml`)
-- [ ] Wire Mini Dashboard `[ UNDER REVIEW ]` card to navigate to `ReviewView.xaml`
-- [ ] Build split-screen review workspace: student details on left, zoomable receipt image on right
+- [x] Wire Mini Dashboard `[ UNDER REVIEW ]` card to navigate to `ReviewView.xaml` `[Session 4]`
+- [x] Build split-screen review workspace: student details on left, zoomable receipt image on right `[Session 4]`
 - [ ] Implement 1-click coordinator actions: `[ Approve Override ]` and `[ Flag for Resubmit ]`
 - [ ] Add `[ ← Back to Dashboard ]` header navigation button with instant metric synchronization
 
@@ -196,6 +197,7 @@ PDQA Project/
 - [x] Dynamic Stage Status Badges: Real-time calculation and display of 'In Progress' vs 'Complete ✓' on Workspace cards `[Session 3]`
 - [x] Cross-Version Unicode Hardening: Replaced unsupported PowerShell 7 escape sequences with runtime [char] tokens for cross-version em-dash and checkmarks `[Session 3]`
 - [x] Context-Aware Navigation State: Implemented $script:currentView tracking so in-stage actions (OCR Verify All, Health Recheck, Replace Sheet) stay on the active stage view `[Session 3]`
+- [x] Course Deletion Workflow: Implemented safe Remove-Course with confirmation dialog, JSON/cache cleanup, and Delete buttons in CoursesView card & WorkspaceView header `[Session 4]`
 
 ---
 
@@ -399,7 +401,30 @@ Progress.md (Recorded Session 3 completion, updated repo layout, added Branch 3 
 
 **Known issues / TODO carried forward**
 ```
-- Next piece: Phase E — Review & Discrepancy Queue (ReviewView.xaml) to inspect students in "Under Review" state with split-screen receipt zoom and coordinator override actions.
+- Completed Phase D, 5-Rule Matcher, and Stage-Based Workspace Redesign in Sessions 2 & 3.
+```
+
+### Session 4 (Branch 3 (Student Verification System)) — Phase E: Review Queue Navigation, Split-Screen Review Workspace & Course Deletion
+
+**Files created/updated**
+```
+UI/Views/ReviewView.xaml (Added TxtReviewBreadcrumb, TxtReviewCountBadge styling, and BtnBackToStage1; built 2-state split-screen ReviewWorkspaceGrid with student info, verification diagnostics, and zoomable receipt viewer with ScaleTransform)
+UI/Views/WorkspaceView.xaml (Added Delete Course button to workspace header)
+NPTEL-Manager.ps1 (Wired CardVerStatReview click to Open-ReviewView; built Show-StudentReviewDetails with cached image loading; wired toolbar controls for Zoom In/Out/Fit, Open File in OS viewer, Drive link, and missing receipt download; updated router active styles; added Remove-Course with confirmation, state cleanup, and delete buttons on course cards and workspace header)
+Progress.md (Recorded Session 4 progress, checked off Phase E Items 1 & 2, logged Course Deletion extra task, updated session log)
+```
+
+**Decisions made this session**
+- *Dedicated Review Flow*: Routed the Stage 1 `UNDER REVIEW` mini-dashboard card directly to `ReviewView.xaml`, ensuring coordinators can seamlessly jump from status metrics into flagged submissions.
+- *In-Place Metric Sync on Return*: Wired `BtnBackToStage1` to invoke `Select-Course` with `-TargetView "Stage1View"`, guaranteeing that any modifications made during review immediately synchronize back with the Stage 1 dashboard.
+- *Dynamic Review Queue Cards*: Designed card components in `ReviewItemsListHost` displaying Roll Number, Student Name, Warm Amber Review Badge, and discrepancy remark snippets, with zero mock data and automatic empty state handling ("Queue is Clear").
+- *Split-Screen Review Workspace*: Implemented a 2-column layout inside the review workspace separating student registration metadata & diagnostics on the left from interactive receipt viewing on the right.
+- *Native Zoom & File Release*: Used WPF `ScaleTransform` inside a `ScrollViewer` for zoom controls (25% to 400%), loaded bitmaps with `CacheOption = OnLoad` and `.Freeze()` to release file locks immediately, and integrated single-receipt fallback download and external viewer launching.
+- *Safe Course Deletion Workflow*: Added a confirmation dialog guarding against accidental deletion, removed courses cleanly from `courses.json`, cleared local student caches (`data/Courses/<CourseName>`), updated active state and header badges, and added Delete buttons to both `CoursesView` cards and the `WorkspaceView` header.
+
+**Known issues / TODO carried forward**
+```
+- Next piece: Phase E — Implement 1-click coordinator actions: [ Approve Override ] and [ Flag for Resubmit ].
 ```
 
 ---

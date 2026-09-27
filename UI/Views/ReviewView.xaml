@@ -15,7 +15,8 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
-                <TextBlock Text="STUDENT SUBMISSION REVIEW"
+                <TextBlock x:Name="TxtReviewBreadcrumb"
+                           Text="COURSES > REVIEW QUEUE"
                            FontFamily="IBM Plex Mono, Consolas"
                            FontSize="11"
                            FontWeight="Medium"
@@ -32,13 +33,18 @@
                         BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="6"
-                        Padding="12,6">
+                        Padding="12,6"
+                        Margin="0,0,12,0">
                     <TextBlock x:Name="TxtReviewCountBadge"
                                Text="0 Students Need Review"
                                FontFamily="IBM Plex Mono, Consolas"
                                FontSize="12"
                                Foreground="{DynamicResource MutedBrush}"/>
                 </Border>
+                <Button x:Name="BtnBackToStage1"
+                        Content="← Back to Stage 1"
+                        Style="{DynamicResource BtnSecondary}"
+                        Padding="14,8"/>
             </StackPanel>
         </Grid>
 
@@ -106,10 +112,13 @@
                     BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1"
                     CornerRadius="10"
-                    Padding="24">
+                    Padding="20">
                 <Grid x:Name="ReviewDetailsContainer">
-                    <!-- Empty selection placeholder -->
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440">
+                    <!-- State A: Empty selection placeholder -->
+                    <StackPanel x:Name="ReviewDetailsPlaceholder"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                MaxWidth="440">
                         <Border Background="{DynamicResource Panel2Brush}"
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
@@ -138,6 +147,318 @@
                                    TextWrapping="Wrap"
                                    TextAlignment="Center"/>
                     </StackPanel>
+
+                    <!-- State B: Active Split-Screen Review Workspace -->
+                    <Grid x:Name="ReviewWorkspaceGrid" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <!-- Header Row: Student Identity & Actions -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Split-Screen Body: Details on Left, Receipt on Right -->
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header Row -->
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,3">
+                                    <TextBlock x:Name="TxtReviewStudentName"
+                                               Text="Student Name"
+                                               FontFamily="IBM Plex Mono, Consolas"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               Margin="0,0,10,0"/>
+                                    <Border x:Name="BadgeReviewStatus"
+                                            Background="{DynamicResource AccentTintBrush}"
+                                            BorderBrush="{DynamicResource AccentBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="8,2"
+                                            VerticalAlignment="Center">
+                                        <TextBlock x:Name="TxtReviewStatus"
+                                                   Text="UNDER REVIEW"
+                                                   FontFamily="IBM Plex Mono, Consolas"
+                                                   FontSize="10"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AccentBrush}"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock x:Name="TxtReviewStudentRoll"
+                                           Text="Roll No: 0801CS221000"
+                                           FontFamily="IBM Plex Mono, Consolas"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                            </StackPanel>
+
+                            <!-- Coordinator Actions Host (Populated in Phase E Item 3) -->
+                            <StackPanel x:Name="ReviewActionsHost" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Split-Screen Body -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <!-- Sub-Column 1: Student Information & Diagnostics (Width: 330) -->
+                                <ColumnDefinition Width="330"/>
+                                <ColumnDefinition Width="14"/>
+                                <!-- Sub-Column 2: Zoomable Receipt Viewer (Flexible) -->
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Sub-Column 1: Student Details & Diagnostics -->
+                            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="0,0,6,0">
+                                    <!-- Diagnostics Box -->
+                                    <Border Background="{DynamicResource Panel2Brush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="14"
+                                            Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="VERIFICATION DIAGNOSTICS"
+                                                       FontFamily="IBM Plex Mono, Consolas"
+                                                       FontSize="10"
+                                                       FontWeight="Bold"
+                                                       Foreground="{DynamicResource AccentBrush}"
+                                                       Margin="0,0,0,6"/>
+                                            <Border Background="{DynamicResource AccentTintBrush}"
+                                                    BorderBrush="{DynamicResource AccentBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10,8"
+                                                    Margin="0,0,0,8">
+                                                <TextBlock x:Name="TxtReviewRemarks"
+                                                           Text="Remarks explaining why verification flagged this student."
+                                                           FontSize="12"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           LineHeight="17"/>
+                                            </Border>
+                                            <TextBlock Text="Compare the student's declared course, name, and fee against the receipt shown on the right."
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource MutedBrush}"
+                                                       TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Registration Info Box -->
+                                    <Border Background="{DynamicResource Panel2Brush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="14"
+                                            Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="REGISTRATION RECORD"
+                                                       FontFamily="IBM Plex Mono, Consolas"
+                                                       FontSize="10"
+                                                       FontWeight="Bold"
+                                                       Foreground="{DynamicResource MutedBrush}"
+                                                       Margin="0,0,0,10"/>
+
+                                            <TextBlock Text="Email Address"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource MutedBrush}"/>
+                                            <TextBlock x:Name="TxtReviewEmail"
+                                                       Text="student@college.edu"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Margin="0,2,0,8"
+                                                       TextWrapping="Wrap"/>
+
+                                            <TextBlock Text="Enrolled Course / Subject"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource MutedBrush}"/>
+                                            <TextBlock x:Name="TxtReviewSubject"
+                                                       Text="Introduction to Soft Computing"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Margin="0,2,0,8"
+                                                       TextWrapping="Wrap"/>
+
+                                            <TextBlock Text="Exam Registration Declared?"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource MutedBrush}"/>
+                                            <TextBlock x:Name="TxtReviewIsRegistered"
+                                                       Text="Yes"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Margin="0,2,0,8"/>
+
+                                            <TextBlock Text="Submission Timestamp"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource MutedBrush}"/>
+                                            <TextBlock x:Name="TxtReviewTimestamp"
+                                                       Text="25/09/2026 19:15:19"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Margin="0,2,0,8"/>
+
+                                            <TextBlock Text="Proof URL (Google Drive)"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource MutedBrush}"/>
+                                            <TextBlock x:Name="TxtReviewProofUrl"
+                                                       Text="https://drive.google.com/..."
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource AccentBrush}"
+                                                       Margin="0,2,0,8"
+                                                       TextWrapping="Wrap"/>
+
+                                            <Button x:Name="BtnOpenDriveLink"
+                                                    Content="🌐 Open Drive Link"
+                                                    Style="{DynamicResource BtnSecondary}"
+                                                    HorizontalAlignment="Left"
+                                                    Padding="10,5"
+                                                    FontSize="11"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <!-- Sub-Column 2: Zoomable Receipt Viewer -->
+                            <Border Grid.Column="2"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <!-- Toolbar -->
+                                        <RowDefinition Height="Auto"/>
+                                        <!-- Canvas -->
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Toolbar -->
+                                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="PAYMENT RECEIPT"
+                                                       FontFamily="IBM Plex Mono, Consolas"
+                                                       FontSize="10"
+                                                       FontWeight="Bold"
+                                                       Foreground="{DynamicResource MutedBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0"/>
+                                            <TextBlock x:Name="TxtReceiptStatusBadge"
+                                                       Text="Local Cache"
+                                                       FontFamily="IBM Plex Mono, Consolas"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource SageBrush}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+
+                                        <!-- Zoom & File Controls -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button x:Name="BtnZoomOut"
+                                                    Content="－"
+                                                    ToolTip="Zoom Out"
+                                                    Style="{DynamicResource BtnSecondary}"
+                                                    Padding="8,3"
+                                                    Margin="0,0,3,0"/>
+                                            <TextBlock x:Name="TxtZoomLevel"
+                                                       Text="100%"
+                                                       FontFamily="IBM Plex Mono, Consolas"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource MutedBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0,6,0"/>
+                                            <Button x:Name="BtnZoomIn"
+                                                    Content="＋"
+                                                    ToolTip="Zoom In"
+                                                    Style="{DynamicResource BtnSecondary}"
+                                                    Padding="8,3"
+                                                    Margin="0,0,3,0"/>
+                                            <Button x:Name="BtnZoomFit"
+                                                    Content="Fit"
+                                                    ToolTip="Reset to Fit"
+                                                    Style="{DynamicResource BtnSecondary}"
+                                                    Padding="8,3"
+                                                    Margin="0,0,6,0"/>
+                                            <Button x:Name="BtnOpenReceiptFile"
+                                                    Content="↗ Open File"
+                                                    ToolTip="Open in external system viewer"
+                                                    Style="{DynamicResource BtnSecondary}"
+                                                    Padding="10,3"
+                                                    FontSize="11"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Canvas -->
+                                    <Border Grid.Row="1"
+                                            Background="#0C0C0B"
+                                            BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            ClipToBounds="True">
+                                        <Grid>
+                                            <!-- Interactive Scroll & Zoom Canvas -->
+                                            <ScrollViewer x:Name="ReceiptScrollViewer"
+                                                          HorizontalScrollBarVisibility="Auto"
+                                                          VerticalScrollBarVisibility="Auto">
+                                                <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <Image x:Name="ReceiptImage"
+                                                           Stretch="None"
+                                                           RenderOptions.BitmapScalingMode="HighQuality">
+                                                        <Image.LayoutTransform>
+                                                            <ScaleTransform x:Name="ReceiptZoomScale" ScaleX="1.0" ScaleY="1.0"/>
+                                                        </Image.LayoutTransform>
+                                                    </Image>
+                                                </Grid>
+                                            </ScrollViewer>
+
+                                            <!-- Missing Receipt Fallback -->
+                                            <Border x:Name="ReceiptMissingPlaceholder"
+                                                    Visibility="Collapsed"
+                                                    Background="#0C0C0B"
+                                                    Padding="20"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="📄"
+                                                               FontSize="32"
+                                                               HorizontalAlignment="Center"
+                                                               Margin="0,0,0,8"/>
+                                                    <TextBlock x:Name="TxtReceiptMissingTitle"
+                                                               Text="Receipt File Not Available"
+                                                               FontFamily="IBM Plex Mono, Consolas"
+                                                               FontSize="13"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               HorizontalAlignment="Center"
+                                                               Margin="0,0,0,4"/>
+                                                    <TextBlock x:Name="TxtReceiptMissingMsg"
+                                                               Text="The receipt image is not yet cached locally. You can open the Drive link in a browser or download it directly."
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource MutedBrush}"
+                                                               TextWrapping="Wrap"
+                                                               TextAlignment="Center"
+                                                               MaxWidth="280"
+                                                               Margin="0,0,0,12"/>
+                                                    <Button x:Name="BtnDownloadMissingReceipt"
+                                                            Content="⬇ Try Downloading Receipt"
+                                                            Style="{DynamicResource BtnSecondary}"
+                                                            HorizontalAlignment="Center"
+                                                            Padding="10,5"
+                                                            FontSize="11"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>
