@@ -59,7 +59,8 @@ PDQA Project/
 │   ├── Branch_3(Session_1).md     # Notes for Branch 3 Session 1 (Phases A, B, C & Data Restructure)
 │   ├── Branch_3(Session_2).md     # Notes for Branch 3 Session 2 (Phase D: 5-Rule Matcher & Delta Sync)
 │   ├── Branch_3(Session_3).md     # Notes for Branch 3 Session 3 (Stage-Based Workspace & Router)
-│   └── Branch_3(Session_4).md     # Notes for Branch 3 Session 4 (Review Workspace, Zoomable Viewer & Course Deletion)
+│   ├── Branch_3(Session_4).md     # Notes for Branch 3 Session 4 (Review Workspace, Decoupled Pipeline & "Update Sheet" De-duplication)
+│   └── Branch_3(Session_5).md     # Notes for Branch 3 Session 5 (1-Click Actions, Resubmit Modal & Manual Attachment)
 ├── NPTEL-Manager.ps1              # Main WPF application runner & router controller
 ├── build.ps1                      # ps2exe compilation script
 ├── test_parse.ps1                 # XAML and script syntax validator
@@ -71,7 +72,7 @@ PDQA Project/
 └── Progress.md                    # This active tracking file
 ```
 
-**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md`, `Branch_2(Session_2).md`, `Branch_2(Session_3).md`, `Branch_2(Session_4).md`, `Branch_3(Session_1).md`, `Branch_3(Session_2).md`, `Branch_3(Session_3).md`, `Branch_3(Session_4).md`.
+**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md`, `Branch_2(Session_2).md`, `Branch_2(Session_3).md`, `Branch_2(Session_4).md`, `Branch_3(Session_1).md`, `Branch_3(Session_2).md`, `Branch_3(Session_3).md`, `Branch_3(Session_4).md`, `Branch_3(Session_5).md`.
 
 ---
 
@@ -178,8 +179,8 @@ PDQA Project/
 #### Phase E — Review & Discrepancy Queue (`ReviewView.xaml`)
 - [x] Wire Mini Dashboard `[ UNDER REVIEW ]` card to navigate to `ReviewView.xaml` `[Session 4]`
 - [x] Build split-screen review workspace: student details on left, zoomable receipt image on right `[Session 4]`
-- [ ] Implement 1-click coordinator actions: `[ Approve Override ]` and `[ Flag for Resubmit ]`
-- [ ] Add `[ ← Back to Dashboard ]` header navigation button with instant metric synchronization
+- [x] Implement 1-click coordinator actions: `[ Approve Override ]` and `[ Flag for Resubmit ]` `[Session 5]`
+- [x] Add `[ ← Back to Dashboard ]` header navigation button with instant metric synchronization `[Session 4]`
 
 #### Phase F — Filtered Student Roster & Export (`StudentListView.xaml`)
 - [ ] Wire Mini Dashboard `[ VERIFIED ]` and total counts to navigate to `StudentListView.xaml`
@@ -198,6 +199,11 @@ PDQA Project/
 - [x] Cross-Version Unicode Hardening: Replaced unsupported PowerShell 7 escape sequences with runtime [char] tokens for cross-version em-dash and checkmarks `[Session 3]`
 - [x] Context-Aware Navigation State: Implemented $script:currentView tracking so in-stage actions (OCR Verify All, Health Recheck, Replace Sheet) stay on the active stage view `[Session 3]`
 - [x] Course Deletion Workflow: Implemented safe Remove-Course with confirmation dialog, JSON/cache cleanup, and Delete buttons in CoursesView card & WorkspaceView header `[Session 4]`
+- [x] Metric Synchronization & Path Resolution Fix: Explicitly passed CourseName to all store calls in NPTEL-Manager.ps1 and hardened ArrayList type preservation, ensuring Stage 1 dashboard mini-cards accurately reflect verified OCR counts `[Session 4]`
+- [x] Decoupled 2-Step Verification Pipeline: Added dedicated [ 📥 Download Receipts ] and [ ▶ Run OCR Verification ] actions with on-disk cache tracking and permission diagnostics `[Session 4]`
+- [x] Smart Resubmission De-Duplication & "Update Sheet" Workflow: Replaced "Replace Sheet" and "Sync" with a unified "Update Sheet" action that re-scans or browses sheets, de-duplicates multiple submissions by Roll No (latest timestamp wins), automatically purges old cached receipts for resubmitted students, and queues them for re-verification `[Session 4]`
+- [x] Session Review Mini Dashboard & Queue Table Redesign: Redesigned ReviewView with 2-mode architecture based on coordinator sketch: Mode A (Mini Dashboard with Total Issues, Solved in Session, Pending; Push Changes to Main Sheet action bar with dynamic badge; polished Segoe UI 26pt SemiBold #FFFFFF heading; 3-column student card rows with mono Enrollment, Name [with issue tooltip], and Quick Actions [Width: Auto - never clipped]: Issues, Receipt, Approve/Unapprove toggle, Open Student) and Mode B (split-screen student detail inspection workspace with Back to Queue button) `[Session 5]`
+- [x] Staged Push Synchronization & Toggleable Approval: Quick-approvals and detail overrides stage students in session memory with visual 'Solved' badges (no tick mark, no extra text); clicking [ Approve ] toggles into [ Unapprove ] with full rollback of status and remarks; clicking [ Push Changes to Main Sheet ] commits all staged students to students.json and synchronizes <CourseName>_Verification_Sheet.xlsx, automatically decrementing Under Review and incrementing Verified counters on the Stage 1 dashboard `[Session 5]`
 
 ---
 
@@ -404,14 +410,19 @@ Progress.md (Recorded Session 3 completion, updated repo layout, added Branch 3 
 - Completed Phase D, 5-Rule Matcher, and Stage-Based Workspace Redesign in Sessions 2 & 3.
 ```
 
-### Session 4 (Branch 3 (Student Verification System)) — Phase E: Review Queue Navigation, Split-Screen Review Workspace & Course Deletion
+### Session 4 (Branch 3 (Student Verification System)) — Review Workspace, Decoupled Pipeline, Resubmission De-Duplication & "Update Sheet" Engine
 
 **Files created/updated**
 ```
 UI/Views/ReviewView.xaml (Added TxtReviewBreadcrumb, TxtReviewCountBadge styling, and BtnBackToStage1; built 2-state split-screen ReviewWorkspaceGrid with student info, verification diagnostics, and zoomable receipt viewer with ScaleTransform)
 UI/Views/WorkspaceView.xaml (Added Delete Course button to workspace header)
-NPTEL-Manager.ps1 (Wired CardVerStatReview click to Open-ReviewView; built Show-StudentReviewDetails with cached image loading; wired toolbar controls for Zoom In/Out/Fit, Open File in OS viewer, Drive link, and missing receipt download; updated router active styles; added Remove-Course with confirmation, state cleanup, and delete buttons on course cards and workspace header)
-Progress.md (Recorded Session 4 progress, checked off Phase E Items 1 & 2, logged Course Deletion extra task, updated session log)
+UI/Views/Stage1View.xaml (Modernized Automated Engine into 2-step pipeline with BtnDownloadReceipts, BtnVerifyAll, and dynamic TxtPipelineStatus cache label; replaced separate Replace Sheet / Sync with unified BtnUpdateSheet)
+UI/Views/DashboardView.xaml (Added BtnDownloadReceipts and unified BtnUpdateSheet to match Stage1View)
+modules/Import-StudentSheet.ps1 (Enhanced Get-CourseStudentsFilePath; implemented smart de-duplication in Import-StudentSheet where later rows overwrite earlier submissions by RollNo, tracking DuplicateCount and SupersededRolls; initialized DuplicateCount and SupersededRolls on PSCustomObject result to fix property assignment error)
+modules/VerificationEngine.ps1 (Added -SkipDownload switch to Invoke-CourseVerificationPipeline; updated Sync-CourseResponses to de-duplicate rows, track DuplicateCount, and automatically delete old cached receipt files for resubmitted students)
+NPTEL-Manager.ps1 (Cleaned non-ASCII characters; evaluated MessageBox arguments outside call to fix PS5.1 syntax error; wired BtnDownloadReceipts and SkipDownload in BtnVerifyAll; implemented unified Update Sheet handler with choice dialog to re-scan current file or browse new file, de-duplicate rows, purge old receipts, and re-sync metrics)
+notes/Branch_3(Session_4).md (Comprehensive educational notes covering Review Workspace, Decoupled Pipeline, Resubmission De-Duplication, and Update Sheet Engine)
+Progress.md (Recorded Session 4 progress, checked off Phase E Items 1 & 2, logged Course Deletion, Metric Sync fix, Decoupled 2-Step Pipeline, and Smart Resubmission De-Duplication & Update Sheet Workflow)
 ```
 
 **Decisions made this session**
@@ -421,10 +432,44 @@ Progress.md (Recorded Session 4 progress, checked off Phase E Items 1 & 2, logge
 - *Split-Screen Review Workspace*: Implemented a 2-column layout inside the review workspace separating student registration metadata & diagnostics on the left from interactive receipt viewing on the right.
 - *Native Zoom & File Release*: Used WPF `ScaleTransform` inside a `ScrollViewer` for zoom controls (25% to 400%), loaded bitmaps with `CacheOption = OnLoad` and `.Freeze()` to release file locks immediately, and integrated single-receipt fallback download and external viewer launching.
 - *Safe Course Deletion Workflow*: Added a confirmation dialog guarding against accidental deletion, removed courses cleanly from `courses.json`, cleared local student caches (`data/Courses/<CourseName>`), updated active state and header badges, and added Delete buttons to both `CoursesView` cards and the `WorkspaceView` header.
+- *Metric Synchronization & Store Path Hardening*: Fixed parameter omissions in `Select-Course` and related store calls by explicitly forwarding `-CourseName` to `Get-CourseStudentStore` and `Save-CourseStudents`. Hardened `ArrayList` type preservation during course deletion and creation, ensuring Stage 1 dashboard mini-cards accurately read verified counts (4 Verified, 2 Under Review) from `data/Courses/<CourseName>/students.json` without raw GUID duplication.
+- *Decoupled 2-Step Verification Pipeline*: Separated receipt downloading from OCR verification. Added `[ 📥 Download Receipts ]` to fetch missing files with Google Drive permission failure reporting, and modernized `[ ▶ Run Verification (OCR) ]` with an on-disk cache check and `-SkipDownload` offline execution mode. Dynamic status label `TxtPipelineStatus` tracks the number of on-disk receipts in real-time.
+- *Smart Resubmission De-Duplication & "Update Sheet" Workflow*: Replaced confusing separate "Replace Sheet" and "Sync" buttons with a single, clear "Update Sheet" action. The parser automatically de-duplicates entries by Roll No (or Email) where the latest submission wins. When a student resubmits a new receipt URL, the old receipt file on disk is deleted so stale OCR data is purged, and the student's status is reset for re-verification. An interactive prompt lets the coordinator either re-scan the currently attached sheet or browse a newly downloaded file.
 
 **Known issues / TODO carried forward**
 ```
-- Next piece: Phase E — Implement 1-click coordinator actions: [ Approve Override ] and [ Flag for Resubmit ].
+- Completed Phase E Review Queue & Split-Screen Workspace in Session 4.
+```
+
+### Session 5 (Branch 3 (Student Verification System)) — Phase E Completion: 1-Click Actions, Review Mini Dashboard & Staged Push Workflow
+
+**Files created/updated**
+```
+UI/Views/ReviewView.xaml (Overhauled with 2-mode architecture based on coordinator sketch: Mode A Review Queue Overview with 3-card Mini Dashboard [TOTAL ISSUES, SOLVED IN THIS SESSION, PENDING], Push Changes to Main Sheet bar with live ready badge, and student rows table with mono Enrollment, Name, Flagged Issues snippet, and 4 Quick Actions [Diagnostics, Receipt, Approve, Open Student]; Mode B split-screen student inspection workspace with Back to Queue button, zoomable viewer, and ModalFlagResubmit)
+modules/VerificationEngine.ps1 (Added Export-CourseVerificationSheetData helper to synchronize updated student verification remarks and statuses to the course verification spreadsheet)
+modules/OcrEngine.ps1 (Added [switch]$Force parameter to ConvertTo-ReceiptImage to support force-rendering staged receipts; added timestamp-aware cache invalidation; added Get-ReceiptText compatibility wrapper function forwarding to Invoke-ReceiptOcr)
+NPTEL-Manager.ps1 (Added review session tracking state [$script:reviewSessionSolvedRolls, $script:reviewStagedSolved]; refactored Update-ReviewView to calculate Mini Dashboard metrics, manage Push Action Bar state, and dynamically render student card rows with 4 Quick Action handlers; wired 1-click Quick Approve staging with '✓ Solved' badges; wired Push Changes to Main Sheet to commit staged students to students.json and sync <CourseName>_Verification_Sheet.xlsx, automatically decrementing Under Review and incrementing Verified on Stage 1 dashboard; wired Mode B navigation with Back to Queue button and safety check on Back to Stage 1; wired BtnAttachLocalReceipt with safe file staging, 5-rule OCR, safe purge on approval, and instant viewer reload; switched to zero-lock MemoryStream loading with newest file priority; fixed ArgumentNullException on StreamSource in EndInit)
+notes/Branch_3(Session_5).md (Created comprehensive educational notes for Session 5 including in-depth documentation of all 4 bugfix resolutions and the 2-mode Review View Mini Dashboard architecture)
+Progress.md (Completed Phase E checklist, recorded Session 5 progress and ad-hoc tasks, and targeted Phase F Student Roster & Export)
+```
+
+**Decisions made this session**
+- *2-Mode Review View Architecture (Coordinator Sketch)*: Transformed `ReviewView.xaml` into a 2-mode system: Mode A presents the Review Queue Overview Table with the Review Progress Mini Dashboard and Push Bar, while Mode B offers the detailed split-screen workspace with `[ ← Back to Queue ]` navigation.
+- *Review Progress Mini Dashboard*: Displays 3 key session metrics: `TOTAL ISSUES`, `SOLVED IN THIS SESSION`, and `PENDING`. Formulas dynamically ensure mathematical consistency (`Pending = Total - Solved in Session`).
+- *Staged Push Workflow (`BtnPushSolvedChanges`)*: Rather than immediately writing each individual override directly to Excel, approvals stage the student in session memory with a visible `Solved` badge (no checkmark, no extra text). Clicking `[ Push Changes to Main Sheet ]` commits all staged students in a single batch, updating `students.json` and synchronizing the verification spreadsheet, which immediately decrements `Under Review` and increments `Verified` on the Stage 1 panel.
+- *Streamlined 3-Column Review Queue Table & 4 Quick Actions*: Each student appears as an individual card row with dividers: `ENROLLMENT` (monospace), `STUDENT NAME` (with hover tooltip displaying issues summary), and `QUICK ACTIONS` (`Width="Auto"`, right-aligned to eliminate badge clipping) featuring 4 Quick Action buttons:
+  - `[ Issues ]`: Displays clean dialog detailing the verification failure reasons and OCR diagnostics (renamed from Diagnostics).
+  - `[ Receipt ]`: Opens the student's saved receipt file directly in the Windows default viewer.
+  - `[ Approve ]` ⇄ `[ Unapprove ]`: Dynamic toggle button. Clicking `[ Approve ]` stages the student and turns into `[ Unapprove ]`; clicking `[ Unapprove ]` prompts for confirmation and cleanly restores original remarks/status and decrements session count.
+  - `[ Open Student ]`: Transitions into Mode B to inspect the full split-screen details.
+- *In-App Flag for Resubmit Modal*: Rather than clunky external dialogs, designed an in-app dark modal overlay (`ModalFlagResubmit`) equipped with 4 one-click preset buttons (*Blurry Receipt*, *Wrong Course Name*, *Drive Access Denied*, *Fee Incomplete*) plus a custom multi-line text input.
+- *Automated OCR & Safe Staged Replacement*: When attaching a receipt (PDF or image), the new file is staged first without deleting the old receipt. The system automatically runs OCR against the 5 verification rules. If all rules match, an approval prompt appears (*"All 5 rules matched! Approve now?"*). Only upon approval are old receipts safely purged, preventing any data loss from accidental file selections.
+- *Zero-Lock Memory Streaming & De-Duplication*: Fixed WPF unmanaged image handle locking and URI memory caching by loading receipt images through `[System.IO.File]::ReadAllBytes` and an unmanaged `MemoryStream`. Purged old receipts across all extensions (`${cleanRoll}_receipt*`) on replacement, and prioritized newest files via `Sort-Object LastWriteTime -Descending`.
+- *Zero-Encoding-Risk ASCII UI*: Preserved 100% clean ASCII throughout all `.ps1` code strings (`[char]0x2014`, `[char]0x25CF`, `[char]0x2713`) to prevent Windows PowerShell 5.1 ANSI decoding issues.
+
+**Known issues / TODO carried forward**
+```
+- Next piece: Phase F — Filtered Student Roster & Export (StudentListView.xaml).
 ```
 
 ---

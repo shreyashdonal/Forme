@@ -50,7 +50,8 @@ function ConvertTo-ReceiptImage {
         [Parameter(Mandatory = $true)]
         [string]$FilePath,
         [string]$OutputPath = $null,
-        [int]$RenderWidth = 1600
+        [int]$RenderWidth = 1600,
+        [switch]$Force
     )
 
     if (-not (Test-Path -LiteralPath $FilePath)) {
@@ -75,10 +76,11 @@ function ConvertTo-ReceiptImage {
         $OutputPath = Join-Path $dir "${baseName}_page1.png"
     }
 
-    # If already rendered to PNG cache, return immediately (fast-path)
-    if (Test-Path -LiteralPath $OutputPath) {
+    # If already rendered to PNG cache and not -Force, check if cache is up-to-date
+    if (-not $Force -and (Test-Path -LiteralPath $OutputPath)) {
         $existing = Get-Item -LiteralPath $OutputPath -ErrorAction SilentlyContinue
-        if ($existing -and $existing.Length -gt 0) {
+        $sourceFile = Get-Item -LiteralPath $FilePath -ErrorAction SilentlyContinue
+        if ($existing -and $existing.Length -gt 0 -and $sourceFile -and $existing.LastWriteTime -ge $sourceFile.LastWriteTime) {
             return $OutputPath
         }
     }
@@ -259,4 +261,14 @@ function Get-ReceiptExtractedData {
         $output.Error   = $_.Exception.Message
         return $output
     }
+}
+
+# 4. Compatibility Alias for OCR Text Extraction
+function Get-ReceiptText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ImagePath
+    )
+    return Invoke-ReceiptOcr -ImagePath $ImagePath
 }

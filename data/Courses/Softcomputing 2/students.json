@@ -1,6 +1,6 @@
 ﻿{
-    "CourseId":  "2f2bdcf0-edf9-4569-a8c1-0c4eef0399f5",
-    "LastSync":  "2026-09-27 23:48",
+    "CourseId":  "1ea2c643-4fad-42bb-bd8a-7d77c594cec6",
+    "LastSync":  "2026-09-28 00:08",
     "ColumnMap":  {
                       "RollNo":  "Enrollment Number",
                       "Name":  "Name",
@@ -58,7 +58,7 @@
                          "VerificationRemarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
                      },
                      {
-                         "RollNo":  "0801cs22113",
+                         "RollNo":  "0801cs221113",
                          "Name":  "Sneha Gupta",
                          "Email":  "0801cs221136@sgsits.ac.in",
                          "Subject":  "Introduction to soft computing",
@@ -71,6 +71,36 @@
                                  },
                          "VerificationStatus":  "Verified",
                          "VerificationRemarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
+                     },
+                     {
+                         "RollNo":  "0801cs221108",
+                         "Name":  "Prince Parte",
+                         "Email":  "shreyashdonal980@gmail.com",
+                         "Subject":  "Introduction to soft computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=15TZVVVDQOsABHMO3HNmsIFk2okHYjvIq",
+                         "Timestamp":  "28/09/2026 00:02:32",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Under Review",
+                         "VerificationRemarks":  "Flagged: Private link (Google Drive sign-in required). File is not publicly shared."
+                     },
+                     {
+                         "RollNo":  "0801cs221109",
+                         "Name":  "Praveen Agariya",
+                         "Email":  "satishmandloi301@gmail.com",
+                         "Subject":  "Introduction to soft computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1cvb7fv43IuJFX_z-VXb5TJdj9MnJKElU",
+                         "Timestamp":  "28/09/2026 00:03:51",
+                         "Raw":  {
+
+                                 },
+                         "VerificationStatus":  "Under Review",
+                         "VerificationRemarks":  "Flagged: Private link (Google Drive sign-in required). File is not publicly shared."
                      }
                  ]
 }

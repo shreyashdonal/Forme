@@ -98,14 +98,16 @@ function Import-StudentSheet {
     )
 
     $result = [PSCustomObject]@{
-        Success   = $false
-        FilePath  = $Path
-        RowCount  = 0
-        Headers   = @()
-        ColumnMap = [ordered]@{}
-        Students  = @()
-        Rows      = @()
-        Error     = $null
+        Success         = $false
+        FilePath        = $Path
+        RowCount        = 0
+        Headers         = @()
+        ColumnMap       = [ordered]@{}
+        Students        = @()
+        DuplicateCount  = 0
+        SupersededRolls = @()
+        Rows            = @()
+        Error           = $null
     }
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -172,8 +174,10 @@ function Import-StudentSheet {
         # Detect smart column mappings
         $colMap = Get-ColumnMapping -Headers $headers
 
-        # Build normalized Students collection
-        $students = @()
+        # Build normalized Students collection with smart de-duplication (latest submission wins)
+        $studentMap = [ordered]@{}
+        $duplicateCount = 0
+        $supersededRolls = [System.Collections.ArrayList]@()
         $mappedHeaders = @($colMap.Values | Where-Object { $_ })
 
         foreach ($row in $validRows) {
@@ -194,7 +198,7 @@ function Import-StudentSheet {
                 }
             }
 
-            $students += [PSCustomObject]@{
+            $stObj = [PSCustomObject]@{
                 RollNo       = $rollNo.Trim()
                 Name         = $name.Trim()
                 Email        = $email.Trim()
@@ -205,14 +209,33 @@ function Import-StudentSheet {
                 Timestamp    = $timestamp.Trim()
                 Raw          = $rawDict
             }
+
+            # De-duplication: match by RollNo (case-insensitive), fallback to Email
+            $key = if ($stObj.RollNo) { $stObj.RollNo.ToLower() } elseif ($stObj.Email) { $stObj.Email.ToLower() } else { [Guid]::NewGuid().ToString() }
+
+            if ($studentMap.Contains($key)) {
+                # A previous submission exists for this student; latest row supersedes earlier row
+                $duplicateCount++
+                $dispRoll = if ($stObj.RollNo) { $stObj.RollNo } else { $stObj.Email }
+                if ($dispRoll -notin $supersededRolls) {
+                    $null = $supersededRolls.Add($dispRoll)
+                }
+                $studentMap[$key] = $stObj
+            } else {
+                $studentMap[$key] = $stObj
+            }
         }
 
-        $result.Success   = $true
-        $result.RowCount  = $validRows.Count
-        $result.Headers   = $headers
-        $result.ColumnMap = $colMap
-        $result.Students  = $students
-        $result.Rows      = $validRows
+        $students = @($studentMap.Values)
+
+        $result.Success         = $true
+        $result.RowCount        = $validRows.Count
+        $result.Headers         = $headers
+        $result.ColumnMap       = $colMap
+        $result.Students        = $students
+        $result.DuplicateCount  = $duplicateCount
+        $result.SupersededRolls = @($supersededRolls)
+        $result.Rows            = $validRows
         return $result
     }
     catch {
@@ -238,10 +261,38 @@ function Get-CourseStudentsFilePath {
         $DataDir = Join-Path $appRoot "data"
     }
 
+    $coursesParent = Join-Path $DataDir "Courses"
+
+    # 1. If CourseName is missing, check $script:courses if loaded
+    if (-not $CourseName -and $script:courses) {
+        foreach ($c in $script:courses) {
+            if ([string]$c.Id -eq $CourseId) {
+                $CourseName = $c.Name
+                break
+            }
+        }
+    }
+
+    # 2. If still missing, inspect existing named folders under data/Courses/ to find matching CourseId
+    if (-not $CourseName -and (Test-Path -LiteralPath $coursesParent)) {
+        $namedDirs = Get-ChildItem -LiteralPath $coursesParent -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch '^[0-9a-fA-F-]{36}$' }
+        foreach ($nd in $namedDirs) {
+            $candidateJson = Join-Path $nd.FullName "students.json"
+            if (Test-Path -LiteralPath $candidateJson) {
+                try {
+                    $peek = Get-Content -LiteralPath $candidateJson -Raw -Encoding UTF8 | ConvertFrom-Json
+                    if ($peek.CourseId -eq $CourseId) {
+                        $CourseName = $nd.Name
+                        break
+                    }
+                } catch {}
+            }
+        }
+    }
+
     $cleanCourseName = if ($CourseName) { ($CourseName -replace '[\\/:*?"<>|]', '_').Trim() } else { $null }
     if (-not $cleanCourseName) { $cleanCourseName = $CourseId }
 
-    $coursesParent = Join-Path $DataDir "Courses"
     $courseDir = Join-Path $coursesParent $cleanCourseName
     if (-not (Test-Path -LiteralPath $courseDir)) {
         $null = New-Item -ItemType Directory -Path $courseDir -Force
@@ -253,6 +304,14 @@ function Get-CourseStudentsFilePath {
     $legacyPath = Join-Path $DataDir "students_$CourseId.json"
     if ((Test-Path -LiteralPath $legacyPath) -and (-not (Test-Path -LiteralPath $modernPath))) {
         Move-Item -LiteralPath $legacyPath -Destination $modernPath -Force
+    }
+
+    # Clean up duplicate raw-GUID folder if a named folder exists for this CourseId
+    if ($cleanCourseName -ne $CourseId) {
+        $guidDir = Join-Path $coursesParent $CourseId
+        if (Test-Path -LiteralPath $guidDir) {
+            Remove-Item -LiteralPath $guidDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 
     return $modernPath

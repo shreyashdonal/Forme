@@ -204,6 +204,7 @@ function Invoke-CourseVerificationPipeline {
         [string]$DataDir = $null,
         [string]$LocalReceiptsFolder = $null,
         [scriptblock]$ProgressCallback = $null,
+        [switch]$SkipDownload,
         [switch]$Force
     )
 
@@ -282,9 +283,10 @@ function Invoke-CourseVerificationPipeline {
         $cachedReceipt = Get-ChildItem -LiteralPath $receiptsDir -Filter "${cleanRoll}_receipt.*" -ErrorAction SilentlyContinue | Select-Object -First 1
 
         $receiptPath = $null
+        $dlBatch = $null
         if ($cachedReceipt -and $cachedReceipt.Length -gt 0) {
             $receiptPath = $cachedReceipt.FullName
-        } else {
+        } elseif (-not $SkipDownload) {
             # Try single download/match
             $dlBatch = Invoke-ReceiptBatchDownload -CourseId $Course.Id -CourseName $Course.Name -Students @($student) -DataDir $DataDir -LocalReceiptsFolder $LocalReceiptsFolder
             if ($dlBatch.Results -and $dlBatch.Results[0].Success) {
@@ -294,7 +296,13 @@ function Invoke-CourseVerificationPipeline {
 
         # If receipt could not be found or downloaded
         if (-not $receiptPath -or -not (Test-Path -LiteralPath $receiptPath)) {
-            $errNote = if ($dlBatch -and $dlBatch.Results[0].Error) { $dlBatch.Results[0].Error } else { "Receipt file not found or inaccessible" }
+            $errNote = if ($SkipDownload -and -not $cachedReceipt) {
+                "Receipt not downloaded on disk (Run 'Download Receipts' first)"
+            } elseif ($dlBatch -and $dlBatch.Results[0].Error) {
+                $dlBatch.Results[0].Error
+            } else {
+                "Receipt file not found or inaccessible"
+            }
             $reviewCount++
             if ($student.PSObject.Properties['VerificationStatus']) { $student.VerificationStatus = "Under Review" } else { $student | Add-Member -NotePropertyName 'VerificationStatus' -NotePropertyValue "Under Review" -Force }
             if ($student.PSObject.Properties['VerificationRemarks']) { $student.VerificationRemarks = "Flagged: $errNote" } else { $student | Add-Member -NotePropertyName 'VerificationRemarks' -NotePropertyValue "Flagged: $errNote" -Force }
@@ -633,7 +641,63 @@ function Sync-CourseResponses {
         UpdatedReviewStudents   = $updatedReviewCount
         PreservedStudents       = $preservedCount
         PreservedVerifiedCount  = $preservedVerifiedCount
+        DuplicateCount          = $sheetResult.DuplicateCount
+        SupersededRolls         = $sheetResult.SupersededRolls
     }
+}
+
+function Export-CourseVerificationSheetData {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        $Course,
+        [Parameter(Mandatory = $true)]
+        $Students
+    )
+
+    $vSheetPath = if ($Course.PSObject.Properties['VerificationSheet']) { [string]$Course.VerificationSheet } else { $null }
+    if (-not $vSheetPath -or -not (Test-Path -LiteralPath $vSheetPath)) { return }
+
+    try {
+        $parsedVer = Import-StudentSheet -Path $vSheetPath
+        if (-not $parsedVer.Success) { return }
+
+        $statusMap = @{}
+        $remarkMap = @{}
+        foreach ($st in $Students) {
+            $key = if ($st.RollNo) { $st.RollNo.Trim().ToLower() } else { "" }
+            if ($key) {
+                $statusMap[$key] = [string]$st.VerificationStatus
+                $remarkMap[$key] = [string]$st.VerificationRemarks
+            }
+        }
+
+        $rollHeader = if ($parsedVer.ColumnMap) { $parsedVer.ColumnMap.RollNo } else { $null }
+        $updatedRows = [System.Collections.ArrayList]@()
+
+        foreach ($row in $parsedVer.Rows) {
+            $rDict = [ordered]@{}
+            foreach ($p in $row.PSObject.Properties) {
+                $rDict[$p.Name] = $p.Value
+            }
+            $rowRoll = if ($rollHeader -and $rDict.Contains($rollHeader)) { [string]$rDict[$rollHeader] } else { "" }
+            $cleanRollKey = $rowRoll.Trim().ToLower()
+
+            if ($cleanRollKey -and $statusMap.ContainsKey($cleanRollKey)) {
+                $rDict['Verification Status'] = $statusMap[$cleanRollKey]
+                $rDict['Verification Remarks'] = $remarkMap[$cleanRollKey]
+            }
+            $null = $updatedRows.Add([PSCustomObject]$rDict)
+        }
+
+        $hasImportExcel = (Get-Module -Name ImportExcel -ListAvailable)
+        if ($hasImportExcel -and $vSheetPath.EndsWith(".xlsx")) {
+            Import-Module ImportExcel -ErrorAction SilentlyContinue
+            $updatedRows | Export-Excel -Path $vSheetPath -WorksheetName "Verification" -AutoSize -BoldTopRow -FreezeTopRow -ClearSheet
+        } else {
+            $updatedRows | Export-Csv -Path $vSheetPath -NoTypeInformation -Encoding UTF8
+        }
+    } catch { }
 }
 
 

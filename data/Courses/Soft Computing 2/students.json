@@ -1,0 +1,112 @@
+﻿{
+    "CourseId":  "ddee7c90-ef0a-497f-9be6-93f50f479373",
+    "LastSync":  "2026-09-30 22:49",
+    "ColumnMap":  {
+                      "RollNo":  "Enrollment Number",
+                      "Name":  "Name",
+                      "Email":  "Email address",
+                      "Subject":  "Subject",
+                      "IsEnrolled":  "Enrollment completed",
+                      "IsRegistered":  "Registration Done",
+                      "ProofUrl":  "Upload proof of registration",
+                      "Timestamp":  "Timestamp"
+                  },
+    "Students":  [
+                     {
+                         "RollNo":  "0801cs221136",
+                         "Name":  "Vaibhav Singh",
+                         "Email":  "satishmandloi301@gmail.com",
+                         "Subject":  "Introduction to soft computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1SBhLSTfKbMAJQxql2X_gsaoy29GhtIUm",
+                         "Timestamp":  "25/09/2026 19:15:19",
+                         "Raw":  {
+                                     "Verification Status":  "Verified",
+                                     "Verification Remarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
+                                 },
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Attached receipt: Payment success confirmation not found | Fee amount not Rs. 1,000 or Rs. 1,100 | Course title mismatch (Expected: \u0027Soft Computing 2\u0027) | Missing NPTEL / Razorpay authenticity markers | Student name does not match receipt greeting (\u0027Praveen Agariya\u0027)"
+                     },
+                     {
+                         "RollNo":  "0801cs221137",
+                         "Name":  "Priya Verma",
+                         "Email":  "nshreyashdonal@gmail.com",
+                         "Subject":  "Introduction to soft computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1IBV4Ih6WT31Y478Q713hLepkmDa4vw89",
+                         "Timestamp":  "25/09/2026 21:00:24",
+                         "Raw":  {
+                                     "Verification Status":  "Verified",
+                                     "Verification Remarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
+                                 },
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
+                     },
+                     {
+                         "RollNo":  "0801cs221138",
+                         "Name":  "Rahul Sharma",
+                         "Email":  "shreyashdonal007@gmail.com",
+                         "Subject":  "Introduction to soft computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1TpBgcwh75dBTdGtzJSwQXyg5bYM2P7j2",
+                         "Timestamp":  "25/09/2026 21:08:32",
+                         "Raw":  {
+                                     "Verification Status":  "Verified",
+                                     "Verification Remarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
+                                 },
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
+                     },
+                     {
+                         "RollNo":  "0801cs221113",
+                         "Name":  "Sneha Gupta",
+                         "Email":  "0801cs221136@sgsits.ac.in",
+                         "Subject":  "Introduction to soft computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1FBfIHN3IaStcuQunnsQArXXExOlY0LQ1",
+                         "Timestamp":  "25/09/2026 21:11:50",
+                         "Raw":  {
+                                     "Verification Status":  "Verified",
+                                     "Verification Remarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
+                                 },
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Clean match (Fee: Rs. 1,000 confirmed, Course \u0026 Identity matched)"
+                     },
+                     {
+                         "RollNo":  "0801cs221108",
+                         "Name":  "Prince Parte",
+                         "Email":  "shreyashdonal980@gmail.com",
+                         "Subject":  "Introduction to soft computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=15TZVVVDQOsABHMO3HNmsIFk2okHYjvIq",
+                         "Timestamp":  "28/09/2026 00:02:32",
+                         "Raw":  {
+                                     "Verification Status":  "Under Review",
+                                     "Verification Remarks":  "Payment success confirmation not found | Fee amount not Rs. 1,000 or Rs. 1,100 | Course title mismatch (Expected: \u0027Soft Computing 2\u0027) | Missing NPTEL / Razorpay authenticity markers | Student name does not match receipt greeting (\u0027Prince Parte\u0027)"
+                                 },
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Manually approved by coordinator on 29/09/2026 23:24"
+                     },
+                     {
+                         "RollNo":  "0801cs221109",
+                         "Name":  "Praveen Agariya",
+                         "Email":  "satishmandloi301@gmail.com",
+                         "Subject":  "Introduction to soft computing",
+                         "IsEnrolled":  true,
+                         "IsRegistered":  true,
+                         "ProofUrl":  "https://drive.google.com/open?id=1cvb7fv43IuJFX_z-VXb5TJdj9MnJKElU",
+                         "Timestamp":  "28/09/2026 00:03:51",
+                         "Raw":  {
+                                     "Verification Status":  "Under Review",
+                                     "Verification Remarks":  "Payment success confirmation not found | Fee amount not Rs. 1,000 or Rs. 1,100 | Course title mismatch (Expected: \u0027Soft Computing 2\u0027) | Missing NPTEL / Razorpay authenticity markers | Student name does not match receipt greeting (\u0027Praveen Agariya\u0027)"
+                                 },
+                         "VerificationStatus":  "Under Review",
+                         "VerificationRemarks":  "Payment success confirmation not found | Fee amount not Rs. 1,000 or Rs. 1,100 | Course title mismatch (Expected: \u0027Soft Computing 2\u0027) | Missing NPTEL / Razorpay authenticity markers | Student name does not match receipt greeting (\u0027Praveen Agariya\u0027)"
+                     }
+                 ]
+}

@@ -85,11 +85,11 @@
                                     Style="{DynamicResource BtnSecondary}"
                                     Padding="14,8"
                                     Margin="0,0,8,0"/>
-                            <Button x:Name="BtnChangeRegistrationSheet"
-                                    Content="Replace Sheet..."
+                            <Button x:Name="BtnUpdateSheet"
+                                    Content="Update Sheet"
                                     Style="{DynamicResource BtnSecondary}"
                                     Padding="14,8"
-                                    ToolTip="Replace or re-link the registration spreadsheet."/>
+                                    ToolTip="Update sheet with latest Google Form responses and resubmissions."/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -461,7 +461,7 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Automated Engine Bar -->
+                            <!-- Automated Pipeline Bar (2-Step Decoupled) -->
                             <Border Background="{DynamicResource Panel2Brush}"
                                     BorderBrush="{DynamicResource BorderBrush}"
                                     BorderThickness="1"
@@ -475,7 +475,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <TextBlock Text="AUTOMATED ENGINE"
+                                        <TextBlock Text="AUTOMATED VERIFICATION PIPELINE"
                                                    FontFamily="IBM Plex Mono"
                                                    FontSize="10"
                                                    FontWeight="Bold"
@@ -486,19 +486,24 @@
                                                    FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextBrush}"
                                                    Margin="0,0,0,4"/>
-                                        <TextBlock Text="Automatically download, OCR-parse, and cross-verify payment receipts against registration data."
+                                        <TextBlock x:Name="TxtPipelineStatus"
+                                                   Text="Step 1: Download student receipts from Google Drive. Step 2: Run native OCR verification."
                                                    FontSize="12"
                                                    Foreground="{DynamicResource MutedBrush}"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
 
-                                    <Button x:Name="BtnVerifyAll"
-                                            Grid.Column="1"
-                                            Content="▶ Verify All (OCR)"
-                                            Style="{DynamicResource BtnPrimary}"
-                                            Padding="16,9"
-                                            VerticalAlignment="Center"
-                                            Margin="16,0,0,0"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                        <Button x:Name="BtnDownloadReceipts"
+                                                Content="📥 Download Receipts"
+                                                Style="{DynamicResource BtnSecondary}"
+                                                Padding="14,9"
+                                                Margin="0,0,8,0"/>
+                                        <Button x:Name="BtnVerifyAll"
+                                                Content="▶ Run Verification (OCR)"
+                                                Style="{DynamicResource BtnPrimary}"
+                                                Padding="14,9"/>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
 

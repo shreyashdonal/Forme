@@ -120,11 +120,11 @@
                                     Style="{DynamicResource BtnSecondary}"
                                     Padding="14,8"
                                     Margin="0,0,8,0"/>
-                            <Button x:Name="BtnChangeRegistrationSheet"
-                                    Content="Replace Sheet..."
+                            <Button x:Name="BtnUpdateSheet"
+                                    Content="Update Sheet"
                                     Style="{DynamicResource BtnSecondary}"
                                     Padding="14,8"
-                                    ToolTip="Replace or re-link the registration spreadsheet."/>
+                                    ToolTip="Update sheet with latest Google Form responses and resubmissions."/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -412,14 +412,21 @@
                                                    Foreground="{DynamicResource MutedBrush}"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
-                                    <Button x:Name="BtnVerifyAll"
-                                            Grid.Column="1"
-                                            Content="▶ Verify All (OCR)"
-                                            Style="{DynamicResource BtnPrimary}"
-                                            Padding="18,10"
-                                            FontSize="12"
-                                            FontWeight="SemiBold"
-                                            VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button x:Name="BtnDownloadReceipts"
+                                                Content="📥 Download Receipts"
+                                                Style="{DynamicResource BtnSecondary}"
+                                                Padding="14,10"
+                                                FontSize="12"
+                                                FontWeight="SemiBold"
+                                                Margin="0,0,8,0"/>
+                                        <Button x:Name="BtnVerifyAll"
+                                                Content="▶ Run Verification (OCR)"
+                                                Style="{DynamicResource BtnPrimary}"
+                                                Padding="14,10"
+                                                FontSize="12"
+                                                FontWeight="SemiBold"/>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
 
