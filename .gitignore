@@ -1,0 +1,69 @@
+# ==============================================================================
+# NPTEL Student Registration & Verification Manager - .gitignore
+# ==============================================================================
+
+# --- Application Runtime Data & Student Stores ---
+# All student databases, course folders, downloaded receipts, and settings
+data/
+data/**
+
+# --- Student Spreadsheets & Financial Documents ---
+# Never track coordinator Excel or CSV rosters containing student PII
+*.xlsx
+*.xls
+*.csv
+# Microsoft Excel temporary lock files
+~$*.xlsx
+~$*.xls
+
+# --- Student Receipt Files & Raster Images ---
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.bmp
+# Exception: allow any UI theme assets if added in UI/Assets in the future
+!UI/Assets/**
+
+# --- Temporary / Scratch / Debug Files ---
+scratch/
+scratch/**
+test_*.ps1
+test-*.ps1
+Bug*.png
+Bug*.jpg
+Bug*.jpeg
+Dashboard*.png
+Dashboard*.jpeg
+UI*.jpeg
+UI*.png
+
+# --- Logs & Diagnostics ---
+*.log
+*.tmp
+temp/
+logs/
+
+# --- IDE & Editor Artifacts ---
+.vscode/
+.idea/
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# --- Windows System Files ---
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# --- Installer & Build Artifacts (Inno Setup / Packaging) ---
+Output/
+_build/
+bin/
+obj/
