@@ -60,7 +60,8 @@ PDQA Project/
 │   ├── Branch_3(Session_2).md     # Notes for Branch 3 Session 2 (Phase D: 5-Rule Matcher & Delta Sync)
 │   ├── Branch_3(Session_3).md     # Notes for Branch 3 Session 3 (Stage-Based Workspace & Router)
 │   ├── Branch_3(Session_4).md     # Notes for Branch 3 Session 4 (Review Workspace, Decoupled Pipeline & "Update Sheet" De-duplication)
-│   └── Branch_3(Session_5).md     # Notes for Branch 3 Session 5 (1-Click Actions, Resubmit Modal & Manual Attachment)
+│   ├── Branch_3(Session_5).md     # Notes for Branch 3 Session 5 (1-Click Actions, Resubmit Modal & Manual Attachment)
+│   └── Branch_3(Session_6).md     # Notes for Branch 3 Session 6 (Collapsible Health, 'Import Receipts' & Concession Matching)
 ├── NPTEL-Manager.ps1              # Main WPF application runner & router controller
 ├── build.ps1                      # ps2exe compilation script
 ├── test_parse.ps1                 # XAML and script syntax validator
@@ -72,7 +73,7 @@ PDQA Project/
 └── Progress.md                    # This active tracking file
 ```
 
-**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md`, `Branch_2(Session_2).md`, `Branch_2(Session_3).md`, `Branch_2(Session_4).md`, `Branch_3(Session_1).md`, `Branch_3(Session_2).md`, `Branch_3(Session_3).md`, `Branch_3(Session_4).md`, `Branch_3(Session_5).md`.
+**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md` through `Branch_2(Session_4).md`, `Branch_3(Session_1).md` through `Branch_3(Session_6).md`.
 
 ---
 
@@ -82,7 +83,8 @@ PDQA Project/
 |---|------|---------|--------|
 | 1 | Main | Core build, in planned order | Paused |
 | 2 | Dealing with sheet in our app | Import, parse, validate student enrollment sheet & handle sheet operations | Paused |
-| 3 | Student Verification System | Batch download receipts, OCR extraction, rule-based verification, and discrepancy review | In progress |
+| 3 | Student Verification System | Batch download receipts, OCR extraction, rule-based verification, and discrepancy review | Paused |
+| 4 | Send Email | Student notification system for receipt resubmissions, discrepancy alerts, and coordinator updates | In progress |
 
 ---
 
@@ -204,6 +206,34 @@ PDQA Project/
 - [x] Smart Resubmission De-Duplication & "Update Sheet" Workflow: Replaced "Replace Sheet" and "Sync" with a unified "Update Sheet" action that re-scans or browses sheets, de-duplicates multiple submissions by Roll No (latest timestamp wins), automatically purges old cached receipts for resubmitted students, and queues them for re-verification `[Session 4]`
 - [x] Session Review Mini Dashboard & Queue Table Redesign: Redesigned ReviewView with 2-mode architecture based on coordinator sketch: Mode A (Mini Dashboard with Total Issues, Solved in Session, Pending; Push Changes to Main Sheet action bar with dynamic badge; polished Segoe UI 26pt SemiBold #FFFFFF heading; 3-column student card rows with mono Enrollment, Name [with issue tooltip], and Quick Actions [Width: Auto - never clipped]: Issues, Receipt, Approve/Unapprove toggle, Open Student) and Mode B (split-screen student detail inspection workspace with Back to Queue button) `[Session 5]`
 - [x] Staged Push Synchronization & Toggleable Approval: Quick-approvals and detail overrides stage students in session memory with visual 'Solved' badges (no tick mark, no extra text); clicking [ Approve ] toggles into [ Unapprove ] with full rollback of status and remarks; clicking [ Push Changes to Main Sheet ] commits all staged students to students.json and synchronizes <CourseName>_Verification_Sheet.xlsx, automatically decrementing Under Review and incrementing Verified counters on the Stage 1 dashboard `[Session 5]`
+- [x] Collapsible Sheet Health Panel & Categorized Impact Guidance: Compact mini-info header row (`Total Students • Exam Registered • Detected/7 Standard Columns`) with toggle button `[ View Details ▼ ]` ⇄ `[ Hide Details ▲ ]` and distinct Critical vs Optional column impact guidance `[Session 6]`
+- [x] Direct Native File Explorer for Sheet Updates: Clicking `[ Update Sheet ]` directly opens Windows File Explorer dialog without intermediate prompts `[Session 6]`
+- [x] Typo-Tolerant Sheet Schema & Defensive Property Initialization: Regex handles real-world variations like `"Reistration Done"`, and defensive initialization of `VerificationStatus` prevents runtime property assignment errors `[Session 6]`
+- [x] Local Folder & ZIP Receipt Ingestion Engine (`[ 📁 Import Receipts ]`): Added toolbar button left of `[ 📥 Download Receipts ]`, auto-extracting `.zip` archives with temp cleanup, and 4-tier smart matching (Roll Number, Full Name, Token overlap, Unique First Name) `[Session 6]`
+- [x] Rule 2 Fee Concession & Comma-Separated Normalization: Expanded Rule 2 to accept ₹500/₹550 official SC/ST/PwD concessions alongside standard ₹1,000/₹1,100, with comma/decimal normalization `[Session 6]`
+- [x] Instant View Panel Reload on Manual Attachment: Fixed bug where newly attached and approved receipts were not re-rendered in Review Mode B view panel `[Session 6]`
+- [x] Clean & Adaptive Verification Pipeline Bar: Streamlined pipeline UI by removing all "Step 1/Step 2" text clutter and duplicate titles, replaced with a clean single-line status pill and an on-demand adaptive progress bar (with live percentage and student ticker) that dynamically morphs across Import, Download, and OCR verification `[Session 6]`
+- [x] PowerShell 5.1 Parser Hardening & Scoping Fixes: Script-scoped Update-PipelineBarState with Dispatcher render queue pumping; eliminated inline ternary concatenations to ensure 100% compatibility with Windows PowerShell 5.1 `[Session 6]`
+
+### Branch 4 (Send Email)
+
+#### Phase A — Dedicated Email UI & Review Entry Point (Shared Foundation)
+- [ ] Add "Send Email to Flagged Students" action bar row in `ReviewView.xaml`
+- [ ] Create dedicated Email Management Center view (`UI/Views/EmailView.xaml`)
+- [ ] Wire SPA router in `NPTEL-Manager.ps1` (`Navigate-To -ViewName "EmailView"`) with return navigation
+
+#### Sub-Branch 4.1 — Browser Draft Dispatch (Approach 2: Zero-Password & Manual Gmail Send)
+- [ ] Build 1-click Gmail Web Compose launcher with BCC student list, dynamic subject, and pre-filled instructions
+- [ ] Add 1-click `[ 📋 Copy Formatted Notice ]` (for WhatsApp/Telegram) and `[ 📋 Copy BCC Emails ]` buttons
+- [ ] Mark recipients as `Notified` in `students.json` with timestamp upon launching draft
+
+#### Sub-Branch 4.2 — Direct In-App Background Dispatch (Approach 1: SMTP / App Password)
+- [ ] Email & SMTP configuration card with masked `<PasswordBox>` in `SettingsView.xaml`
+- [ ] Secure credential storage using Windows DPAPI encryption (`data/settings.json`)
+- [ ] Implement native SMTP client module (`modules/EmailEngine.ps1`) with test email verification
+- [ ] Direct in-app batch sender with live progress bar and individual delivery tracking in `students.json`
+
+#### Extra / Ad-Hoc Completed Tasks
 
 ---
 
@@ -445,11 +475,11 @@ Progress.md (Recorded Session 4 progress, checked off Phase E Items 1 & 2, logge
 
 **Files created/updated**
 ```
-UI/Views/ReviewView.xaml (Overhauled with 2-mode architecture based on coordinator sketch: Mode A Review Queue Overview with 3-card Mini Dashboard [TOTAL ISSUES, SOLVED IN THIS SESSION, PENDING], Push Changes to Main Sheet bar with live ready badge, and student rows table with mono Enrollment, Name, Flagged Issues snippet, and 4 Quick Actions [Diagnostics, Receipt, Approve, Open Student]; Mode B split-screen student inspection workspace with Back to Queue button, zoomable viewer, and ModalFlagResubmit)
+UI/Views/ReviewView.xaml (Overhauled with 2-mode architecture based on coordinator sketch: Mode A Review Queue Overview with 3-card Mini Dashboard [TOTAL ISSUES, SOLVED IN THIS SESSION, PENDING], Push Changes to Main Sheet bar with live ready badge, and 3-column table header [ENROLLMENT, STUDENT NAME, QUICK ACTIONS with Width="Auto"]; upgraded heading typography to Segoe UI SemiBold 26pt #FFFFFF; Mode B split-screen student inspection workspace with Back to Queue button, zoomable viewer, and ModalFlagResubmit)
 modules/VerificationEngine.ps1 (Added Export-CourseVerificationSheetData helper to synchronize updated student verification remarks and statuses to the course verification spreadsheet)
 modules/OcrEngine.ps1 (Added [switch]$Force parameter to ConvertTo-ReceiptImage to support force-rendering staged receipts; added timestamp-aware cache invalidation; added Get-ReceiptText compatibility wrapper function forwarding to Invoke-ReceiptOcr)
-NPTEL-Manager.ps1 (Added review session tracking state [$script:reviewSessionSolvedRolls, $script:reviewStagedSolved]; refactored Update-ReviewView to calculate Mini Dashboard metrics, manage Push Action Bar state, and dynamically render student card rows with 4 Quick Action handlers; wired 1-click Quick Approve staging with '✓ Solved' badges; wired Push Changes to Main Sheet to commit staged students to students.json and sync <CourseName>_Verification_Sheet.xlsx, automatically decrementing Under Review and incrementing Verified on Stage 1 dashboard; wired Mode B navigation with Back to Queue button and safety check on Back to Stage 1; wired BtnAttachLocalReceipt with safe file staging, 5-rule OCR, safe purge on approval, and instant viewer reload; switched to zero-lock MemoryStream loading with newest file priority; fixed ArgumentNullException on StreamSource in EndInit)
-notes/Branch_3(Session_5).md (Created comprehensive educational notes for Session 5 including in-depth documentation of all 4 bugfix resolutions and the 2-mode Review View Mini Dashboard architecture)
+NPTEL-Manager.ps1 (Added review session tracking state [$script:reviewSessionSolvedRolls, $script:reviewStagedSolved]; refactored Update-ReviewView to calculate Mini Dashboard metrics, manage Push Action Bar state, and dynamically render 3-column student card rows with 4 Quick Actions [Issues, Receipt, Approve/Unapprove toggle, Open Student]; wired toggleable [ Approve ] ⇄ [ Unapprove ] with full status/remarks restoration; simplified staged badge to strictly 'Solved' [no tick, no extra text]; wired Push Changes to Main Sheet to commit staged students to students.json and sync <CourseName>_Verification_Sheet.xlsx; wired Mode B navigation with Back to Queue; wired BtnAttachLocalReceipt with safe staging, 5-rule OCR, and safe purge on approval; zero-lock MemoryStream loading; 100% clean ASCII)
+notes/Branch_3(Session_5).md (Created comprehensive educational notes for Session 5 including documentation of the 2-mode Review View Mini Dashboard architecture, toggleable approval, simplified badge, and heading typography polish)
 Progress.md (Completed Phase E checklist, recorded Session 5 progress and ad-hoc tasks, and targeted Phase F Student Roster & Export)
 ```
 
@@ -467,12 +497,42 @@ Progress.md (Completed Phase E checklist, recorded Session 5 progress and ad-hoc
 - *Zero-Lock Memory Streaming & De-Duplication*: Fixed WPF unmanaged image handle locking and URI memory caching by loading receipt images through `[System.IO.File]::ReadAllBytes` and an unmanaged `MemoryStream`. Purged old receipts across all extensions (`${cleanRoll}_receipt*`) on replacement, and prioritized newest files via `Sort-Object LastWriteTime -Descending`.
 - *Zero-Encoding-Risk ASCII UI*: Preserved 100% clean ASCII throughout all `.ps1` code strings (`[char]0x2014`, `[char]0x25CF`, `[char]0x2713`) to prevent Windows PowerShell 5.1 ANSI decoding issues.
 
+### Session 6 (Branch 3 (Student Verification System)) — Collapsible Sheet Health, Local/ZIP Receipt Ingestion, Adaptive Pipeline Bar & PS 5.1 Hardening [COMPLETED]
+
+**Files created/updated**
+```
+modules/Download-Receipts.ps1 (Enhanced Find-LocalReceiptMatch with multi-token name matching; added Import-ReceiptsFromLocalSource supporting both local folders and auto-extracted .zip archives with 4-tier matching [RollNo, Full Name, First+Last token, Unique First Name] and temp folder cleanup)
+UI/Views/Stage1View.xaml (Added BtnImportReceipts toolbar button; collapsible Sheet Health Details panel with toggle button [View Details ▼ / Hide Details ▲]; decluttered Automated Verification Pipeline removing Step 1/Step 2 text clutter; added single collapsible adaptive PanelPipelineProgress bar with live percentage and student ticker)
+NPTEL-Manager.ps1 (Wired BtnImportReceipts with dual-source picker [.zip archive or folder]; integrated Import-ReceiptsFromLocalSource; fixed scope closure bug on BtnToggleHealthDetails using $this; script-scoped Update-PipelineBarState with 60fps WPF Dispatcher render queue pumping; fixed PS 5.1 UnexpectedToken syntax errors by pre-evaluating ternary string fragments; sanitized multi-byte characters to safe ASCII)
+modules/Import-StudentSheet.ps1 (Added defensive property initialization for VerificationStatus and VerificationRemarks; widened IsRegistered regex to tolerate typos like "Reistration Done")
+modules/VerificationEngine.ps1 (Defensive Add-Member checks on VerificationStatus to prevent property assignment errors; expanded Rule 2 for SC/ST/PwD ₹500/₹550 fee concessions with comma/decimal normalization)
+notes/Branch_3(Session_6).md (Comprehensive educational notes covering 10 topics: Defensive Property Injection, WPF Scope Closures, Collapsible Sheet Health, Direct Native File Explorer, Local Ingestion Engine, Fee Concession Matching, PS 5.1 ASCII Encoding, Clean Adaptive Pipeline Bar, Script-Scope State Managers & Dispatcher Pumping, and PS 5.1 Pre-Evaluation Pattern)
+Progress.md (Recorded Session 6 progress and closed Session 6)
+```
+
+**Decisions made this session**
+- *Pipeline Button Placement*: Positioned `[ 📁 Import Receipts ]` to the left of `[ 📥 Download Receipts ]` in Stage 1, providing coordinators with an immediate local alternative when Google Drive links have restricted permissions.
+- *Dual-Source Ingestion (ZIP or Folder)*: Coordinators can either point to an unzipped folder or directly pick a downloaded Google Drive `.zip` file without manual extraction. The engine unpacks archives into a secure temp directory and cleans it up in a `finally` block.
+- *4-Tier Smart Matching Engine*: Implemented high-confidence matching across:
+  - Tier 1: Clean Roll Number match (100% confidence).
+  - Tier 2: Clean Student Full Name match (98% confidence, matching Google Forms `<filename> - <Student Name>.<ext>` pattern).
+  - Tier 3: First + Last token match (95% confidence).
+  - Tier 4: Unique First Name match (90% confidence, only if the first name is unique among registered students).
+- *Collision & Duplication Prevention*: Used hash-set tracking to ensure each file in the source is assigned to at most one student, and existing on-disk receipts are preserved by default.
+- *Collapsible Sheet Health Panel*: Added a compact, collapsed-by-default Sheet Health header displaying live metrics (`Total Students • Exam Registered • Detected/7 Standard Columns`) with a toggle button `[ View Details ▼ ]` ⇄ `[ Hide Details ▲ ]` and categorized impact guidance for Critical vs Optional columns.
+- *Fee Rule Concession Support (Rule 2)*: Expanded Rule 2 in `modules/VerificationEngine.ps1` to accept both standard NPTEL fees (₹1,000 / ₹1,100 late fee) and official SC/ST/PwD 50% concession fees (₹500 / ₹550 late fee). Made amount matching robust against comma separators (`1,000`), decimals (`1000.00`), and spaces. Automatically records `Fee: Rs. 500 (Concession)` in verified remarks. Ready for future configurable course fee settings.
+- *Clean & Adaptive Verification Pipeline Bar*: Replaced multi-step text overhead ("Step 1...", "Step 2...", duplicate titles) with a unified card title (*Automated Verification Pipeline*), a single status pill (*IDLE / READY*), and a single collapsible progress container (`PanelPipelineProgress`). The container dynamically morphs its headline, accent brush, and live monospace student ticker across Import, Download, and OCR verification.
+- *Script-Scoped Pipeline State & 60fps Dispatcher Render Pumping*: Promoted `Update-PipelineBarState` to script scope (`$script:`) to prevent runtime closure scope loss (`Update-PipelineBarState is not recognized`). Implemented `[System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Render)` on each student tick to guarantee smooth non-blocking 60fps UI repaints during long-running verification loops.
+- *Windows PowerShell 5.1 Parser Compatibility & Pre-Evaluation Pattern*: Eliminated inline ternary concatenations (`"$stRoll" + (if ($stName) ... )`) which trigger `Unexpected token 'if'` errors in the Windows PowerShell 5.1 language parser. Standardized on intermediate pre-evaluated local variables (`$nameStr = if ($stName) { " - $stName" } else { "" }`), ensuring 100% crash-free execution across all Windows machines out of the box.
+- *Session 6 Closed*: Successfully completed all Stage 1 verification pipeline enhancements, fee concession support, local ingestion mechanics, and PS 5.1 parser resilience.
+
 **Known issues / TODO carried forward**
 ```
-- Next piece: Phase F — Filtered Student Roster & Export (StudentListView.xaml).
+- Next piece: Phase F — Filtered Student Roster & Export (StudentListView.xaml) in Session 7.
 ```
 
 ---
+
 
 ## 4. Project-Wide Decisions
 

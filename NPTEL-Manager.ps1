@@ -817,33 +817,97 @@ function Select-Course {
             }
         }
 
+        # Mini-Summary Text on the Collapsed Header Row
+        $txtMiniHealth = $s1View.FindName("TxtMiniSheetHealthSummary")
+        $detectedCount = 7 - $missingCols.Count
+        if ($txtMiniHealth) {
+            $txtMiniHealth.Text = "$totalCount Total Students  " + [char]0x2022 + "  $regCount Exam Registered  " + [char]0x2022 + "  $detectedCount/7 Standard Columns Detected"
+        }
+
         # Overall Health & Missing Column Warning Banner
         $panelWarn = $s1View.FindName("PanelColumnWarning")
+        $txtWarnTitle = $s1View.FindName("TxtColumnWarningTitle")
         $txtWarnMsg = $s1View.FindName("TxtColumnWarningMessage")
         $badgeHealth = $s1View.FindName("BadgeOverallHealth")
         $txtHealth = $s1View.FindName("TxtOverallHealth")
 
+        # Categorize missing columns into Critical vs Optional
+        $hasCriticalMissing = ('RollNo' -in $missingCols -or 'Name' -in $missingCols -or 'Proof Receipt' -in $missingCols)
+        $warnLines = [System.Collections.ArrayList]@()
+
+        if ('RollNo' -in $missingCols) {
+            $null = $warnLines.Add([char]0x2022 + " Roll Number (RollNo) Missing:`n  Required to identify students and name receipt files on disk. Automated verification cannot continue without this column.")
+        }
+        if ('Name' -in $missingCols) {
+            $null = $warnLines.Add([char]0x2022 + " Student Name (Name) Missing:`n  Required to verify student identity against receipt greeting (Rule 5). Automated verification cannot continue without this column.")
+        }
+        if ('Proof Receipt' -in $missingCols) {
+            $null = $warnLines.Add([char]0x2022 + " Receipt Link (ProofUrl) Missing:`n  Required to download and verify payment receipts via OCR. Automated verification cannot continue without this column.")
+        }
+        if ('Email' -in $missingCols) {
+            $null = $warnLines.Add([char]0x2022 + " Email Column Missing:`n  You will not be able to send automated email alerts to students. (Announcement notice copy for class WhatsApp/Telegram remains available).")
+        }
+        if ('Exam Registered' -in $missingCols) {
+            $null = $warnLines.Add([char]0x2022 + " Registration Done Missing:`n  The system will assume all form submitters registered for the exam.")
+        }
+        if ('Subject' -in $missingCols) {
+            $courseDisplayName = if ($script:activeCourse -and $script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "Course Title" }
+            $null = $warnLines.Add([char]0x2022 + " Subject Column Missing:`n  The system will use the active Course Title ('$courseDisplayName') for receipt verification matching.")
+        }
+        if ('Enrolled' -in $missingCols) {
+            $null = $warnLines.Add([char]0x2022 + " Enrollment Completed Missing:`n  SWAYAM portal course enrollment counts will not be tracked.")
+        }
+
+        if (-not $hasCriticalMissing -and $missingCols.Count -gt 0) {
+            $null = $warnLines.Add([char]0x2713 + " All 3 Critical Columns (Roll Number, Student Name, Receipt Link) are present and verified!")
+        }
+
         if ($missingCols.Count -gt 0) {
             if ($panelWarn) { $panelWarn.Visibility = [System.Windows.Visibility]::Visible }
-            if ($txtWarnMsg) {
-                if ('Exam Registered' -in $missingCols) {
-                    $txtWarnMsg.Text = "The 'Exam Registration' column was not found in this spreadsheet."
-                } else {
-                    $txtWarnMsg.Text = "The following expected column(s) were not found in this spreadsheet: $($missingCols -join ', ')."
+            if ($hasCriticalMissing) {
+                if ($txtWarnTitle) {
+                    $txtWarnTitle.Text = [char]0x26A0 + " CRITICAL COLUMN(S) MISSING - ACTION REQUIRED"
+                    $txtWarnTitle.Foreground = $dangerBrush
                 }
+                if ($panelWarn) {
+                    $panelWarn.BorderBrush = $dangerBrush
+                    $panelWarn.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#332015")
+                }
+                if ($txtHealth) {
+                    $txtHealth.Text = "$($missingCols.Count) Column(s) Missing " + [char]0x26A0
+                    $txtHealth.Foreground = $dangerBrush
+                }
+                if ($badgeHealth) { $badgeHealth.BorderBrush = $dangerBrush }
+            } else {
+                if ($txtWarnTitle) {
+                    $txtWarnTitle.Text = [char]0x26A0 + " COLUMN ATTENTION & OPERATIONAL IMPACT"
+                    $txtWarnTitle.Foreground = $accentBrush
+                }
+                if ($panelWarn) {
+                    $panelWarn.BorderBrush = $accentBrush
+                    $panelWarn.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A2215")
+                }
+                if ($txtHealth) {
+                    $txtHealth.Text = "$($missingCols.Count) Column(s) Missing " + [char]0x26A0
+                    $txtHealth.Foreground = $accentBrush
+                }
+                if ($badgeHealth) { $badgeHealth.BorderBrush = $accentBrush }
             }
-            if ($txtHealth) { $txtHealth.Text = "$($missingCols.Count) Column(s) Missing " + [char]0x26A0; $txtHealth.Foreground = $accentBrush }
-            if ($badgeHealth) { $badgeHealth.BorderBrush = $accentBrush }
+            if ($txtWarnMsg) {
+                $txtWarnMsg.Text = $warnLines -join "`n`n"
+            }
         } else {
             if ($panelWarn) { $panelWarn.Visibility = [System.Windows.Visibility]::Collapsed }
-            if ($txtHealth) { $txtHealth.Text = "7/7 Columns Detected " + [char]0x2713; $txtHealth.Foreground = $sageBrush }
+            if ($txtHealth) {
+                $txtHealth.Text = "7/7 Columns Detected " + [char]0x2713
+                $txtHealth.Foreground = $sageBrush
+            }
             if ($badgeHealth) { $badgeHealth.BorderBrush = $sageBrush }
         }
 
         # Summary Text
         $txtSummary = $s1View.FindName("TxtSheetAuditSummary")
         if ($txtSummary) {
-            $detectedCount = 7 - $missingCols.Count
             $txtSummary.Text = "$totalCount Total Students | $detectedCount/7 Standard Columns Detected"
         }
         $txtSyncTime = $s1View.FindName("TxtSheetAuditTimestamp")
@@ -882,17 +946,22 @@ function Select-Course {
                 $txtVerTime.Text = "Updated: $modTime"
             }
 
-            # Update on-disk receipt cache counter
+            # Update on-disk receipt cache counter (Clean & Streamlined)
             $cleanCName = ($cName -replace '[\\/:*?"<>|]', '_').Trim()
             $rDir = Join-Path $dataDir "Courses\$cleanCName\receipts"
             $diskCount = 0
             if (Test-Path -LiteralPath $rDir) {
                 $diskCount = @(Get-ChildItem -LiteralPath $rDir -Filter "*_receipt.*" -ErrorAction SilentlyContinue | Where-Object { $_.Length -gt 0 }).Count
             }
+            $txtTitle = $s1View.FindName("TxtPipelineTitle")
+            if ($txtTitle) { $txtTitle.Text = "Receipt Verification & OCR" }
             $txtPipe = $s1View.FindName("TxtPipelineStatus")
             if ($txtPipe) {
-                $txtPipe.Text = "$diskCount of $regCount registered receipt(s) saved on disk. Step 1: Download receipts. Step 2: Run OCR verification."
+                $pct = if ($regCount -gt 0) { [math]::Round(($diskCount / $regCount) * 100) } else { 0 }
+                $txtPipe.Text = "$diskCount of $regCount receipt(s) on disk ($pct%)"
             }
+            $panelProg = $s1View.FindName("PanelPipelineProgress")
+            if ($panelProg) { $panelProg.Visibility = [System.Windows.Visibility]::Collapsed }
         } else {
             if ($panelPrompt) { $panelPrompt.Visibility = [System.Windows.Visibility]::Visible }
             if ($panelActive) { $panelActive.Visibility = [System.Windows.Visibility]::Collapsed }
@@ -1462,8 +1531,8 @@ function Show-StudentReviewDetails {
 
     if ($script:activeCourse -and $Student.RollNo) {
         $cName = if ($script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "Default" }
-        $cleanCName = ($cName -replace '[\\/:*?"<>|]', '_').Trim()
-        $receiptsDir = Join-Path $appRoot "data\Courses\$cleanCName\receipts"
+        $dDir = if ($script:dataDir) { $script:dataDir } else { (Join-Path $script:appRoot "data") }
+        $receiptsDir = Get-CourseReceiptsDirectory -CourseId $script:activeCourse.Id -CourseName $cName -DataDir $dDir
 
         $cleanRoll = (($Student.RollNo) -replace '[\\/:*?"<>|]', '_').Trim()
         if (Test-Path -LiteralPath $receiptsDir) {
@@ -1478,10 +1547,15 @@ function Show-StudentReviewDetails {
 
                 $ext = $matchedFile.Extension.ToLower()
                 if ($ext -eq ".pdf") {
-                    try {
-                        $displayImgPath = ConvertTo-ReceiptImage -FilePath $receiptPath
-                    } catch {
-                        $displayImgPath = $null
+                    $expectedPng = Join-Path $receiptsDir "${cleanRoll}_receipt_page1.png"
+                    if (Test-Path -LiteralPath $expectedPng) {
+                        $displayImgPath = $expectedPng
+                    } else {
+                        try {
+                            $displayImgPath = ConvertTo-ReceiptImage -FilePath $receiptPath
+                        } catch {
+                            $displayImgPath = $null
+                        }
                     }
                 } elseif ($ext -in @('.png', '.jpg', '.jpeg', '.bmp', '.webp')) {
                     $displayImgPath = $receiptPath
@@ -1554,6 +1628,104 @@ function Open-ReviewView {
     }
     Update-ReviewView -Course $script:activeCourse
     Navigate-To "ReviewView"
+}
+
+# Dynamic Pipeline Progress State Manager (Script Scope)
+function Update-PipelineBarState {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Mode,
+        [int]$Current = 0,
+        [int]$Total = 0,
+        [string]$ItemText = "",
+        [string]$Headline = ""
+    )
+
+    $s1 = if ($script:views) { $script:views["Stage1View"] } else { $null }
+    if (-not $s1) { return }
+
+    $panelProg  = $s1.FindName("PanelPipelineProgress")
+    $txtTitle   = $s1.FindName("TxtPipelineTitle")
+    $txtStatus  = $s1.FindName("TxtPipelineStatus")
+    $txtHead    = $s1.FindName("TxtProgressHeadline")
+    $txtCounter = $s1.FindName("TxtProgressCounter")
+    $txtDetail  = $s1.FindName("TxtProgressDetail")
+    $pBar       = $s1.FindName("ProgressBarPipeline")
+
+    $btnImport   = $s1.FindName("BtnImportReceipts")
+    $btnDownload = $s1.FindName("BtnDownloadReceipts")
+    $btnVerify   = $s1.FindName("BtnVerifyAll")
+
+    switch ($Mode) {
+        'Idle' {
+            if ($panelProg) { $panelProg.Visibility = [System.Windows.Visibility]::Collapsed }
+            if ($txtTitle) { $txtTitle.Text = "Receipt Verification & OCR" }
+            if ($btnImport) { $btnImport.IsEnabled = $true; $btnImport.Content = ([string][char]0xD83D + [char]0xDCC1 + " Import") }
+            if ($btnDownload) { $btnDownload.IsEnabled = $true; $btnDownload.Content = ([string][char]0xD83D + [char]0xDCE5 + " Download") }
+            if ($btnVerify) { $btnVerify.IsEnabled = $true; $btnVerify.Content = ([string][char]0x25B6 + " Run OCR") }
+        }
+        'Download' {
+            if ($panelProg) { $panelProg.Visibility = [System.Windows.Visibility]::Visible }
+            if ($txtTitle) { $txtTitle.Text = ([string][char]0xD83D + [char]0xDCE5 + " Downloading Receipts from Drive...") }
+            if ($txtStatus) { $txtStatus.Text = "Fetching payment receipts from Google Drive" }
+            if ($btnImport) { $btnImport.IsEnabled = $false }
+            if ($btnDownload) { $btnDownload.IsEnabled = $false; $btnDownload.Content = ([string][char]0x23F3 + " Downloading...") }
+            if ($btnVerify) { $btnVerify.IsEnabled = $false }
+
+            $pct = if ($Total -gt 0) { [math]::Min(100, [math]::Round(($Current / $Total) * 100)) } else { 0 }
+            if ($pBar) { $pBar.Value = $pct }
+            if ($txtHead) { $txtHead.Text = if ($Headline) { $Headline } else { "DOWNLOADING RECEIPTS" } }
+            if ($txtCounter) { $txtCounter.Text = "$Current / $Total ($pct%)" }
+            if ($txtDetail) { $txtDetail.Text = $ItemText }
+        }
+        'Import' {
+            if ($panelProg) { $panelProg.Visibility = [System.Windows.Visibility]::Visible }
+            if ($txtTitle) { $txtTitle.Text = ([string][char]0xD83D + [char]0xDCC1 + " Ingesting Receipts from Archive...") }
+            if ($txtStatus) { $txtStatus.Text = "Extracting and matching receipts to roster" }
+            if ($btnImport) { $btnImport.IsEnabled = $false; $btnImport.Content = ([string][char]0x23F3 + " Importing...") }
+            if ($btnDownload) { $btnDownload.IsEnabled = $false }
+            if ($btnVerify) { $btnVerify.IsEnabled = $false }
+
+            $pct = if ($Total -gt 0) { [math]::Min(100, [math]::Round(($Current / $Total) * 100)) } else { 0 }
+            if ($pBar) { $pBar.Value = $pct }
+            if ($txtHead) { $txtHead.Text = if ($Headline) { $Headline } else { "INGESTING LOCAL ARCHIVE" } }
+            if ($txtCounter) { $txtCounter.Text = "$Current / $Total ($pct%)" }
+            if ($txtDetail) { $txtDetail.Text = $ItemText }
+        }
+        'Verify' {
+            if ($panelProg) { $panelProg.Visibility = [System.Windows.Visibility]::Visible }
+            if ($txtTitle) { $txtTitle.Text = ([string][char]0xD83D + [char]0xDD0D + " Verifying Receipts (WinRT OCR)...") }
+            if ($txtStatus) { $txtStatus.Text = "Auditing 5 verification rules with native OCR" }
+            if ($btnImport) { $btnImport.IsEnabled = $false }
+            if ($btnDownload) { $btnDownload.IsEnabled = $false }
+            if ($btnVerify) { $btnVerify.IsEnabled = $false; $btnVerify.Content = ([string][char]0x23F3 + " Verifying...") }
+
+            $pct = if ($Total -gt 0) { [math]::Min(100, [math]::Round(($Current / $Total) * 100)) } else { 0 }
+            if ($pBar) { $pBar.Value = $pct }
+            if ($txtHead) { $txtHead.Text = if ($Headline) { $Headline } else { "RUNNING OCR AUDIT" } }
+            if ($txtCounter) { $txtCounter.Text = "$Current / $Total ($pct%)" }
+            if ($txtDetail) { $txtDetail.Text = $ItemText }
+        }
+        'Complete' {
+            if ($pBar) { $pBar.Value = 100 }
+            if ($txtCounter) { $txtCounter.Text = "$Total / $Total (100%)" }
+            if ($txtHead) { $txtHead.Text = "COMPLETED" }
+            if ($txtDetail) { $txtDetail.Text = $ItemText }
+            if ($btnImport) { $btnImport.IsEnabled = $true; $btnImport.Content = ([string][char]0xD83D + [char]0xDCC1 + " Import") }
+            if ($btnDownload) { $btnDownload.IsEnabled = $true; $btnDownload.Content = ([string][char]0xD83D + [char]0xDCE5 + " Download") }
+            if ($btnVerify) { $btnVerify.IsEnabled = $true; $btnVerify.Content = ([string][char]0x25B6 + " Run OCR") }
+        }
+    }
+
+    # Dispatcher pump to immediately render UI changes
+    try {
+        [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke(
+            [Action]{},
+            [System.Windows.Threading.DispatcherPriority]::Render
+        )
+    } catch {
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+    }
 }
 
 # 10. Wire Events per View (Using dynamic lookups to prevent scope closure loss)
@@ -1894,7 +2066,26 @@ function Wire-ViewEvents {
                 })
             }
 
-            # Update Registration Sheet Handler (Unified Re-scan / Browse New)
+            # Toggle Registration Sheet Health Details Handler
+            $btnToggleHealth = $viewObj.FindName("BtnToggleHealthDetails")
+            if ($btnToggleHealth) {
+                $btnToggleHealth.Add_Click({
+                    $s1 = $script:views["Stage1View"]
+                    $panel = if ($s1) { $s1.FindName("HealthDetailsContainer") } else { $null }
+                    $btn = $this
+                    if ($panel -and $btn) {
+                        if ($panel.Visibility -eq [System.Windows.Visibility]::Visible) {
+                            $panel.Visibility = [System.Windows.Visibility]::Collapsed
+                            $btn.Content = "View Details " + [char]0x25BC
+                        } else {
+                            $panel.Visibility = [System.Windows.Visibility]::Visible
+                            $btn.Content = "Hide Details " + [char]0x25B2
+                        }
+                    }
+                })
+            }
+
+            # Update Registration Sheet Handler (Direct File Explorer Browse)
             $btnUpdateSheet = $viewObj.FindName("BtnUpdateSheet")
             if (-not $btnUpdateSheet) { $btnUpdateSheet = $viewObj.FindName("BtnChangeRegistrationSheet") }
             if ($btnUpdateSheet) {
@@ -1903,26 +2094,13 @@ function Wire-ViewEvents {
                     $cName = [string]$script:activeCourse.Name
                     $currentPath = [string]$script:activeCourse.RegistrationSheet
 
-                    $choice = [System.Windows.MessageBox]::Show(
-                        "Update student registration responses for '$cName'?`n`n" +
-                        "Current linked spreadsheet:`n$currentPath`n`n" +
-                        "- Click [Yes] to re-scan the CURRENT file (if new rows were added to it).`n" +
-                        "- Click [No] to BROWSE and pick a newly downloaded spreadsheet (.xlsx, .csv).`n" +
-                        "- Click [Cancel] to abort.",
-                        "Update Registration Sheet",
-                        [System.Windows.MessageBoxButton]::YesNoCancel,
-                        [System.Windows.MessageBoxImage]::Question
-                    )
-                    if ($choice -eq [System.Windows.MessageBoxResult]::Cancel) { return }
+                    # Directly open native File Explorer dialog
+                    $selected = Show-ExcelBrowseDialog "Select Updated Student Registration Spreadsheet (.xlsx, .csv)"
+                    if (-not $selected) { return }
 
-                    $targetFile = $currentPath
-                    if ($choice -eq [System.Windows.MessageBoxResult]::No) {
-                        $selected = Show-ExcelBrowseDialog "Select Updated Student Registration Spreadsheet"
-                        if (-not $selected) { return }
-                        $targetFile = $selected
-                        $script:activeCourse.RegistrationSheet = $selected
-                        Save-Courses
-                    }
+                    $targetFile = $selected
+                    $script:activeCourse.RegistrationSheet = $selected
+                    Save-Courses
 
                     if (-not $targetFile -or -not (Test-Path -LiteralPath $targetFile)) {
                         [System.Windows.MessageBox]::Show("The spreadsheet file could not be found:`n$targetFile`nPlease check the file location.", "File Not Found", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
@@ -2083,6 +2261,150 @@ function Wire-ViewEvents {
                 })
             }
 
+            # -- Step 1: Import Local Receipts (Folder or .ZIP Archive) Handler --
+            $btnImport = $viewObj.FindName("BtnImportReceipts")
+            if ($btnImport) {
+                $btnImport.Add_Click({
+                    try {
+                        if (-not $script:activeCourse) {
+                            [System.Windows.MessageBox]::Show(
+                                "Please select a course first before importing receipts.",
+                                "No Active Course",
+                                [System.Windows.MessageBoxButton]::OK,
+                                [System.Windows.MessageBoxImage]::Warning
+                            )
+                            return
+                        }
+
+                        $store = Get-CourseStudentStore -CourseId $script:activeCourse.Id -RegistrationSheet $script:activeCourse.RegistrationSheet -CourseName $script:activeCourse.Name
+                        $students = @($store.Students)
+                        $regStudents = @($students | Where-Object {
+                            if ($_.PSObject.Properties['IsRegistered']) { $_.IsRegistered -ne $false } else { $true }
+                        })
+
+                        if ($regStudents.Count -eq 0) {
+                            [System.Windows.MessageBox]::Show(
+                                "No registered students found in course '$($script:activeCourse.Name)'.",
+                                "No Students Found",
+                                [System.Windows.MessageBoxButton]::OK,
+                                [System.Windows.MessageBoxImage]::Information
+                            )
+                            return
+                        }
+
+                        $cName = [string]$script:activeCourse.Name
+                        $dDir = if ($script:dataDir) { $script:dataDir } else { (Join-Path $script:appRoot "data") }
+
+                        # Prompt user for source type: .ZIP archive or Extracted Folder
+                        $sourceChoice = [System.Windows.MessageBox]::Show(
+                            "Import Student Receipts for '$cName':`n`n" +
+                            "Registered students queued: $($regStudents.Count)`n`n" +
+                            "Choose your receipt source format:`n" +
+                            " [ Yes ]    Browse for a Google Drive .ZIP archive`n" +
+                            " [ No ]     Browse for an extracted / local Folder`n" +
+                            " [ Cancel ] Abort import",
+                            "Import Student Receipts (Local / ZIP)",
+                            [System.Windows.MessageBoxButton]::YesNoCancel,
+                            [System.Windows.MessageBoxImage]::Question
+                        )
+
+                        if ($sourceChoice -eq [System.Windows.MessageBoxResult]::Cancel) { return }
+
+                        $chosenSourcePath = $null
+
+                        if ($sourceChoice -eq [System.Windows.MessageBoxResult]::Yes) {
+                            # OpenFileDialog for .zip archive
+                            $openDlg = New-Object Microsoft.Win32.OpenFileDialog
+                            $openDlg.Title = "Select Google Drive Receipt ZIP Archive"
+                            $openDlg.Filter = "ZIP Archive (*.zip)|*.zip|All Files (*.*)|*.*"
+                            $openDlg.InitialDirectory = [Environment]::GetFolderPath("Desktop")
+                            if ($openDlg.ShowDialog() -eq $true) {
+                                $chosenSourcePath = $openDlg.FileName
+                            }
+                        } else {
+                            # FolderBrowserDialog for unzipped directory
+                            $folderDlg = New-Object System.Windows.Forms.FolderBrowserDialog
+                            $folderDlg.Description = "Select the folder containing student receipt files (PDF/Images)"
+                            $folderDlg.ShowNewFolderButton = $false
+                            $desktopPath = [Environment]::GetFolderPath("Desktop")
+                            if (Test-Path $desktopPath) { $folderDlg.SelectedPath = $desktopPath }
+                            if ($folderDlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+                                $chosenSourcePath = $folderDlg.SelectedPath
+                            }
+                        }
+
+                        if (-not $chosenSourcePath -or -not (Test-Path -LiteralPath $chosenSourcePath)) {
+                            return
+                        }
+
+                        $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
+                        try {
+                            [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+                            Update-PipelineBarState -Mode 'Import' -Current 0 -Total $regStudents.Count -Headline "INGESTING LOCAL ARCHIVE" -ItemText "Reading and extracting files..."
+
+                            $importCb = {
+                                param($cur, $tot, $st, $msg)
+                                $stRoll = if ($st.RollNo) { [string]$st.RollNo } else { "" }
+                                $stName = if ($st.Name) { [string]$st.Name } else { "" }
+                                $nameStr = if ($stName) { " - $stName" } else { "" }
+                                $itemStr = "$stRoll$nameStr ($msg)"
+                                Update-PipelineBarState -Mode 'Import' -Current $cur -Total $tot -Headline "INGESTING LOCAL ARCHIVE" -ItemText $itemStr
+                            }
+
+                            $importSummary = Import-ReceiptsFromLocalSource -CourseId $script:activeCourse.Id -CourseName $cName -SourcePath $chosenSourcePath -Students $regStudents -DataDir $dDir -ProgressCallback $importCb
+
+                            # Refresh course views to update on-disk counter immediately
+                            Select-Course $script:activeCourse
+
+                            # Format friendly, informative report
+                            $sourceDisplay = [System.IO.Path]::GetFileName($chosenSourcePath)
+                            $reportLines = [System.Collections.ArrayList]@()
+                            $null = $reportLines.Add("Receipt Ingestion Completed for '$cName'!")
+                            $null = $reportLines.Add("Source: $sourceDisplay")
+                            $null = $reportLines.Add("Total Registered Students: $($importSummary.TotalRegistered)`n")
+                            $null = $reportLines.Add("  [+] Newly Ingested: $($importSummary.IngestedCount)")
+                            $null = $reportLines.Add("  [*] Already on Disk: $($importSummary.ExistingCount)")
+                            $null = $reportLines.Add("  [-] Missing Receipts: $($importSummary.MissingCount)")
+                            if ($importSummary.UnassignedCount -gt 0) {
+                                $null = $reportLines.Add("  [i] Unassigned Files in Source: $($importSummary.UnassignedCount)")
+                            }
+
+                            if ($importSummary.MissingCount -gt 0) {
+                                $null = $reportLines.Add("`nMissing Students ($($importSummary.MissingCount)):")
+                                $sampleMissing = @($importSummary.MissingStudents | Select-Object -First 5 | ForEach-Object {
+                                    "  - $($_.RollNo) ($($_.Name))"
+                                }) -join "`n"
+                                $null = $reportLines.Add($sampleMissing)
+                                if ($importSummary.MissingCount -gt 5) {
+                                    $null = $reportLines.Add("  - ... and $($importSummary.MissingCount - 5) more")
+                                }
+                            }
+
+                            $null = $reportLines.Add("`nSaved location: data/Courses/$cName/receipts/")
+
+                            $msgIcon = if ($importSummary.MissingCount -gt 0) { [System.Windows.MessageBoxImage]::Warning } else { [System.Windows.MessageBoxImage]::Information }
+                            [System.Windows.MessageBox]::Show(
+                                ($reportLines -join "`n"),
+                                "Receipt Import Summary",
+                                [System.Windows.MessageBoxButton]::OK,
+                                $msgIcon
+                            )
+                        } finally {
+                            [System.Windows.Input.Mouse]::OverrideCursor = $origCursor
+                            Update-PipelineBarState -Mode 'Idle'
+                            Select-Course $script:activeCourse
+                        }
+                    } catch {
+                        [System.Windows.MessageBox]::Show(
+                            "Failed to import receipts:`n$($_.Exception.Message)",
+                            "Import Error",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Error
+                        )
+                    }
+                })
+            }
+
             # -- Step 1: Download Receipts Handler --
             $btnDownload = $viewObj.FindName("BtnDownloadReceipts")
             if ($btnDownload) {
@@ -2117,17 +2439,20 @@ function Wire-ViewEvents {
                         if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
 
                         $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
-                        $s1 = $script:views["Stage1View"]
-                        $btn = if ($s1) { $s1.FindName("BtnDownloadReceipts") } else { $this }
-                        $origContent = if ($btn) { $btn.Content } else { "Download Receipts" }
                         try {
                             [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
-                            if ($btn) {
-                                $btn.IsEnabled = $false
-                                $btn.Content = "Downloading Receipts..."
+                            Update-PipelineBarState -Mode 'Download' -Current 0 -Total $regStudents.Count -Headline "DOWNLOADING RECEIPTS" -ItemText "Connecting to Google Drive..."
+
+                            $dlCb = {
+                                param($cur, $tot, $st, $msg)
+                                $stRoll = if ($st.RollNo) { [string]$st.RollNo } else { "" }
+                                $stName = if ($st.Name) { [string]$st.Name } else { "" }
+                                $nameStr = if ($stName) { " - $stName" } else { "" }
+                                $itemStr = "$stRoll$nameStr ($msg)"
+                                Update-PipelineBarState -Mode 'Download' -Current $cur -Total $tot -Headline "DOWNLOADING RECEIPTS" -ItemText $itemStr
                             }
 
-                            $dlSummary = Invoke-ReceiptBatchDownload -CourseId $script:activeCourse.Id -CourseName $cName -Students $regStudents -DataDir $dDir
+                            $dlSummary = Invoke-ReceiptBatchDownload -CourseId $script:activeCourse.Id -CourseName $cName -Students $regStudents -DataDir $dDir -ProgressCallback $dlCb
 
                             # Refresh views to update on-disk counter
                             Select-Course $script:activeCourse
@@ -2160,10 +2485,8 @@ function Wire-ViewEvents {
                             )
                         } finally {
                             [System.Windows.Input.Mouse]::OverrideCursor = $origCursor
-                            if ($btn) {
-                                $btn.Content = $origContent
-                                $btn.IsEnabled = $true
-                            }
+                            Update-PipelineBarState -Mode 'Idle'
+                            Select-Course $script:activeCourse
                         }
                     } catch {
                         [System.Windows.MessageBox]::Show(
@@ -2252,7 +2575,7 @@ function Wire-ViewEvents {
                                 "All $($regStudents.Count) registered student receipt(s) are ready on disk.`n`n" +
                                 "The pipeline will execute locally:`n" +
                                 "1. Native WinRT OCR text extraction (PDF / Images)`n" +
-                                "2. Evaluate the 5 verification rules (Status, Rs. 1000/1100 Fee, Course Title, Authenticity, Identity)`n" +
+                                "2. Evaluate the 5 verification rules (Status, Rs. 1,000 / Rs. 500 Concession Fee, Course Title, Authenticity, Identity)`n" +
                                 "3. Delta-sync and auto-update students.json and the Excel Verification Sheet.",
                                 "Confirm OCR Verification",
                                 [System.Windows.MessageBoxButton]::YesNo,
@@ -2264,17 +2587,20 @@ function Wire-ViewEvents {
 
                         # 4. Run Pipeline with Wait Cursor & Visual Feedback
                         $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
-                        $dv = $script:views["Stage1View"]
-                        $btn = if ($dv) { $dv.FindName("BtnVerifyAll") } else { $null }
-                        $origContent = if ($btn) { $btn.Content } else { "Run Verification (OCR)" }
                         try {
                             [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
-                            if ($btn) {
-                                $btn.IsEnabled = $false
-                                $btn.Content = "Verifying Receipts (OCR)..."
+                            Update-PipelineBarState -Mode 'Verify' -Current 0 -Total $regStudents.Count -Headline "RUNNING WINRT OCR AUDIT" -ItemText "Starting OCR audit engine..."
+
+                            $verCb = {
+                                param($cur, $tot, $st, $msg)
+                                $stRoll = if ($st.RollNo) { [string]$st.RollNo } else { "" }
+                                $stName = if ($st.Name) { [string]$st.Name } else { "" }
+                                $nameStr = if ($stName) { " - $stName" } else { "" }
+                                $itemStr = "$stRoll$nameStr ($msg)"
+                                Update-PipelineBarState -Mode 'Verify' -Current $cur -Total $tot -Headline "RUNNING WINRT OCR AUDIT" -ItemText $itemStr
                             }
 
-                            $summary = Invoke-CourseVerificationPipeline -Course $script:activeCourse -DataDir $dDir -SkipDownload:$skipDownload
+                            $summary = Invoke-CourseVerificationPipeline -Course $script:activeCourse -DataDir $dDir -SkipDownload:$skipDownload -ProgressCallback $verCb
 
                             # Refresh views and mini cards
                             Select-Course $script:activeCourse
@@ -2294,10 +2620,8 @@ function Wire-ViewEvents {
                             )
                         } finally {
                             [System.Windows.Input.Mouse]::OverrideCursor = $origCursor
-                            if ($btn) {
-                                $btn.Content = $origContent
-                                $btn.IsEnabled = $true
-                            }
+                            Update-PipelineBarState -Mode 'Idle'
+                            Select-Course $script:activeCourse
                         }
                     } catch {
                         [System.Windows.MessageBox]::Show(
@@ -2904,7 +3228,7 @@ function Wire-ViewEvents {
                                 # --- CASE 1: All 5 Rules Matched (Correct Receipt!) ---
                                 $approvePrompt = "All 5 verification rules matched on the new receipt for '$stName' ($cleanRoll)!`n`n" +
                                     "- Payment Status: Successful`n" +
-                                    "- Fee Amount: Verified (Rs. 1,000 / Rs. 1,100)`n" +
+                                    "- Fee Amount: Verified (Rs. 1,000 / Rs. 500 Concession)`n" +
                                     "- Course Title: Matched ('$cName')`n" +
                                     "- Authenticity: Confirmed (NPTEL / Razorpay)`n" +
                                     "- Student Identity: Matched ('$stName')`n`n" +
@@ -2972,7 +3296,10 @@ function Wire-ViewEvents {
                                     Save-CourseStudents -CourseId $script:activeCourse.Id -Students $students -ColumnMap $store.ColumnMap -CourseName $cName
                                     Export-CourseVerificationSheetData -Course $script:activeCourse -Students $students
 
-                                    # Refresh Review Queue in-place
+                                    # Reload student details with new receipt displayed and updated status
+                                    Show-StudentReviewDetails -Student $st
+
+                                    # Refresh Review Queue metrics in-place
                                     Update-ReviewView
 
                                     [System.Windows.MessageBox]::Show(

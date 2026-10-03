@@ -1,6 +1,6 @@
 ﻿{
     "CourseId":  "67fb632d-3bfa-4ac4-9ebd-aa913e4e5610",
-    "LastSync":  "2026-10-01 00:43",
+    "LastSync":  "2026-10-01 15:05",
     "ColumnMap":  {
                       "RollNo":  "Enrollment Number",
                       "Name":  "Name",
@@ -84,8 +84,8 @@
                          "Raw":  {
 
                                  },
-                         "VerificationStatus":  "Under Review",
-                         "VerificationRemarks":  "Payment success confirmation not found | Fee amount not Rs. 1,000 or Rs. 1,100 | Course title mismatch (Expected: \u0027Soft Compting 3\u0027) | Missing NPTEL / Razorpay authenticity markers | Student name does not match receipt greeting (\u0027Prince Parte\u0027)"
+                         "VerificationStatus":  "Verified",
+                         "VerificationRemarks":  "Manually approved by coordinator on 01/10/2026 12:31"
                      },
                      {
                          "RollNo":  "0801cs221109",

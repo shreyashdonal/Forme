@@ -47,14 +47,15 @@ function Test-ReceiptVerificationRules {
 
     # --------------------------------------------------------------------------
     # RULE 2: Fee Amount Check
-    # Must detect official NPTEL exam fee (₹1,000 standard or ₹1,100 late fee)
+    # Must detect official NPTEL exam fee (₹1,000 standard, ₹1,100 late fee, or ₹500/₹550 concession)
     # --------------------------------------------------------------------------
     $rule2Pass = $false
-    # Match 1000 or 1100 (alone or with currency symbols)
-    if ($normOcr -match '\b(?:1000|1100)\b') {
+    # Match 1000, 1100, 500, or 550 (handling commas e.g. 1,000 and decimals e.g. .00)
+    $cleanAmtOcr = ($OcrText -replace ',', '')
+    if ($normOcr -match '\b(?:1000|1100|500|550)\b' -or $cleanAmtOcr -match '\b(?:1000|1100|500|550)(?:\.00)?\b' -or $normOcr -match '\b1\s+000\b' -or $normOcr -match '\b1\s+100\b') {
         $rule2Pass = $true
     } else {
-        $null = $failedRemarks.Add("Fee amount not Rs. 1,000 or Rs. 1,100")
+        $null = $failedRemarks.Add("Fee amount not Rs. 1,000, Rs. 1,100, or Rs. 500")
     }
 
     # --------------------------------------------------------------------------
@@ -170,7 +171,7 @@ function Test-ReceiptVerificationRules {
     $allPass = $rule1Pass -and $rule2Pass -and $rule3Pass -and $rule4Pass -and $rule5Pass
 
     if ($allPass) {
-        $feeLabel = if ($normOcr -match '\b1100\b') { "Fee: Rs. 1,100 (Late Fee)" } else { "Fee: Rs. 1,000" }
+        $feeLabel = if ($normOcr -match '\b500\b') { "Fee: Rs. 500 (Concession)" } elseif ($normOcr -match '\b550\b') { "Fee: Rs. 550 (Late Concession)" } elseif ($normOcr -match '\b1100\b') { "Fee: Rs. 1,100 (Late Fee)" } else { "Fee: Rs. 1,000" }
         return [PSCustomObject]@{
             Status      = "Verified"
             Remarks     = "Clean match ($feeLabel confirmed, Course & Identity matched)"
@@ -510,8 +511,16 @@ function Sync-CourseResponses {
             # -------------------------------------------------------------
             $oldUrl = if ($match.ProofUrl) { $match.ProofUrl.Trim() } else { "" }
             $newUrl = if ($incoming.ProofUrl) { $incoming.ProofUrl.Trim() } else { "" }
-            $oldStatus = if ($match.VerificationStatus) { [string]$match.VerificationStatus } else { "Pending" }
-            $oldRemarks = if ($match.VerificationRemarks) { [string]$match.VerificationRemarks } else { "Awaiting Verification" }
+            $oldStatus = if ($match.PSObject.Properties['VerificationStatus']) { [string]$match.VerificationStatus } else { "Pending" }
+            $oldRemarks = if ($match.PSObject.Properties['VerificationRemarks']) { [string]$match.VerificationRemarks } else { "Awaiting Verification" }
+
+            # Ensure VerificationStatus and VerificationRemarks exist as properties on $match
+            if (-not $match.PSObject.Properties['VerificationStatus']) {
+                $match | Add-Member -NotePropertyName 'VerificationStatus' -NotePropertyValue $oldStatus -Force
+            }
+            if (-not $match.PSObject.Properties['VerificationRemarks']) {
+                $match | Add-Member -NotePropertyName 'VerificationRemarks' -NotePropertyValue $oldRemarks -Force
+            }
 
             $urlChanged = ($oldUrl -and $newUrl -and ($oldUrl -ne $newUrl))
 

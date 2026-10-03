@@ -68,7 +68,7 @@ function Get-ColumnMapping {
         Email        = '^(email|email\s*address|mail)$'
         Subject      = '^(subject|course\s*name|course\s*title|course|elective)$'
         IsEnrolled   = 'enroll.*complete|enrolled'
-        IsRegistered = 'registration\s*done|registered'
+        IsRegistered = 're[g]?istr.*(done|complete)|registration|registered'
         ProofUrl     = 'upload.*(proof|certificate|receipt)|proof|receipt|drive\.google'
         Timestamp    = 'timestamp|submission\s*time'
     }
@@ -199,15 +199,17 @@ function Import-StudentSheet {
             }
 
             $stObj = [PSCustomObject]@{
-                RollNo       = $rollNo.Trim()
-                Name         = $name.Trim()
-                Email        = $email.Trim()
-                Subject      = $subject.Trim()
-                IsEnrolled   = $isEnrolled
-                IsRegistered = $isRegistered
-                ProofUrl     = $proofUrl.Trim()
-                Timestamp    = $timestamp.Trim()
-                Raw          = $rawDict
+                RollNo              = $rollNo.Trim()
+                Name                = $name.Trim()
+                Email               = $email.Trim()
+                Subject             = $subject.Trim()
+                IsEnrolled          = $isEnrolled
+                IsRegistered        = $isRegistered
+                ProofUrl            = $proofUrl.Trim()
+                Timestamp           = $timestamp.Trim()
+                Raw                 = $rawDict
+                VerificationStatus  = "Pending"
+                VerificationRemarks = "Awaiting Verification"
             }
 
             # De-duplication: match by RollNo (case-insensitive), fallback to Email
