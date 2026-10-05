@@ -40,6 +40,7 @@ PDQA Project/
 │       ├── Stage2View.xaml        # Stage 2 Post-Exam Results & reconciliation workspace
 │       ├── DashboardView.xaml     # Legacy course dashboard (preserved for fallback)
 │       ├── ReviewView.xaml        # Discrepancy review & receipt comparison (staged for Phase E)
+│       ├── EmailView.xaml         # Dedicated Email Management Center view (Branch 4)
 │       ├── SettingsView.xaml      # Google Sheets & Tesseract OCR paths
 │       └── StudentListView.xaml   # Full student roster view (staged for Phase F)
 ├── data/
@@ -61,7 +62,8 @@ PDQA Project/
 │   ├── Branch_3(Session_3).md     # Notes for Branch 3 Session 3 (Stage-Based Workspace & Router)
 │   ├── Branch_3(Session_4).md     # Notes for Branch 3 Session 4 (Review Workspace, Decoupled Pipeline & "Update Sheet" De-duplication)
 │   ├── Branch_3(Session_5).md     # Notes for Branch 3 Session 5 (1-Click Actions, Resubmit Modal & Manual Attachment)
-│   └── Branch_3(Session_6).md     # Notes for Branch 3 Session 6 (Collapsible Health, 'Import Receipts' & Concession Matching)
+│   ├── Branch_3(Session_6).md     # Notes for Branch 3 Session 6 (Collapsible Health, 'Import Receipts' & Concession Matching)
+│   └── Branch_4(Session_1).md     # Notes for Branch 4 Session 1 (Email Center, Zero-Password Dispatch & 2-Way Audit)
 ├── NPTEL-Manager.ps1              # Main WPF application runner & router controller
 ├── build.ps1                      # ps2exe compilation script
 ├── test_parse.ps1                 # XAML and script syntax validator
@@ -73,7 +75,7 @@ PDQA Project/
 └── Progress.md                    # This active tracking file
 ```
 
-**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md` through `Branch_2(Session_4).md`, `Branch_3(Session_1).md` through `Branch_3(Session_6).md`.
+**Notes tracking:** Session notes in `notes/` directory: `Branch_1(Session_1).md`, `Branch_2(Session_1).md` through `Branch_2(Session_4).md`, `Branch_3(Session_1).md` through `Branch_3(Session_6).md`, `Branch_4(Session_1).md`.
 
 ---
 
@@ -218,14 +220,14 @@ PDQA Project/
 ### Branch 4 (Send Email)
 
 #### Phase A — Dedicated Email UI & Review Entry Point (Shared Foundation)
-- [ ] Add "Send Email to Flagged Students" action bar row in `ReviewView.xaml`
-- [ ] Create dedicated Email Management Center view (`UI/Views/EmailView.xaml`)
-- [ ] Wire SPA router in `NPTEL-Manager.ps1` (`Navigate-To -ViewName "EmailView"`) with return navigation
+- [x] Add "Send Email to Flagged Students" action bar row in `ReviewView.xaml` `[Session 1]`
+- [x] Create dedicated Email Management Center view (`UI/Views/EmailView.xaml`) `[Session 1]`
+- [x] Wire SPA router in `NPTEL-Manager.ps1` (`Navigate-To -ViewName "EmailView"`) with return navigation `[Session 1]`
 
 #### Sub-Branch 4.1 — Browser Draft Dispatch (Approach 2: Zero-Password & Manual Gmail Send)
-- [ ] Build 1-click Gmail Web Compose launcher with BCC student list, dynamic subject, and pre-filled instructions
-- [ ] Add 1-click `[ 📋 Copy Formatted Notice ]` (for WhatsApp/Telegram) and `[ 📋 Copy BCC Emails ]` buttons
-- [ ] Mark recipients as `Notified` in `students.json` with timestamp upon launching draft
+- [x] Build 1-click Gmail Web Compose launcher with BCC student list, dynamic subject, and pre-filled instructions `[Session 1]`
+- [x] Add 1-click `[ 📋 Copy Formatted Notice ]` (for WhatsApp/Telegram) and `[ 📋 Copy BCC Emails ]` buttons `[Session 1]`
+- [x] Mark recipients as `Notified` in `students.json` with timestamp upon launching draft `[Session 1]`
 
 #### Sub-Branch 4.2 — Direct In-App Background Dispatch (Approach 1: SMTP / App Password)
 - [ ] Email & SMTP configuration card with masked `<PasswordBox>` in `SettingsView.xaml`
@@ -234,6 +236,10 @@ PDQA Project/
 - [ ] Direct in-app batch sender with live progress bar and individual delivery tracking in `students.json`
 
 #### Extra / Ad-Hoc Completed Tasks
+- [x] Fix WPF Event Scope Closure on Template Switcher (promoted `Set-EmailTemplate` to script-scoped function) `[Session 1]`
+- [x] Email Center UI Declutter & Modernization (streamlined headers, eliminated noisy descriptions, shortened button labels) `[Session 1]`
+- [x] 2-Way Delivery Status Management (added `[✓ Mark Notified]` and `[↺ Unmark]` manual roster controls with state rollback) `[Session 1]`
+- [x] Decommissioned Redundant 'Flag for Resubmit' Button & Modal (all review queue students are already flagged; simplified Mode B to single 'Approve (Override)' action) `[Session 1]`
 
 ---
 
@@ -528,7 +534,40 @@ Progress.md (Recorded Session 6 progress and closed Session 6)
 
 **Known issues / TODO carried forward**
 ```
-- Next piece: Phase F — Filtered Student Roster & Export (StudentListView.xaml) in Session 7.
+- Completed Session 6 (Branch 3).
+```
+
+### Session 1 (Branch 4 (Send Email)) — Dedicated Email UI, Review Entry Point & Zero-Password Browser Dispatch [COMPLETED]
+
+**Files created/updated**
+```
+UI/Views/EmailView.xaml (Created dedicated Email Management Center view: 2-column layout with 3-card mini dashboard [Flagged Recipients, Already Notified, Discrepancy Summary], interactive student recipient roster with batch Select All / Clear All, multi-template notice composer [Missing Receipt, Fee Mismatch, General Notice], live monospace body preview, and dispatch action bar)
+UI/Views/ReviewView.xaml (Added responsive [✉ Send Email to Flagged Students] action bar button in ReviewQueueOverviewPanel alongside Push Changes)
+NPTEL-Manager.ps1 (Wired [✉ Send Email to Flagged Students] to Open-EmailView; implemented Open-EmailView and Update-EmailView with automatic roster filtering for 'Under Review' students; added Update-EmailComposerPreview for dynamic template generation; added Update-EmailSelectionMetrics for live student count badges; wired [📋 Copy Notice Text] for WhatsApp/Telegram; wired [📋 Copy BCC Emails] with clipboard export; implemented 1-click [✉ Open in Gmail (Web Draft)] URL compose with BCC list, auto-marking students as Notified with timestamp in students.json; updated Navigate-To to maintain active tab styling on EmailView)
+notes/Branch_4(Session_1).md (Educational documentation for Branch 4 Session 1)
+Progress.md (Updated Branch 4 checklist and logged Session 1)
+```
+
+**Decisions made this session**
+- *Review Queue Action Bar Integration*: Placed `[ ✉ Send Email to Flagged Students ]` directly on the primary Mode A action bar in `ReviewView.xaml`, dynamically indicating the exact number of flagged students needing outreach (e.g. `✉ Send Email to Flagged (3 Students)`). Disabled cleanly when the queue is clear.
+- *Two-Column Responsive Email Management Center*: Designed `EmailView.xaml` following the Zinc Warm Dark aesthetic with a 420px left-hand Recipient Roster and a flexible right-hand Notice Composer & Live Preview panel.
+- *Discrepancy Category Extraction*: `Update-EmailView` scans verification remarks to automatically categorize issues into *Missing Receipt* vs *Fee Discrepancy* and displays a live mini-metric breakdown (`2 Missing Receipt • 1 Fee Discrepancy`).
+- *Two-Function Composer Architecture*: Consolidated the notice composer into two clear functions:
+  1. `[ 📋 Standard Template (5 Rules) ]`: Automatically pre-fills an authoritative institutional resubmission notice detailing the 5 mandatory verification criteria (Payment Status, Fee Amount, Course Name, Platform Authenticity, Student Identity) and common rejection reasons, covering all discrepancy scenarios in a single BCC notice.
+  2. `[ ✏️ Custom Draft Mail ]`: Provides an editable canvas with dynamic subject line and starter skeleton for custom announcements (e.g. Google Form resubmission links, physical lab verification schedules, deadline extensions).
+- *Unique Student Identification & Shared Email Resolution*: Fixed bug where multiple students sharing a test or common email address caused `break` to prematurely terminate evaluation and accidentally tag `Verified` students. Refactored `Get-SelectedStudents` to extract student objects and `Mark-SelectedStudentsNotified` to match strictly by unique `RollNo` and `Under Review` status.
+- *Zero-Password Browser Draft Launcher (Sub-Branch 4.1)*: Coordinators can dispatch notices without configuring any SMTP credentials or App Passwords. Clicking `[ ✉ Open in Gmail (Web Draft) ]` constructs an RFC-compliant Gmail Web Compose URL (`https://mail.google.com/mail/?view=cm...`) with all checked students placed in the `BCC` line (protecting student privacy) and opens the default web browser.
+- *Multi-Channel Outreach (WhatsApp / Telegram / Circulars)*: Provided `[ 📋 Copy Notice Text ]` for instant copy-pasting into class groups or messaging apps, and `[ 📋 Copy BCC Emails ]` for standalone email clients.
+- *Delivery & Audit Tracking*: Launching the draft marks students as `Notified = $true` with a formatted timestamp (`NotifiedTimestamp = "YYYY-MM-DD HH:mm"`) in `students.json`, instantly rendering a green `✓ Notified` badge in both the roster and the dashboard.
+- *Seamless SPA Navigation Triangle*: Enabled bidirectional routing between `Stage1View` ⇄ `ReviewView` ⇄ `EmailView`, maintaining tab highlighting on the Courses tab.
+- *WPF Event Scope Closure Elimination*: Promoted `Set-EmailTemplate` to a dedicated script-scoped function, eliminating a runtime `The expression after '&' in a pipeline element produced an object that was not valid` exception caused by invoking an out-of-scope local scriptblock on button click.
+- *Email Center UI Declutter & Modernization*: Streamlined `EmailView.xaml` following coordinator feedback: shortened main title to `Email Center`, deleted paragraph subtitles, removed the redundant gray info pill from the roster (gaining 30px vertical viewport), simplified metric card headers (`FLAGGED`, `NOTIFIED`, `ISSUES`), shortened template toggle buttons to `[ 📋 Standard (5 Rules) ]` and `[ ✏️ Custom Draft ]`, and streamlined action bar buttons (`[ 📋 Copy Notice ]`, `[ ✉ Open in Gmail ]`).
+- *2-Way Delivery Status Management*: Introduced a dual-path delivery audit architecture. Way 1 (Automated): `[ ✉ Open in Gmail ]` launches the browser draft and flags records as notified with an informative rollback tip. Way 2 (Manual): Added `[ ✓ Mark Notified ]` and `[ ↺ Unmark ]` toolbar controls above the recipient roster, allowing the coordinator to manually verify delivery across other email channels (Outlook, college portal) and instantly undo/revert notifications if an external send was canceled or failed.
+- *Decommissioned Redundant 'Flag for Resubmit' Workflow*: Removed the redundant `[ Flag for Resubmit ]` button and `ModalFlagResubmit` popup dialog from `ReviewView.xaml` and `NPTEL-Manager.ps1`. Since every student appearing in the Review Queue is already marked `Under Review` (flagged), re-flagging was redundant and conceptually confused coordinators. Mode B now has a clear single primary decision: `[ Approve (Override) ]` (or do nothing to leave them flagged for batch email notice).
+
+**Known issues / TODO carried forward**
+```
+- Sub-Branch 4.2: Direct in-app SMTP background dispatch with Windows DPAPI encryption in SettingsView.xaml and modules/EmailEngine.ps1.
 ```
 
 ---

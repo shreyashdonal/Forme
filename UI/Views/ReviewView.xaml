@@ -177,7 +177,7 @@
                     </Grid>
                 </Border>
 
-                <!-- 2. Push Changes Action Bar -->
+                <!-- 2. Action Bar: Push Changes & Student Outreach -->
                 <Border Grid.Row="1"
                         Background="{DynamicResource PanelBrush}"
                         BorderBrush="{DynamicResource BorderBrush}"
@@ -189,6 +189,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Push Button -->
@@ -214,6 +215,17 @@
                                        FontSize="11"
                                        Foreground="{DynamicResource MutedBrush}"/>
                         </StackPanel>
+
+                        <!-- Send Email to Flagged Students Action Button -->
+                        <Button x:Name="BtnNotifyFlaggedStudents"
+                                Grid.Column="2"
+                                Content="✉ Send Email to Flagged Students"
+                                Style="{DynamicResource BtnSecondary}"
+                                Padding="16,8"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Cursor="Hand"
+                                ToolTip="Open the Email Management Center to notify flagged students with issues"/>
                     </Grid>
                 </Border>
 
@@ -382,21 +394,11 @@
 
                             <!-- Coordinator Actions -->
                             <StackPanel x:Name="ReviewActionsHost" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button x:Name="BtnFlagResubmit"
-                                        Content="Flag for Resubmit"
-                                        Style="{DynamicResource BtnSecondary}"
-                                        BorderBrush="{DynamicResource DangerBrush}"
-                                        Foreground="{DynamicResource DangerBrush}"
-                                        Padding="12,7"
-                                        FontSize="12"
-                                        Cursor="Hand"
-                                        Margin="0,0,10,0"/>
-
                                 <Button x:Name="BtnApproveOverride"
                                         Content="Approve (Override)"
                                         Style="{DynamicResource BtnPrimary}"
                                         Background="{DynamicResource SageBrush}"
-                                        Padding="14,7"
+                                        Padding="16,8"
                                         FontSize="12"
                                         Cursor="Hand"/>
                             </StackPanel>
@@ -708,97 +710,6 @@
                     </Grid>
                 </Border>
             </Grid>
-        </Grid>
-
-        <!-- Modal Overlay for Flagging Resubmission -->
-        <Grid x:Name="ModalFlagResubmit"
-              Grid.Row="0"
-              Grid.RowSpan="2"
-              Margin="-32,-20,-32,-20"
-              Visibility="Collapsed"
-              Background="#CC151513">
-            <Border Background="{DynamicResource PanelBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="10"
-                    Padding="24"
-                    Width="460"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center">
-                <StackPanel>
-                    <TextBlock Text="Flag Student for Resubmission"
-                               FontFamily="IBM Plex Mono, Consolas"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextBrush}"
-                               Margin="0,0,0,6"/>
-                    <TextBlock Text="Enter the reason why this student's receipt requires resubmission. This note will be recorded in the student verification record."
-                               FontSize="12"
-                               Foreground="{DynamicResource MutedBrush}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,16"/>
-
-                    <TextBlock Text="Quick Preset Reasons:"
-                               FontFamily="IBM Plex Mono, Consolas"
-                               FontSize="10"
-                               FontWeight="Bold"
-                               Foreground="{DynamicResource MutedBrush}"
-                               Margin="0,0,0,6"/>
-                    <WrapPanel Margin="0,0,0,14">
-                        <Button x:Name="BtnPresetBlurry"
-                                Content="Blurry Receipt"
-                                Style="{DynamicResource BtnSecondary}"
-                                Padding="8,4"
-                                FontSize="11"
-                                Margin="0,0,6,6"/>
-                        <Button x:Name="BtnPresetWrongCourse"
-                                Content="Wrong Course Name"
-                                Style="{DynamicResource BtnSecondary}"
-                                Padding="8,4"
-                                FontSize="11"
-                                Margin="0,0,6,6"/>
-                        <Button x:Name="BtnPresetDriveAccess"
-                                Content="Drive Access Denied"
-                                Style="{DynamicResource BtnSecondary}"
-                                Padding="8,4"
-                                FontSize="11"
-                                Margin="0,0,6,6"/>
-                        <Button x:Name="BtnPresetFeeIncomplete"
-                                Content="Fee Incomplete"
-                                Style="{DynamicResource BtnSecondary}"
-                                Padding="8,4"
-                                FontSize="11"
-                                Margin="0,0,6,6"/>
-                    </WrapPanel>
-
-                    <TextBlock Text="Coordinator Note / Instructions:"
-                               FontFamily="IBM Plex Mono, Consolas"
-                               FontSize="10"
-                               FontWeight="Bold"
-                               Foreground="{DynamicResource MutedBrush}"
-                               Margin="0,0,0,6"/>
-                    <TextBox x:Name="TxtResubmitReason"
-                             Style="{DynamicResource InputDark}"
-                             Height="75"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto"
-                             Margin="0,0,0,20"/>
-
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="BtnCancelFlagModal"
-                                Content="Cancel"
-                                Style="{DynamicResource BtnSecondary}"
-                                Padding="14,8"
-                                Margin="0,0,10,0"/>
-                        <Button x:Name="BtnConfirmFlagModal"
-                                Content="Flag Student"
-                                Style="{DynamicResource BtnPrimary}"
-                                Background="{DynamicResource DangerBrush}"
-                                Padding="16,8"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
         </Grid>
     </Grid>
 </UserControl>

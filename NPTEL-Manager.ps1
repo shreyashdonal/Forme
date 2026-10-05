@@ -1107,6 +1107,20 @@ function Update-ReviewView {
         }
     }
 
+    # 5b. Notify Flagged Students Action Button
+    $btnNotify = $rv.FindName("BtnNotifyFlaggedStudents")
+    if ($btnNotify) {
+        $mailIcon = [char]0x2709
+        if ($pendingCount -gt 0) {
+            $plural = if ($pendingCount -eq 1) { "1 Student" } else { "$pendingCount Students" }
+            $btnNotify.Content = "$mailIcon Send Email to Flagged ($plural)"
+            $btnNotify.IsEnabled = $true
+        } else {
+            $btnNotify.Content = "$mailIcon Send Email to Flagged Students"
+            $btnNotify.IsEnabled = $false
+        }
+    }
+
     # 6. Populate Review Rows Table
     $hostPanel = $rv.FindName("ReviewRowsHost")
     $emptyNotice = $rv.FindName("ReviewEmptyStateNotice")
@@ -1512,8 +1526,6 @@ function Show-StudentReviewDetails {
     if ($btnDownload) { $btnDownload.Tag = $Student }
     $btnApprove = $rv.FindName("BtnApproveOverride")
     if ($btnApprove) { $btnApprove.Tag = $Student }
-    $btnFlag = $rv.FindName("BtnFlagResubmit")
-    if ($btnFlag) { $btnFlag.Tag = $Student }
     $btnAttach = $rv.FindName("BtnAttachLocalReceipt")
     if ($btnAttach) { $btnAttach.Tag = $Student }
 
@@ -1628,6 +1640,422 @@ function Open-ReviewView {
     }
     Update-ReviewView -Course $script:activeCourse
     Navigate-To "ReviewView"
+}
+
+# =====================================================================
+# Branch 4: Email Management Center Helpers
+# =====================================================================
+$script:emailCurrentTemplate = "StandardTemplate"
+
+function Open-EmailView {
+    if (-not $script:activeCourse) { return }
+    $null = Get-OrCreateView "EmailView"
+    Update-EmailView -Course $script:activeCourse
+    Navigate-To "EmailView"
+}
+
+function Get-SelectedStudents {
+    $selected = [System.Collections.Generic.List[PSCustomObject]]::new()
+    $ev = if ($script:views) { $script:views["EmailView"] } else { $null }
+    if (-not $ev) { return $selected }
+
+    $hostP = $ev.FindName("EmailRecipientsHost")
+    if (-not $hostP) { return $selected }
+
+    foreach ($card in $hostP.Children) {
+        $grid = $card.Child
+        if ($grid -and $grid.Children.Count -gt 0) {
+            $chk = $grid.Children[0]
+            if ($chk -is [System.Windows.Controls.CheckBox] -and $chk.IsChecked -eq $true) {
+                $st = $chk.Tag
+                if ($st) {
+                    $selected.Add($st)
+                }
+            }
+        }
+    }
+    return $selected
+}
+
+function Get-SelectedEmailRecipients {
+    $emails = [System.Collections.Generic.List[string]]::new()
+    $selected = Get-SelectedStudents
+    foreach ($st in $selected) {
+        if ($st.Email -and [string]$st.Email.Trim()) {
+            $emails.Add([string]$st.Email.Trim())
+        }
+    }
+    return $emails
+}
+
+function Update-EmailSelectionMetrics {
+    $ev = if ($script:views) { $script:views["EmailView"] } else { $null }
+    if (-not $ev) { return }
+
+    $emails = Get-SelectedEmailRecipients
+    $txtBadge = $ev.FindName("TxtEmailHeaderBadge")
+    if ($txtBadge) {
+        $count = $emails.Count
+        $plural = if ($count -eq 1) { "1 Selected" } else { "$count Selected" }
+        $txtBadge.Text = $plural
+    }
+
+    $btnLaunch = $ev.FindName("BtnLaunchGmailDraft")
+    $btnCopyBcc = $ev.FindName("BtnCopyBccEmails")
+    $hasSelected = ($emails.Count -gt 0)
+    if ($btnLaunch) { $btnLaunch.IsEnabled = $hasSelected }
+    if ($btnCopyBcc) { $btnCopyBcc.IsEnabled = $hasSelected }
+}
+
+function Update-EmailComposerPreview {
+    $ev = if ($script:views) { $script:views["EmailView"] } else { $null }
+    if (-not $ev -or -not $script:activeCourse) { return }
+
+    $cName = if ($script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "NPTEL Course" }
+    $cDept = if ($script:activeCourse.Department) { [string]$script:activeCourse.Department } else { "" }
+    $cSem  = if ($script:activeCourse.Semester) { [string]$script:activeCourse.Semester } else { "" }
+
+    $deptStr = if ($cDept) { "$cDept Department" } else { "Department Coordinator" }
+    $semStr  = if ($cSem) { " - Semester $cSem" } else { "" }
+
+    $txtSubject = $ev.FindName("TxtEmailSubject")
+    $txtBody = $ev.FindName("TxtEmailBodyPreview")
+    $tpl = if ($script:emailCurrentTemplate) { $script:emailCurrentTemplate } else { "StandardTemplate" }
+
+    switch ($tpl) {
+        "CustomDraft" {
+            if ($txtSubject) {
+                $txtSubject.Text = "[URGENT] Notice Regarding NPTEL Examination Verification - $cName"
+            }
+            if ($txtBody) {
+                $txtBody.Text = "Dear Students,`n`nThis is an official notice regarding your NPTEL exam registration for course `"$cName`".`n`n[Type your custom instructions, Google Form resubmission link, or lab verification schedule here]`n`nDEADLINE:`nPlease complete the required action within 48 hours of this notice.`n`nRegards,`nNPTEL Local Chapter / Course Coordinator`n$deptStr$semStr"
+            }
+        }
+        default {
+            # Standard Rule-Based Template (5 Rules Checklist & Resubmission Guidelines)
+            if ($txtSubject) {
+                $txtSubject.Text = "[ACTION REQUIRED] NPTEL Exam Registration Receipt Verification Failed - $cName"
+            }
+            if ($txtBody) {
+                $txtBody.Text = "Dear Student,`n`nDuring the institutional verification of NPTEL exam registrations for course `"$cName`", your submitted proof of registration could not be verified and has been marked as UNDER REVIEW.`n`nTo ensure your examination registration is approved and credited by the college, you are required to resubmit a valid, official payment receipt that satisfies ALL of the following criteria:`n`nMANDATORY RECEIPT REQUIREMENTS:`n1. Payment Status: Must clearly show `"Payment Successful`" or `"Transaction Complete`".`n2. Fee Amount: Must clearly display Rs. 1,000 (or Rs. 500 for approved SC/ST/PwD concession).`n3. Course Title: Must match `"$cName`" exactly.`n4. Platform Authenticity: Must be an official NPTEL / SWAYAM / Razorpay generated receipt (UPI debit SMS or banking app screenshots are NOT accepted).`n5. Student Identity: Must clearly show your Name, Roll Number, or Application Number matching college records.`n`nCOMMON REASONS FOR REJECTION:`n- Uploading course enrollment screenshot instead of exam registration payment receipt.`n- UPI / Google Pay / PhonePe transaction debit screenshot without course details.`n- Receipt of a different course or incomplete cropped screenshot.`n- Drive link permission set to `"Restricted`" / Access Denied.`n`nHOW TO RESUBMIT:`nPlease reply directly to this email with a clear PDF or readable image of your official receipt, or submit it to your departmental coordinator.`n`nDEADLINE FOR RESUBMISSION:`nWithin 48 hours of this notice. Failure to resubmit will result in your registration remaining unverified.`n`nRegards,`nNPTEL Local Chapter / Course Coordinator`n$deptStr$semStr"
+            }
+        }
+    }
+}
+
+function Set-EmailTemplate {
+    param([string]$TplName)
+    $script:emailCurrentTemplate = $TplName
+    $ev = if ($script:views) { $script:views["EmailView"] } else { $null }
+    if (-not $ev) { return }
+
+    $bStandard = $ev.FindName("BtnTplStandardRuleNotice")
+    $bCustom   = $ev.FindName("BtnTplCustomDraft")
+
+    $actStyle = [System.Windows.Application]::Current.FindResource("BtnNavActive")
+    $defStyle = [System.Windows.Application]::Current.FindResource("BtnNav")
+
+    if ($bStandard) { $bStandard.Style = if ($TplName -eq "StandardTemplate") { $actStyle } else { $defStyle } }
+    if ($bCustom)   { $bCustom.Style   = if ($TplName -eq "CustomDraft")      { $actStyle } else { $defStyle } }
+
+    Update-EmailComposerPreview
+}
+
+function Mark-SelectedStudentsNotified {
+    param($SelectedStudents)
+    if (-not $SelectedStudents -or $SelectedStudents.Count -eq 0 -or -not $script:activeCourse) { return }
+
+    $cName = if ($script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "Course" }
+    $store = Get-CourseStudentStore -CourseId $script:activeCourse.Id -RegistrationSheet $script:activeCourse.RegistrationSheet -CourseName $cName
+    $students = [System.Collections.ArrayList]@($store.Students)
+
+    $nowStr = (Get-Date).ToString("yyyy-MM-dd HH:mm")
+    $matched = 0
+
+    # Build unique lookup keys for selected students using RollNo (or Email fallback)
+    $selectedRolls = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $selectedEmails = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($sel in $SelectedStudents) {
+        if ($sel -is [string]) {
+            # Backward compatibility if an email string was passed
+            $null = $selectedEmails.Add($sel.Trim())
+        } else {
+            if ($sel.RollNo -and [string]$sel.RollNo.Trim()) {
+                $null = $selectedRolls.Add([string]$sel.RollNo.Trim())
+            } elseif ($sel.Email -and [string]$sel.Email.Trim()) {
+                $null = $selectedEmails.Add([string]$sel.Email.Trim())
+            }
+        }
+    }
+
+    foreach ($s in $students) {
+        # Only mark students who are actually Under Review (flagged)
+        if ($s.VerificationStatus -ne "Under Review") { continue }
+
+        $match = $false
+        if ($s.RollNo -and [string]$s.RollNo.Trim() -and $selectedRolls.Contains([string]$s.RollNo.Trim())) {
+            $match = $true
+        } elseif ($s.Email -and [string]$s.Email.Trim() -and $selectedEmails.Contains([string]$s.Email.Trim())) {
+            $match = $true
+        }
+
+        if ($match) {
+            $s | Add-Member -NotePropertyName "Notified" -NotePropertyValue $true -Force
+            $s | Add-Member -NotePropertyName "NotifiedTimestamp" -NotePropertyValue $nowStr -Force
+            $matched++
+        }
+    }
+
+    if ($matched -gt 0) {
+        Save-CourseStudents -CourseId $script:activeCourse.Id -Students $students -ColumnMap $store.ColumnMap -CourseName $cName
+        Update-EmailView -Course $script:activeCourse
+    }
+    return $matched
+}
+
+function Unmark-SelectedStudentsNotified {
+    param($SelectedStudents)
+    if (-not $SelectedStudents -or $SelectedStudents.Count -eq 0 -or -not $script:activeCourse) { return 0 }
+
+    $cName = if ($script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "Course" }
+    $store = Get-CourseStudentStore -CourseId $script:activeCourse.Id -RegistrationSheet $script:activeCourse.RegistrationSheet -CourseName $cName
+    $students = [System.Collections.ArrayList]@($store.Students)
+
+    $matched = 0
+
+    # Build unique lookup keys for selected students using RollNo (or Email fallback)
+    $selectedRolls = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $selectedEmails = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($sel in $SelectedStudents) {
+        if ($sel -is [string]) {
+            $null = $selectedEmails.Add($sel.Trim())
+        } else {
+            if ($sel.RollNo -and [string]$sel.RollNo.Trim()) {
+                $null = $selectedRolls.Add([string]$sel.RollNo.Trim())
+            } elseif ($sel.Email -and [string]$sel.Email.Trim()) {
+                $null = $selectedEmails.Add([string]$sel.Email.Trim())
+            }
+        }
+    }
+
+    foreach ($s in $students) {
+        if ($s.VerificationStatus -ne "Under Review") { continue }
+
+        $match = $false
+        if ($s.RollNo -and [string]$s.RollNo.Trim() -and $selectedRolls.Contains([string]$s.RollNo.Trim())) {
+            $match = $true
+        } elseif ($s.Email -and [string]$s.Email.Trim() -and $selectedEmails.Contains([string]$s.Email.Trim())) {
+            $match = $true
+        }
+
+        if ($match) {
+            $s | Add-Member -NotePropertyName "Notified" -NotePropertyValue $false -Force
+            $s | Add-Member -NotePropertyName "NotifiedTimestamp" -NotePropertyValue $null -Force
+            $matched++
+        }
+    }
+
+    if ($matched -gt 0) {
+        Save-CourseStudents -CourseId $script:activeCourse.Id -Students $students -ColumnMap $store.ColumnMap -CourseName $cName
+        Update-EmailView -Course $script:activeCourse
+    }
+    return $matched
+}
+
+function Update-EmailView {
+    param(
+        $Course = $script:activeCourse
+    )
+    if (-not $Course) { $Course = $script:activeCourse }
+    if (-not $Course) { return }
+
+    $ev = Get-OrCreateView "EmailView"
+    if (-not $ev) { return }
+
+    $cName = if ($Course.Name) { [string]$Course.Name } else { "Untitled Course" }
+    $cCode = if ($Course.Code) { [string]$Course.Code } else { "" }
+
+    # 1. Breadcrumb
+    $txtBreadcrumb = $ev.FindName("TxtEmailBreadcrumb")
+    if ($txtBreadcrumb) {
+        $codeStr = if ($cCode) { " ($cCode)" } else { "" }
+        $upperName = $cName.ToUpper()
+        $txtBreadcrumb.Text = "COURSES > $upperName$codeStr > EMAIL OUTREACH"
+    }
+
+    # 2. Retrieve store & students
+    $store = Get-CourseStudentStore -CourseId $Course.Id -RegistrationSheet $Course.RegistrationSheet -CourseName $Course.Name
+    $allStudents = @($store.Students)
+    $flagged = @($allStudents | Where-Object { $_.VerificationStatus -eq "Under Review" })
+
+    # 3. Mini Dashboard Metrics
+    $txtQueued = $ev.FindName("TxtEmailQueuedCount")
+    $txtNotified = $ev.FindName("TxtEmailNotifiedCount")
+    $txtSummary = $ev.FindName("TxtEmailIssuesSummary")
+
+    $notifiedCount = @($flagged | Where-Object { $_.Notified -eq $true }).Count
+    if ($txtQueued) { $txtQueued.Text = $flagged.Count.ToString() }
+    if ($txtNotified) { $txtNotified.Text = $notifiedCount.ToString() }
+
+    # Summarize discrepancies
+    $missingReceiptCount = @($flagged | Where-Object {
+        $r = [string]$_.VerificationRemarks
+        $r -like "*Missing*" -or $r -like "*No proof*" -or $r -like "*Not Found*" -or -not $_.ProofUrl
+    }).Count
+    $feeMismatchCount = @($flagged | Where-Object {
+        $r = [string]$_.VerificationRemarks
+        $r -like "*Fee*" -or $r -like "*Amount*" -or $r -like "*₹*"
+    }).Count
+
+    if ($txtSummary) {
+        $bullet = [char]0x2022
+        if ($flagged.Count -eq 0) {
+            $txtSummary.Text = "No issues detected"
+        } else {
+            $txtSummary.Text = "$missingReceiptCount Missing Receipt $bullet $feeMismatchCount Fee Discrepancy"
+        }
+    }
+
+    # 4. Populate Recipient List
+    $hostPanel = $ev.FindName("EmailRecipientsHost")
+    $emptyNotice = $ev.FindName("EmailEmptyStateNotice")
+
+    if ($hostPanel) {
+        $hostPanel.Children.Clear()
+
+        if ($flagged.Count -gt 0) {
+            if ($emptyNotice) { $emptyNotice.Visibility = [System.Windows.Visibility]::Collapsed }
+
+            $panelBrush = [System.Windows.Application]::Current.FindResource("Panel2Brush")
+            $borderBrush = [System.Windows.Application]::Current.FindResource("BorderBrush")
+            $textBrush = [System.Windows.Application]::Current.FindResource("TextBrush")
+            $mutedBrush = [System.Windows.Application]::Current.FindResource("MutedBrush")
+            $dangerBrush = [System.Windows.Application]::Current.FindResource("DangerBrush")
+            $sageBrush = [System.Windows.Application]::Current.FindResource("SageBrush")
+            $dangerTint = [System.Windows.Application]::Current.FindResource("DangerTintBrush")
+            $sageTint = [System.Windows.Application]::Current.FindResource("SageTintBrush")
+
+            foreach ($st in $flagged) {
+                $card = New-Object System.Windows.Controls.Border
+                $card.Background = $panelBrush
+                $card.BorderBrush = $borderBrush
+                $card.BorderThickness = New-Object System.Windows.Thickness(1)
+                $card.CornerRadius = New-Object System.Windows.CornerRadius(6)
+                $card.Padding = New-Object System.Windows.Thickness(12, 10, 12, 10)
+                $card.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+
+                $rowGrid = New-Object System.Windows.Controls.Grid
+                $col0 = New-Object System.Windows.Controls.ColumnDefinition
+                $col0.Width = New-Object System.Windows.GridLength(28, [System.Windows.GridUnitType]::Pixel)
+                $col1 = New-Object System.Windows.Controls.ColumnDefinition
+                $col1.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+                $null = $rowGrid.ColumnDefinitions.Add($col0)
+                $null = $rowGrid.ColumnDefinitions.Add($col1)
+
+                # Checkbox
+                $chk = New-Object System.Windows.Controls.CheckBox
+                $chk.IsChecked = $true
+                $chk.VerticalAlignment = [System.Windows.VerticalAlignment]::Top
+                $chk.Margin = New-Object System.Windows.Thickness(0, 3, 0, 0)
+                $chk.Tag = $st
+                $chk.Add_Checked({ Update-EmailSelectionMetrics })
+                $chk.Add_Unchecked({ Update-EmailSelectionMetrics })
+                [System.Windows.Controls.Grid]::SetColumn($chk, 0)
+                $null = $rowGrid.Children.Add($chk)
+
+                # Details Stack
+                $detailStack = New-Object System.Windows.Controls.StackPanel
+                [System.Windows.Controls.Grid]::SetColumn($detailStack, 1)
+
+                # Name & Roll
+                $nameGrid = New-Object System.Windows.Controls.Grid
+                $cLeft = New-Object System.Windows.Controls.ColumnDefinition
+                $cLeft.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+                $cRight = New-Object System.Windows.Controls.ColumnDefinition
+                $cRight.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Auto)
+                $null = $nameGrid.ColumnDefinitions.Add($cLeft)
+                $null = $nameGrid.ColumnDefinitions.Add($cRight)
+
+                $stName = if ($st.Name) { [string]$st.Name } else { "Unnamed Student" }
+                $stRoll = if ($st.RollNo) { [string]$st.RollNo } else { "-" }
+
+                $txtName = New-Object System.Windows.Controls.TextBlock
+                $txtName.Text = $stName
+                $txtName.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $txtName.FontSize = 13
+                $txtName.Foreground = $textBrush
+                [System.Windows.Controls.Grid]::SetColumn($txtName, 0)
+                $null = $nameGrid.Children.Add($txtName)
+
+                $txtRoll = New-Object System.Windows.Controls.TextBlock
+                $txtRoll.Text = $stRoll
+                $txtRoll.FontFamily = New-Object System.Windows.Media.FontFamily("IBM Plex Mono, Consolas")
+                $txtRoll.FontSize = 11
+                $txtRoll.Foreground = $mutedBrush
+                [System.Windows.Controls.Grid]::SetColumn($txtRoll, 1)
+                $null = $nameGrid.Children.Add($txtRoll)
+                $null = $detailStack.Children.Add($nameGrid)
+
+                # Email
+                $stEmail = if ($st.Email) { [string]$st.Email } else { "No email listed" }
+                $txtEmail = New-Object System.Windows.Controls.TextBlock
+                $txtEmail.Text = $stEmail
+                $txtEmail.FontFamily = New-Object System.Windows.Media.FontFamily("IBM Plex Mono, Consolas")
+                $txtEmail.FontSize = 11
+                $txtEmail.Foreground = $mutedBrush
+                $txtEmail.Margin = New-Object System.Windows.Thickness(0, 2, 0, 4)
+                $null = $detailStack.Children.Add($txtEmail)
+
+                # Remarks / Discrepancy Pill
+                $remarks = if ($st.VerificationRemarks) { [string]$st.VerificationRemarks } else { "Flagged under review" }
+                $pillBorder = New-Object System.Windows.Controls.Border
+                $pillBorder.Background = $dangerTint
+                $pillBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
+                $pillBorder.Padding = New-Object System.Windows.Thickness(6, 2, 6, 2)
+                $pillBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+                $pillBorder.Margin = New-Object System.Windows.Thickness(0, 0, 0, 4)
+
+                $txtPill = New-Object System.Windows.Controls.TextBlock
+                $txtPill.Text = $remarks
+                $txtPill.FontSize = 10
+                $txtPill.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $txtPill.Foreground = $dangerBrush
+                $pillBorder.Child = $txtPill
+                $null = $detailStack.Children.Add($pillBorder)
+
+                # Notification Status indicator
+                if ($st.Notified -eq $true) {
+                    $notifPill = New-Object System.Windows.Controls.Border
+                    $notifPill.Background = $sageTint
+                    $notifPill.CornerRadius = New-Object System.Windows.CornerRadius(4)
+                    $notifPill.Padding = New-Object System.Windows.Thickness(6, 2, 6, 2)
+                    $notifPill.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+
+                    $checkIcon = [char]0x2713
+                    $txtNotif = New-Object System.Windows.Controls.TextBlock
+                    $timeStr = if ($st.NotifiedTimestamp) { " ($($st.NotifiedTimestamp))" } else { "" }
+                    $txtNotif.Text = "$checkIcon Notified$timeStr"
+                    $txtNotif.FontSize = 10
+                    $txtNotif.FontWeight = [System.Windows.FontWeights]::SemiBold
+                    $txtNotif.Foreground = $sageBrush
+                    $notifPill.Child = $txtNotif
+                    $null = $detailStack.Children.Add($notifPill)
+                }
+
+                $null = $rowGrid.Children.Add($detailStack)
+                $card.Child = $rowGrid
+                $null = $hostPanel.Children.Add($card)
+            }
+        } else {
+            if ($emptyNotice) { $emptyNotice.Visibility = [System.Windows.Visibility]::Visible }
+        }
+    }
+
+    # 5. Refresh composer preview & selection metrics
+    Set-EmailTemplate $script:emailCurrentTemplate
+    Update-EmailSelectionMetrics
 }
 
 # Dynamic Pipeline Progress State Manager (Script Scope)
@@ -2865,6 +3293,15 @@ function Wire-ViewEvents {
                 })
             }
 
+            # Send Email to Flagged Students -> Open Email Management Center
+            $btnNotifyFlagged = $viewObj.FindName("BtnNotifyFlaggedStudents")
+            if ($btnNotifyFlagged) {
+                $btnNotifyFlagged.Add_Click({
+                    if (-not $script:activeCourse) { return }
+                    Open-EmailView
+                })
+            }
+
             # Open Drive Link in Default Browser
             $btnDrive = $viewObj.FindName("BtnOpenDriveLink")
             if ($btnDrive) {
@@ -3029,138 +3466,6 @@ function Wire-ViewEvents {
                         Update-ReviewView -Course $script:activeCourse
                     } else {
                         Show-StudentReviewDetails -Student $st
-                    }
-                })
-            }
-
-            # Coordinator Action: Flag for Resubmit (Show Modal)
-            $btnFlag = $viewObj.FindName("BtnFlagResubmit")
-            if ($btnFlag) {
-                $btnFlag.Add_Click({
-                    $rv = $script:views["ReviewView"]
-                    $ws = if ($rv) { $rv.FindName("ReviewWorkspaceGrid") } else { $null }
-                    $st = if ($ws) { $ws.Tag } else { $null }
-                    if (-not $st) { return }
-
-                    $modal = if ($rv) { $rv.FindName("ModalFlagResubmit") } else { $null }
-                    $txtReason = if ($rv) { $rv.FindName("TxtResubmitReason") } else { $null }
-                    if ($modal) {
-                        $modal.Tag = $st
-                        if ($txtReason) { $txtReason.Text = "" }
-                        $modal.Visibility = [System.Windows.Visibility]::Visible
-                    }
-                })
-            }
-
-            # Modal Preset Quick Buttons
-            $btnPresetBlurry = $viewObj.FindName("BtnPresetBlurry")
-            if ($btnPresetBlurry) {
-                $btnPresetBlurry.Add_Click({
-                    $rv = $script:views["ReviewView"]
-                    $txt = if ($rv) { $rv.FindName("TxtResubmitReason") } else { $null }
-                    if ($txt) { $txt.Text = "Receipt image is blurry or unreadable. Please upload a clear photo/PDF of your payment receipt." }
-                })
-            }
-
-            $btnPresetCourse = $viewObj.FindName("BtnPresetWrongCourse")
-            if ($btnPresetCourse) {
-                $btnPresetCourse.Add_Click({
-                    $rv = $script:views["ReviewView"]
-                    $txt = if ($rv) { $rv.FindName("TxtResubmitReason") } else { $null }
-                    if ($txt) { $txt.Text = "Payment receipt course title does not match your enrolled course. Please upload the receipt for this specific course." }
-                })
-            }
-
-            $btnPresetDrive = $viewObj.FindName("BtnPresetDriveAccess")
-            if ($btnPresetDrive) {
-                $btnPresetDrive.Add_Click({
-                    $rv = $script:views["ReviewView"]
-                    $txt = if ($rv) { $rv.FindName("TxtResubmitReason") } else { $null }
-                    if ($txt) { $txt.Text = "Google Drive access is restricted (403 Forbidden). Please set link sharing to 'Anyone with the link can view'." }
-                })
-            }
-
-            $btnPresetFee = $viewObj.FindName("BtnPresetFeeIncomplete")
-            if ($btnPresetFee) {
-                $btnPresetFee.Add_Click({
-                    $rv = $script:views["ReviewView"]
-                    $txt = if ($rv) { $rv.FindName("TxtResubmitReason") } else { $null }
-                    if ($txt) { $txt.Text = "Receipt does not show the standard NPTEL exam fee (Rs 1,000 / Rs 1,100) or payment confirmation is missing." }
-                })
-            }
-
-            # Modal Cancel Button
-            $btnCancelModal = $viewObj.FindName("BtnCancelFlagModal")
-            if ($btnCancelModal) {
-                $btnCancelModal.Add_Click({
-                    $rv = $script:views["ReviewView"]
-                    $modal = if ($rv) { $rv.FindName("ModalFlagResubmit") } else { $null }
-                    if ($modal) { $modal.Visibility = [System.Windows.Visibility]::Collapsed }
-                })
-            }
-
-            # Modal Confirm Flag Button
-            $btnConfirmModal = $viewObj.FindName("BtnConfirmFlagModal")
-            if ($btnConfirmModal) {
-                $btnConfirmModal.Add_Click({
-                    $rv = $script:views["ReviewView"]
-                    $modal = if ($rv) { $rv.FindName("ModalFlagResubmit") } else { $null }
-                    $txtReason = if ($rv) { $rv.FindName("TxtResubmitReason") } else { $null }
-                    $st = if ($modal) { $modal.Tag } else { $null }
-
-                    if (-not $st -or -not $script:activeCourse) {
-                        if ($modal) { $modal.Visibility = [System.Windows.Visibility]::Collapsed }
-                        return
-                    }
-
-                    $reason = if ($txtReason -and $txtReason.Text.Trim()) { $txtReason.Text.Trim() } else { "Resubmission requested by coordinator" }
-
-                    try {
-                        $cName = if ($script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "Default" }
-                        $store = Get-CourseStudentStore -CourseId $script:activeCourse.Id -RegistrationSheet $script:activeCourse.RegistrationSheet -CourseName $cName
-                        $students = [System.Collections.ArrayList]@($store.Students)
-
-                        $matched = $null
-                        foreach ($s in $students) {
-                            if ($st.RollNo -and $s.RollNo -and ($s.RollNo.Trim().ToLower() -eq $st.RollNo.Trim().ToLower())) {
-                                $matched = $s
-                                break
-                            } elseif ($st.Email -and $s.Email -and ($s.Email.Trim().ToLower() -eq $st.Email.Trim().ToLower())) {
-                                $matched = $s
-                                break
-                            }
-                        }
-
-                        $note = "Resubmission Requested: $reason"
-                        if ($matched) {
-                            $matched.VerificationStatus = "Under Review"
-                            $matched.VerificationRemarks = $note
-                        }
-                        $st.VerificationStatus = "Under Review"
-                        $st.VerificationRemarks = $note
-
-                        Save-CourseStudents -CourseId $script:activeCourse.Id -Students $students -ColumnMap $store.ColumnMap -CourseName $cName
-                        Export-CourseVerificationSheetData -Course $script:activeCourse -Students $students
-
-                        if ($modal) { $modal.Visibility = [System.Windows.Visibility]::Collapsed }
-
-                        Show-StudentReviewDetails -Student $st
-                        Update-ReviewView
-
-                        $stName = if ($st.Name) { [string]$st.Name } else { "Student" }
-                        [System.Windows.MessageBox]::Show(
-                            "'$stName' flagged for resubmission.`n`nRemarks: $note",
-                            "Flagged for Resubmission",
-                            [System.Windows.MessageBoxButton]::OK,
-                            [System.Windows.MessageBoxImage]::Information
-                        )
-                    } catch {
-                        [System.Windows.MessageBox]::Show(
-                            "Failed to flag student:`n$($_.Exception.Message)",
-                            "Error",
-                            [System.Windows.MessageBoxButton]::OK,
-                            [System.Windows.MessageBoxImage]::Error
-                        )
                     }
                 })
             }
@@ -3400,6 +3705,217 @@ function Wire-ViewEvents {
                 })
             }
         }
+
+        "EmailView" {
+            # 1. Back button -> Return to ReviewView
+            $btnBack = $viewObj.FindName("BtnBackToReview")
+            if ($btnBack) {
+                $btnBack.Add_Click({
+                    if ($script:activeCourse) {
+                        Open-ReviewView
+                    } else {
+                        Navigate-To "CoursesView"
+                    }
+                })
+            }
+
+            # 2. Function Switcher (Standard Rule Template vs Custom Draft Mail)
+            $btnTplStandard = $viewObj.FindName("BtnTplStandardRuleNotice")
+            $btnTplCustom   = $viewObj.FindName("BtnTplCustomDraft")
+
+            if ($btnTplStandard) { $btnTplStandard.Add_Click({ Set-EmailTemplate "StandardTemplate" }) }
+            if ($btnTplCustom)   { $btnTplCustom.Add_Click({ Set-EmailTemplate "CustomDraft" }) }
+
+            # 3. Select All / Clear All
+            $btnSelectAll = $viewObj.FindName("BtnSelectAllRecipients")
+            if ($btnSelectAll) {
+                $btnSelectAll.Add_Click({
+                    $ev = $script:views["EmailView"]
+                    if (-not $ev) { return }
+                    $hostP = $ev.FindName("EmailRecipientsHost")
+                    if (-not $hostP) { return }
+                    foreach ($child in $hostP.Children) {
+                        $grid = $child.Child
+                        if ($grid -and $grid.Children.Count -gt 0) {
+                            $chk = $grid.Children[0]
+                            if ($chk -is [System.Windows.Controls.CheckBox]) {
+                                $chk.IsChecked = $true
+                            }
+                        }
+                    }
+                    Update-EmailSelectionMetrics
+                })
+            }
+
+            $btnDeselectAll = $viewObj.FindName("BtnDeselectAllRecipients")
+            if ($btnDeselectAll) {
+                $btnDeselectAll.Add_Click({
+                    $ev = $script:views["EmailView"]
+                    if (-not $ev) { return }
+                    $hostP = $ev.FindName("EmailRecipientsHost")
+                    if (-not $hostP) { return }
+                    foreach ($child in $hostP.Children) {
+                        $grid = $child.Child
+                        if ($grid -and $grid.Children.Count -gt 0) {
+                            $chk = $grid.Children[0]
+                            if ($chk -is [System.Windows.Controls.CheckBox]) {
+                                $chk.IsChecked = $false
+                            }
+                        }
+                    }
+                    Update-EmailSelectionMetrics
+                })
+            }
+
+            # 3b. Manual Delivery Status Actions (Mark Notified / Unmark)
+            $btnMarkNotified = $viewObj.FindName("BtnMarkSelectedNotified")
+            if ($btnMarkNotified) {
+                $btnMarkNotified.Add_Click({
+                    $selectedStudents = Get-SelectedStudents
+                    if ($selectedStudents.Count -eq 0) {
+                        [System.Windows.MessageBox]::Show(
+                            "No students selected. Please check at least one student in the roster.",
+                            "No Selection",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                        return
+                    }
+                    $count = Mark-SelectedStudentsNotified -SelectedStudents $selectedStudents
+                    [System.Windows.MessageBox]::Show(
+                        "Successfully marked $count student(s) as Notified.`n`nStatus badges and dashboard metrics have been updated.",
+                        "Status Updated",
+                        [System.Windows.MessageBoxButton]::OK,
+                        [System.Windows.MessageBoxImage]::Information
+                    )
+                })
+            }
+
+            $btnUnmarkNotified = $viewObj.FindName("BtnUnmarkSelectedNotified")
+            if ($btnUnmarkNotified) {
+                $btnUnmarkNotified.Add_Click({
+                    $selectedStudents = Get-SelectedStudents
+                    if ($selectedStudents.Count -eq 0) {
+                        [System.Windows.MessageBox]::Show(
+                            "No students selected. Please check at least one student in the roster.",
+                            "No Selection",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                        return
+                    }
+                    $count = Unmark-SelectedStudentsNotified -SelectedStudents $selectedStudents
+                    [System.Windows.MessageBox]::Show(
+                        "Reset notification status for $count student(s).`n`nStatus badges and dashboard metrics have been updated.",
+                        "Status Reset",
+                        [System.Windows.MessageBoxButton]::OK,
+                        [System.Windows.MessageBoxImage]::Information
+                    )
+                })
+            }
+
+            # 4. Copy Notice Text (for WhatsApp/Telegram)
+            $btnCopyNotice = $viewObj.FindName("BtnCopyNoticeText")
+            if ($btnCopyNotice) {
+                $btnCopyNotice.Add_Click({
+                    $ev = $script:views["EmailView"]
+                    if (-not $ev) { return }
+                    $txtBody = $ev.FindName("TxtEmailBodyPreview")
+                    if ($txtBody -and $txtBody.Text) {
+                        try {
+                            [System.Windows.Clipboard]::SetText($txtBody.Text)
+                            [System.Windows.MessageBox]::Show(
+                                "Notice text copied to clipboard!`n`nYou can paste it directly into WhatsApp, Telegram, or email announcements.",
+                                "Notice Copied",
+                                [System.Windows.MessageBoxButton]::OK,
+                                [System.Windows.MessageBoxImage]::Information
+                            )
+                        } catch {
+                            [System.Windows.MessageBox]::Show("Failed to copy text: $($_.Exception.Message)", "Clipboard Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                        }
+                    }
+                })
+            }
+
+            # 5. Copy BCC Emails
+            $btnCopyBcc = $viewObj.FindName("BtnCopyBccEmails")
+            if ($btnCopyBcc) {
+                $btnCopyBcc.Add_Click({
+                    $emails = Get-SelectedEmailRecipients
+                    if ($emails.Count -eq 0) {
+                        [System.Windows.MessageBox]::Show("No recipients selected. Please check at least one student in the roster.", "No Recipients Selected", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                        return
+                    }
+                    try {
+                        $bccStr = ($emails | Select-Object -Unique) -join ", "
+                        [System.Windows.Clipboard]::SetText($bccStr)
+                        [System.Windows.MessageBox]::Show(
+                            "Copied $($emails.Count) student email address(es) to clipboard!`n`nPaste into the BCC line of your email client to notify all flagged students at once while protecting their privacy.",
+                            "BCC Emails Copied",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Information
+                        )
+                    } catch {
+                        [System.Windows.MessageBox]::Show("Failed to copy emails: $($_.Exception.Message)", "Clipboard Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                    }
+                })
+            }
+
+            # 6. Open in Gmail (Web Draft)
+            $btnLaunchGmail = $viewObj.FindName("BtnLaunchGmailDraft")
+            if ($btnLaunchGmail) {
+                $btnLaunchGmail.Add_Click({
+                    $selectedStudents = Get-SelectedStudents
+                    if ($selectedStudents.Count -eq 0) {
+                        [System.Windows.MessageBox]::Show("No recipients selected. Please check at least one student in the roster.", "No Recipients Selected", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                        return
+                    }
+
+                    $emails = [System.Collections.Generic.List[string]]::new()
+                    foreach ($st in $selectedStudents) {
+                        if ($st.Email -and [string]$st.Email.Trim()) {
+                            $emails.Add([string]$st.Email.Trim())
+                        }
+                    }
+
+                    if ($emails.Count -eq 0) {
+                        [System.Windows.MessageBox]::Show("Selected students have no email addresses listed.", "Missing Emails", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                        return
+                    }
+
+                    $ev = $script:views["EmailView"]
+                    if (-not $ev) { return }
+                    $txtSub = $ev.FindName("TxtEmailSubject")
+                    $txtBody = $ev.FindName("TxtEmailBodyPreview")
+
+                    $subText = if ($txtSub -and $txtSub.Text) { $txtSub.Text } else { "NPTEL Verification Notice" }
+                    $bodyText = if ($txtBody -and $txtBody.Text) { $txtBody.Text } else { "" }
+
+                    $bccList = ($emails | Select-Object -Unique) -join ","
+                    $encBcc = [System.Uri]::EscapeDataString($bccList)
+                    $encSub = [System.Uri]::EscapeDataString($subText)
+                    $encBody = [System.Uri]::EscapeDataString($bodyText)
+
+                    $gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&tf=1&bcc=$encBcc&su=$encSub&body=$encBody"
+
+                    try {
+                        [System.Diagnostics.Process]::Start($gmailUrl)
+
+                        # Mark recipients as Notified in store
+                        $null = Mark-SelectedStudentsNotified -SelectedStudents $selectedStudents
+
+                        [System.Windows.MessageBox]::Show(
+                            "Gmail Web Draft opened in your default browser!`n`n- Recipients: $($emails.Count) student email(s) placed in BCC`n- Flagged Students: $($selectedStudents.Count) marked as Notified in database.`n`nTip: If you do not send the email or the send fails, you can select the students and click '[ ↺ Unmark ]' to reset their status.",
+                            "Gmail Draft Launched",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Information
+                        )
+                    } catch {
+                        [System.Windows.MessageBox]::Show("Failed to open browser:`n$($_.Exception.Message)", "Launch Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                    }
+                })
+            }
+        }
     }
 }
 
@@ -3420,7 +3936,7 @@ function Navigate-To {
     $defaultStyle = [System.Windows.Application]::Current.FindResource("BtnNav")
 
     if ($NavBtnHome) { $NavBtnHome.Style = if ($ViewName -eq "HomeView") { $activeStyle } else { $defaultStyle } }
-    if ($NavBtnCourses) { $NavBtnCourses.Style = if ($ViewName -eq "CoursesView" -or $ViewName -eq "WorkspaceView" -or $ViewName -eq "Stage1View" -or $ViewName -eq "Stage2View" -or $ViewName -eq "ReviewView") { $activeStyle } else { $defaultStyle } }
+    if ($NavBtnCourses) { $NavBtnCourses.Style = if ($ViewName -eq "CoursesView" -or $ViewName -eq "WorkspaceView" -or $ViewName -eq "Stage1View" -or $ViewName -eq "Stage2View" -or $ViewName -eq "ReviewView" -or $ViewName -eq "EmailView") { $activeStyle } else { $defaultStyle } }
     if ($NavBtnSettings) { $NavBtnSettings.Style = if ($ViewName -eq "SettingsView") { $activeStyle } else { $defaultStyle } }
 
     Refresh-CourseLists
