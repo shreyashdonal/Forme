@@ -3,144 +3,918 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Background="Transparent">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="1040" Margin="32,32,32,60" HorizontalAlignment="Center">
+    <Grid>
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- MAIN SCROLLABLE CONTENT                                       -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel MaxWidth="1040" Margin="32,32,32,60" HorizontalAlignment="Center">
 
-            <!-- ═══ A. Back Button & Header ═══ -->
-            <Button x:Name="BtnBackToWorkspace"
-                    Content="← Back to Workspace"
-                    Style="{DynamicResource BtnSecondary}"
-                    Padding="12,7"
-                    Margin="0,0,0,16"
-                    HorizontalAlignment="Left"/>
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- A. BACK BUTTON & HEADER                                -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <Button x:Name="BtnBackToWorkspace"
+                        Content="← Back to Workspace"
+                        Style="{DynamicResource BtnSecondary}"
+                        Padding="12,7"
+                        Margin="0,0,0,16"
+                        HorizontalAlignment="Left"/>
 
-            <TextBlock x:Name="TxtStage2Breadcrumb"
-                       Text="COURSES &gt; HELO &gt; STAGE 2"
-                       FontFamily="IBM Plex Mono, Consolas"
-                       FontSize="11"
-                       Foreground="{DynamicResource AccentBrush}"
-                       Margin="0,0,0,6"/>
+                <TextBlock x:Name="TxtStage2Breadcrumb"
+                           Text="COURSES &gt; COURSE &gt; STAGE 2"
+                           FontFamily="IBM Plex Mono"
+                           FontSize="11"
+                           Foreground="{DynamicResource AccentBrush}"
+                           Margin="0,0,0,6"/>
 
-            <TextBlock Text="Examination Result"
-                       FontFamily="IBM Plex Mono, Consolas"
-                       FontSize="28"
-                       FontWeight="Medium"
-                       Foreground="{DynamicResource TextBrush}"
-                       Margin="0,0,0,6"/>
+                <TextBlock Text="Examination Result"
+                           FontFamily="IBM Plex Mono"
+                           FontSize="28"
+                           FontWeight="Medium"
+                           Foreground="{DynamicResource TextBrush}"
+                           Margin="0,0,0,6"/>
 
-            <TextBlock Text="Upload official NPTEL exam results and generate the final college credit reconciliation sheet."
-                       FontSize="13"
-                       Foreground="{DynamicResource MutedBrush}"
-                       Margin="0,0,0,24"/>
+                <TextBlock Text="Manage exam results, check response sheet health, verify certificates via OCR, and generate the final college credit sheet."
+                           FontSize="13"
+                           Foreground="{DynamicResource MutedBrush}"
+                           Margin="0,0,0,24"/>
 
-            <!-- ═══ B. Upload Exam Results Card ═══ -->
-            <Border Background="{DynamicResource PanelBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="10"
-                    Padding="24"
-                    Margin="0,0,0,20">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="20"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- B. STAGE 2 ATTACHMENT CARD                             -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="24"
+                        Margin="0,0,0,20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <!-- Left content -->
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <Border Background="{DynamicResource Panel2Brush}"
-                                    CornerRadius="4"
-                                    Padding="6,2"
-                                    Margin="0,0,8,0"
-                                    VerticalAlignment="Center">
-                                <TextBlock Text="STAGE 2: POST-EXAM"
-                                           FontFamily="IBM Plex Mono, Consolas"
-                                           FontSize="10"
-                                           Foreground="{DynamicResource MutedBrush}"/>
-                            </Border>
-                            <TextBlock Text="NPTEL Examination Results"
+                        <!-- Left: Sheet info -->
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="STAGE 2 ATTACHMENT"
+                                       FontFamily="IBM Plex Mono"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="Examination Results Spreadsheet"
                                        FontSize="15"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
-                                       VerticalAlignment="Center"/>
+                                       Margin="0,0,0,6"/>
+                            <TextBlock x:Name="TxtExamResultsSheetPath"
+                                       Text="No examination results sheet linked."
+                                       FontFamily="IBM Plex Mono"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource MutedBrush}"/>
                         </StackPanel>
-                        <TextBlock Text="Once students write their exams (in 5-6 months), attach the official NPTEL results sheet here to generate the final college credit sheet."
-                                   FontSize="13"
-                                   Foreground="{DynamicResource MutedBrush}"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
 
-                    <!-- Right button -->
-                    <Button x:Name="BtnUploadExamResults"
-                            Grid.Column="2"
-                            Content="+ Upload Exam Results Sheet"
-                            Style="{DynamicResource BtnSecondary}"
-                            Padding="16,10"
-                            VerticalAlignment="Center"/>
+                        <!-- Right: Action buttons -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="BtnPreviewExamSheet"
+                                    Content="Preview Sheet"
+                                    Style="{DynamicResource BtnPrimary}"
+                                    Padding="14,8"
+                                    Margin="0,0,8,0"/>
+                            <Button x:Name="BtnOpenExamSheet"
+                                    Content="Open File"
+                                    Style="{DynamicResource BtnSecondary}"
+                                    Padding="14,8"
+                                    Margin="0,0,8,0"/>
+                            <Button x:Name="BtnUpdateExamSheet"
+                                    Content="Update Sheet"
+                                    Style="{DynamicResource BtnSecondary}"
+                                    Padding="14,8"
+                                    ToolTip="Update or select exam results spreadsheet with latest student responses."/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- C. EXAMINATION SHEET HEALTH PANEL                      -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="24"
+                        Margin="0,0,0,20">
+                    <StackPanel>
+
+                        <!-- Header Grid (Always Visible Mini-Info Row) -->
+                        <Grid Margin="0,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Examination Sheet Health"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock x:Name="TxtMiniExamHealthSummary"
+                                           Text="Column detection and data integrity summary."
+                                           FontSize="12"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border x:Name="BadgeOverallExamHealth"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource SageBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="12,5">
+                                    <TextBlock x:Name="TxtOverallExamHealth"
+                                               Text="Standard Columns Detected ✓"
+                                               FontFamily="IBM Plex Mono"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource SageBrush}"/>
+                                </Border>
+                                <Button x:Name="BtnRecheckExamHealth"
+                                        Content="Recheck"
+                                        Style="{DynamicResource BtnSecondary}"
+                                        Padding="10,5"
+                                        FontSize="11"
+                                        Margin="8,0,0,0"/>
+                                <Button x:Name="BtnToggleExamHealthDetails"
+                                        Content="View Details ▼"
+                                        Style="{DynamicResource BtnSecondary}"
+                                        Padding="10,5"
+                                        FontSize="11"
+                                        Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Collapsible Health Details Container (Hidden by default) -->
+                        <StackPanel x:Name="ExamHealthDetailsContainer" Visibility="Collapsed" Margin="0,16,0,0">
+
+                            <!-- Basic Sheet Numbers Strip -->
+                            <Border Background="{DynamicResource Panel2Brush}"
+                                    CornerRadius="6"
+                                    Padding="16,10"
+                                    Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center">
+                                        <Run Text="Total Submissions: " Foreground="{DynamicResource MutedBrush}"/>
+                                        <Run x:Name="TxtExamHealthTotalStudents" Text="—" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"/>
+                                    </TextBlock>
+
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center">
+                                        <Run Text="Unique Students: " Foreground="{DynamicResource MutedBrush}"/>
+                                        <Run x:Name="TxtExamHealthUniqueStudents" Text="—" FontWeight="Bold" Foreground="{DynamicResource SageBrush}"/>
+                                    </TextBlock>
+
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center">
+                                        <Run Text="Duplicates / Superseded: " Foreground="{DynamicResource MutedBrush}"/>
+                                        <Run x:Name="TxtExamHealthDuplicates" Text="—" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                    </TextBlock>
+                                </Grid>
+                            </Border>
+
+                            <!-- Missing Column Warning Banner -->
+                            <Border x:Name="PanelExamColumnWarning"
+                                    Visibility="Collapsed"
+                                    Background="#2A2215"
+                                    BorderBrush="{DynamicResource AccentBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="16,12"
+                                    Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock x:Name="TxtExamColumnWarningTitle"
+                                               Text="⚠️ ATTENTION REQUIRED"
+                                               FontFamily="IBM Plex Mono"
+                                               FontSize="11"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentBrush}"
+                                               Margin="0,0,0,6"/>
+                                    <TextBlock x:Name="TxtExamColumnWarningMessage"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Standard Column Detection Badges -->
+                            <WrapPanel Margin="0,0,0,16">
+                                <!-- RollNo -->
+                                <Border x:Name="CardColExamRollNo"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="IconColExamRollNo" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="RollNo" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="TxtColExamRollNo" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Name -->
+                                <Border x:Name="CardColExamName"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="IconColExamName" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Name" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="TxtColExamName" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Email -->
+                                <Border x:Name="CardColExamEmail"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="IconColExamEmail" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Email" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="TxtColExamEmail" Text="Not Provided" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Subject -->
+                                <Border x:Name="CardColExamSubject"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="IconColExamSubject" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Subject" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="TxtColExamSubject" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Assignment Marks -->
+                                <Border x:Name="CardColExamAssignMarks"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="IconColExamAssignMarks" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Assignment Marks" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="TxtColExamAssignMarks" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Exam Marks -->
+                                <Border x:Name="CardColExamExamMarks"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="IconColExamExamMarks" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Exam Marks" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="TxtColExamExamMarks" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Total Marks -->
+                                <Border x:Name="CardColExamTotalMarks"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="IconColExamTotalMarks" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Total Marks" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="TxtColExamTotalMarks" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Certificate Proof -->
+                                <Border x:Name="CardColExamCert"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="IconColExamCert" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Certificate" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="TxtColExamCert" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Timestamp -->
+                                <Border x:Name="CardColExamTimestamp"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,6"
+                                        Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="IconColExamTimestamp" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Timestamp" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="TxtColExamTimestamp" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </WrapPanel>
+
+                            <!-- Summary Footer Strip -->
+                            <Border Background="{DynamicResource Panel2Brush}"
+                                    CornerRadius="6"
+                                    Padding="14,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock x:Name="TxtExamSheetAuditSummary"
+                                               Grid.Column="0"
+                                               FontFamily="IBM Plex Mono"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                    <TextBlock x:Name="TxtExamSheetAuditTimestamp"
+                                               Grid.Column="1"
+                                               FontFamily="IBM Plex Mono"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource MutedBrush}"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                        </StackPanel> <!-- End ExamHealthDetailsContainer -->
+
+                    </StackPanel>
+                </Border>
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- D. RESULT VERIFICATION SHEET PANEL                     -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <Border Background="{DynamicResource PanelBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="24"
+                        Margin="0,0,0,20">
+                    <StackPanel>
+
+                        <!-- Header Grid -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Result Verification Sheet"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="Verify student marks against official NPTEL certificates and generate final college grade sheet."
+                                           FontSize="12"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                            </StackPanel>
+
+                            <Border x:Name="BadgeResultVerificationStatus"
+                                    Grid.Column="1"
+                                    Visibility="Collapsed"
+                                    Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource SageBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="12,5"
+                                    VerticalAlignment="Center">
+                                <TextBlock x:Name="TxtResultVerificationStatus"
+                                           Text="Sheet Ready ✓"
+                                           FontFamily="IBM Plex Mono"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SageBrush}"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- State A: Prompt (no result verification sheet generated yet) -->
+                        <Border x:Name="PanelResultVerificationPrompt"
+                                Background="{DynamicResource Panel2Brush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="20">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="No result verification sheet generated yet"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               Margin="0,0,0,4"/>
+                                    <TextBlock Text="Generate a result verification sheet from the examination responses to begin automated certificate checking and OCR processing."
+                                               FontSize="12"
+                                               Foreground="{DynamicResource MutedBrush}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <Button x:Name="BtnGenerateResultVerificationSheet"
+                                        Grid.Column="1"
+                                        Content="+ Generate Result Verification Sheet"
+                                        Style="{DynamicResource BtnPrimary}"
+                                        Padding="16,9"
+                                        VerticalAlignment="Center"
+                                        Margin="16,0,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- State B: Active (result verification sheet generated) -->
+                        <StackPanel x:Name="PanelResultVerificationActive" Visibility="Collapsed">
+
+                            <!-- File Location Bar -->
+                            <Border Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="16,12"
+                                    Margin="0,0,0,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock x:Name="TxtResultSheetPath"
+                                               Grid.Column="0"
+                                               FontFamily="IBM Plex Mono"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource MutedBrush}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <Button x:Name="BtnPreviewExamVerSheet"
+                                                Content="Preview Sheet"
+                                                Style="{DynamicResource BtnSecondary}"
+                                                Padding="12,8"
+                                                Margin="0,0,8,0"/>
+                                        <Button x:Name="BtnOpenExamVerSheet"
+                                                Content="Open in Excel"
+                                                Style="{DynamicResource BtnSecondary}"
+                                                Padding="12,8"
+                                                Margin="0,0,8,0"/>
+                                        <Button x:Name="BtnRecreateExamVerSheet"
+                                                Content="Recreate Sheet..."
+                                                Style="{DynamicResource BtnSecondary}"
+                                                Padding="12,8"
+                                                Margin="0,0,8,0"/>
+                                        <Button x:Name="BtnToggleExamVerificationPanel"
+                                                Content="Open Sheet ▼"
+                                                Style="{DynamicResource BtnPrimary}"
+                                                Padding="14,8"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Collapsible Result Verification Details Container (Hidden by default) -->
+                            <StackPanel x:Name="ExamVerificationSheetDetailsContainer" Visibility="Collapsed" Margin="0,0,0,0">
+
+                            <!-- Automated Pipeline Bar (Adaptive & Streamlined) -->
+                            <Border Background="{DynamicResource Panel2Brush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="16,14"
+                                    Margin="0,0,0,14">
+                                <StackPanel>
+                                    <!-- Top Row: Action Title & Status Pill + Buttons -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="TxtExamPipelineTitle"
+                                                       Text="Certificate Verification &amp; OCR"
+                                                       FontSize="15"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Margin="0,0,0,3"/>
+                                            <TextBlock x:Name="TxtExamPipelineStatus"
+                                                       Text="— certificates on disk"
+                                                       FontFamily="IBM Plex Mono"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource MutedBrush}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                            <Button x:Name="BtnImportCertificates"
+                                                    Content="📁 Import"
+                                                    Style="{DynamicResource BtnSecondary}"
+                                                    Padding="12,8"
+                                                    Margin="0,0,8,0"
+                                                    ToolTip="Import student certificates from a local folder or ZIP archive"/>
+                                            <Button x:Name="BtnDownloadCertificates"
+                                                    Content="📥 Download"
+                                                    Style="{DynamicResource BtnSecondary}"
+                                                    Padding="12,8"
+                                                    Margin="0,0,8,0"
+                                                    ToolTip="Download student certificates from Google Drive"/>
+                                            <Button x:Name="BtnVerifyExamAll"
+                                                    Content="▶ Run OCR"
+                                                    Style="{DynamicResource BtnPrimary}"
+                                                    Padding="14,8"
+                                                    ToolTip="Run automated WinRT OCR verification on all certificates"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Adaptive Live Progress Panel (Collapsed when idle, expands when running) -->
+                                    <Border x:Name="PanelExamPipelineProgress"
+                                            Visibility="Collapsed"
+                                            Margin="0,12,0,0"
+                                            Padding="14,10"
+                                            Background="{DynamicResource PanelBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6">
+                                        <StackPanel>
+                                            <!-- Progress Header (Action Headline + Live Counter) -->
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock x:Name="TxtExamProgressHeadline"
+                                                           Grid.Column="0"
+                                                           Text="Processing..."
+                                                           FontFamily="IBM Plex Mono"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AccentBrush}"/>
+
+                                                <TextBlock x:Name="TxtExamProgressCounter"
+                                                           Grid.Column="1"
+                                                           Text="0 / 0 (0%)"
+                                                           FontFamily="IBM Plex Mono"
+                                                           FontSize="11"
+                                                           FontWeight="Bold"
+                                                           Foreground="{DynamicResource TextBrush}"/>
+                                            </Grid>
+
+                                            <!-- Progress Bar -->
+                                            <ProgressBar x:Name="ProgressBarExamPipeline"
+                                                         Height="6"
+                                                         Minimum="0"
+                                                         Maximum="100"
+                                                         Value="0"
+                                                         Foreground="{DynamicResource AccentBrush}"
+                                                         Background="{DynamicResource Panel2Brush}"
+                                                         BorderThickness="0"
+                                                         Margin="0,0,0,6"/>
+
+                                            <!-- Live Current Student Detail Ticker -->
+                                            <TextBlock x:Name="TxtExamProgressDetail"
+                                                       Text="Initializing..."
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource MutedBrush}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Verification Status Mini Dashboard (3 Cards) -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Card: VERIFIED -->
+                                <Border x:Name="CardExamStatVerified"
+                                        Grid.Column="0"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16,14"
+                                        Cursor="Hand">
+                                    <StackPanel>
+                                        <TextBlock Text="VERIFIED"
+                                                   FontFamily="IBM Plex Mono"
+                                                   FontSize="10"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource SageBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtExamStatVerified"
+                                                   Text="0"
+                                                   FontSize="24"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource SageBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="Marks &amp; Course match certificate"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   Margin="0,0,0,8"/>
+                                        <Border Background="{DynamicResource PanelBrush}"
+                                                CornerRadius="4"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Left">
+                                            <TextBlock Text="✓ Clean"
+                                                       FontFamily="IBM Plex Mono"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource SageBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Card: UNDER REVIEW -->
+                                <Border x:Name="CardExamStatReview"
+                                        Grid.Column="2"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16,14"
+                                        Cursor="Hand">
+                                    <StackPanel>
+                                        <TextBlock Text="UNDER REVIEW"
+                                                   FontFamily="IBM Plex Mono"
+                                                   FontSize="10"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AccentBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtExamStatReview"
+                                                   Text="0"
+                                                   FontSize="24"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AccentBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="Mismatches, rounding, or typos"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   Margin="0,0,0,8"/>
+                                        <Border Background="{DynamicResource PanelBrush}"
+                                                CornerRadius="4"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Left">
+                                            <TextBlock Text="⚠️ Attention"
+                                                       FontFamily="IBM Plex Mono"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource AccentBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Card: CERTIFICATE MISSING -->
+                                <Border x:Name="CardExamStatMissing"
+                                        Grid.Column="4"
+                                        Background="{DynamicResource Panel2Brush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16,14"
+                                        Cursor="Hand">
+                                    <StackPanel>
+                                        <TextBlock Text="CERTIFICATE MISSING"
+                                                   FontFamily="IBM Plex Mono"
+                                                   FontSize="10"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtExamStatMissing"
+                                                   Text="0"
+                                                   FontSize="24"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="No certificate file on disk"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource Muted2Brush}"
+                                                   Margin="0,0,0,8"/>
+                                        <Border Background="{DynamicResource PanelBrush}"
+                                                CornerRadius="4"
+                                                Padding="8,3"
+                                                HorizontalAlignment="Left">
+                                            <TextBlock Text="— No File"
+                                                       FontFamily="IBM Plex Mono"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource MutedBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Bottom Action & Export Strip -->
+                            <Border Background="{DynamicResource Panel2Brush}"
+                                    CornerRadius="6"
+                                    Padding="16,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock x:Name="TxtExamVerificationSummary"
+                                                   Text="0 Verified, 0 Under Review"
+                                                   FontFamily="IBM Plex Mono"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Margin="0,0,0,2"/>
+                                        <TextBlock Text="Generate the formal college final result sheet for university submission."
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource MutedBrush}"/>
+                                    </StackPanel>
+
+                                    <Button x:Name="BtnGenerateFinalResultSheet"
+                                            Grid.Column="1"
+                                            Content="📊 Generate Final Result Sheet"
+                                            Style="{DynamicResource BtnPrimary}"
+                                            Padding="18,9"
+                                            FontWeight="SemiBold"
+                                            VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            </StackPanel> <!-- End ExamVerificationSheetDetailsContainer -->
+
+                        </StackPanel> <!-- End PanelResultVerificationActive -->
+
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- E. IN-APP EXAM SHEET PREVIEW MODAL                             -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <Grid x:Name="ExamSheetPreviewModal"
+              Visibility="Collapsed"
+              Background="#B0000000">
+            <Border Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    MaxWidth="960"
+                    MaxHeight="680"
+                    Margin="32"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Modal Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock x:Name="TxtExamPreviewModalTitle"
+                                       Text="Examination Results Sheet Preview"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtExamPreviewRowCount"
+                                       Text="Showing records"
+                                       FontFamily="IBM Plex Mono"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource MutedBrush}"/>
+                        </StackPanel>
+
+                        <Button x:Name="BtnCloseExamPreviewModal"
+                                Grid.Column="1"
+                                Content="✕"
+                                Style="{DynamicResource BtnSecondary}"
+                                Padding="10,6"
+                                FontSize="12"
+                                FontWeight="Bold"
+                                VerticalAlignment="Top"/>
+                    </Grid>
+
+                    <!-- Search Filter -->
+                    <Border Grid.Row="1"
+                            Background="{DynamicResource Panel2Brush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,8"
+                            Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="🔍" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBox x:Name="TxtExamPreviewSearch"
+                                     Grid.Column="1"
+                                     Style="{DynamicResource DarkInput}"
+                                     BorderThickness="0"
+                                     Padding="0"
+                                     FontSize="12"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Preview DataGrid -->
+                    <Border Grid.Row="2"
+                            Background="{DynamicResource Panel2Brush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="0">
+                        <DataGrid x:Name="DataGridExamPreview"
+                                  AutoGenerateColumns="True"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                                  Background="Transparent"
+                                  RowBackground="Transparent"
+                                  AlternatingRowBackground="{DynamicResource PanelBrush}"
+                                  Foreground="{DynamicResource TextBrush}"
+                                  BorderThickness="0"
+                                  HeadersVisibility="Column"
+                                  FontSize="11"
+                                  FontFamily="IBM Plex Mono, Consolas"
+                                  RowHeight="32">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+                                    <Setter Property="FontFamily" Value="IBM Plex Mono, Consolas"/>
+                                    <Setter Property="FontSize" Value="10"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Padding" Value="10,8"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Padding" Value="10,6"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#33E8B04B"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.CellStyle>
+                        </DataGrid>
+                    </Border>
                 </Grid>
             </Border>
+        </Grid>
 
-            <!-- ═══ C. Results Status Card (shows after upload) ═══ -->
-            <Border x:Name="PanelExamResultsActive"
-                    Visibility="Collapsed"
-                    Background="{DynamicResource PanelBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="10"
-                    Padding="24"
-                    Margin="0,0,0,20">
-                <StackPanel>
-                    <TextBlock Text="RESULTS SHEET ATTACHED"
-                               FontFamily="IBM Plex Mono, Consolas"
-                               FontSize="11"
-                               Foreground="{DynamicResource SageBrush}"
-                               Margin="0,0,0,6"/>
-
-                    <TextBlock x:Name="TxtExamResultsPath"
-                               Text=""
-                               FontFamily="IBM Plex Mono, Consolas"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextBrush}"
-                               Margin="0,0,0,10"/>
-
-                    <Border Background="{DynamicResource Panel2Brush}"
-                            CornerRadius="6"
-                            Padding="14,10">
-                        <TextBlock x:Name="TxtExamResultsSummary"
-                                   Text="Results sheet uploaded. Ready for credit reconciliation."
-                                   FontFamily="IBM Plex Mono, Consolas"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextBrush}"/>
-                    </Border>
-                </StackPanel>
-            </Border>
-
-            <!-- ═══ D. Placeholder / Coming Soon Card ═══ -->
-            <Border Background="{DynamicResource Panel2Brush}"
-                    BorderBrush="{DynamicResource BorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="10"
-                    Padding="32"
-                    Margin="0,0,0,20">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="🔮 Coming Soon"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource MutedBrush}"
-                               HorizontalAlignment="Center"
-                               Margin="0,0,0,8"/>
-
-                    <TextBlock Text="Credit reconciliation, grade mapping, and certificate generation features will be available in a future update."
-                               FontSize="12"
-                               Foreground="{DynamicResource Muted2Brush}"
-                               TextWrapping="Wrap"
-                               TextAlignment="Center"
-                               MaxWidth="500"/>
-                </StackPanel>
-            </Border>
-
-        </StackPanel>
-    </ScrollViewer>
+    </Grid>
 </UserControl>

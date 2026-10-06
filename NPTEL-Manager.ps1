@@ -344,6 +344,79 @@ function New-CourseVerificationSheet {
     return $targetPath
 }
 
+function New-CourseExamVerificationSheet {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Course
+    )
+    $examSheet = [string]$Course.ExamResultsSheet
+    if (-not $examSheet -or -not (Test-Path -LiteralPath $examSheet)) {
+        throw "Examination responses sheet not found on disk: $examSheet"
+    }
+
+    # Determine target path: saved alongside the exam responses sheet
+    $examDir = [System.IO.Path]::GetDirectoryName($examSheet)
+    $cName = if ($Course.Name) { [string]$Course.Name } else { "Course" }
+    $cleanName = ($cName -replace '[\\/:*?"<>|]', '_').Trim()
+    $targetPath = Join-Path $examDir "${cleanName}_Result_Verification_Sheet.xlsx"
+
+    # Read rows from exam responses sheet via Import-ExamResultsSheet
+    $parsed = Import-ExamResultsSheet -Path $examSheet
+    if (-not $parsed.Success -or $parsed.Rows.Count -eq 0) {
+        throw "Could not parse examination results sheet: $($parsed.Error)"
+    }
+
+    # Build result verification rows (existing columns + 'Verification Status' + 'Verification Remarks')
+    $verificationRows = [System.Collections.ArrayList]@()
+    foreach ($row in $parsed.Rows) {
+        $rowDict = [ordered]@{}
+        foreach ($prop in $row.PSObject.Properties) {
+            $rowDict[$prop.Name] = $prop.Value
+        }
+        $rowDict['Verification Status'] = 'Pending'
+        $rowDict['Verification Remarks'] = 'Awaiting Certificate Verification'
+        $null = $verificationRows.Add([PSCustomObject]$rowDict)
+    }
+
+    # Export to Excel using Export-Excel (from ImportExcel module) or fallback to CSV
+    $hasImportExcel = (Get-Module -Name ImportExcel -ListAvailable)
+    if ($hasImportExcel) {
+        Import-Module ImportExcel -ErrorAction SilentlyContinue
+        $verificationRows | Export-Excel -Path $targetPath -WorksheetName "Result Verification" -AutoSize -BoldTopRow -FreezeTopRow -ClearSheet
+    } else {
+        $targetPath = [System.IO.Path]::ChangeExtension($targetPath, ".csv")
+        $verificationRows | Export-Csv -Path $targetPath -NoTypeInformation -Encoding UTF8
+    }
+
+    # Update course record safely in PowerShell 5.1 / 7
+    if ($Course.PSObject.Properties['ExamVerificationSheet']) {
+        $Course.ExamVerificationSheet = $targetPath
+    } else {
+        $Course | Add-Member -NotePropertyName 'ExamVerificationSheet' -NotePropertyValue $targetPath -Force
+    }
+    Save-Courses
+
+    # Update exam_results.json store with initial verification statuses
+    $store = Get-CourseExamResultsStore -CourseId $Course.Id -CourseName $Course.Name -ExamResultsSheet $examSheet -Force
+    if ($store -and $store.Students) {
+        foreach ($st in $store.Students) {
+            if ($st.PSObject.Properties['ExamVerificationStatus']) {
+                $st.ExamVerificationStatus = 'Pending'
+            } else {
+                $st | Add-Member -NotePropertyName 'ExamVerificationStatus' -NotePropertyValue 'Pending' -Force
+            }
+            if ($st.PSObject.Properties['ExamVerificationRemarks']) {
+                $st.ExamVerificationRemarks = 'Awaiting Certificate Verification'
+            } else {
+                $st | Add-Member -NotePropertyName 'ExamVerificationRemarks' -NotePropertyValue 'Awaiting Certificate Verification' -Force
+            }
+        }
+        Save-CourseExamResultsStore -Store $store -CourseId $Course.Id -CourseName $Course.Name
+    }
+
+    return $targetPath
+}
+
 # 3. XAML Loader Helper
 function Import-Xaml {
     param([string]$Path)
@@ -946,6 +1019,16 @@ function Select-Course {
                 $txtVerTime.Text = "Updated: $modTime"
             }
 
+            $btnToggleVer = $s1View.FindName("BtnToggleVerificationPanel")
+            $detailsVer = $s1View.FindName("VerificationSheetDetailsContainer")
+            if ($btnToggleVer -and $detailsVer) {
+                if ($detailsVer.Visibility -eq [System.Windows.Visibility]::Visible) {
+                    $btnToggleVer.Content = "Close Sheet " + [char]0x25B2
+                } else {
+                    $btnToggleVer.Content = "Open Sheet " + [char]0x25BC
+                }
+            }
+
             # Update on-disk receipt cache counter (Clean & Streamlined)
             $cleanCName = ($cName -replace '[\\/:*?"<>|]', '_').Trim()
             $rDir = Join-Path $dataDir "Courses\$cleanCName\receipts"
@@ -970,24 +1053,7 @@ function Select-Course {
     }
 
     # -- Update Stage 2 View (Exam Results) --
-    $s2View = Get-OrCreateView "Stage2View"
-    if ($s2View) {
-        $s2Breadcrumb = $s2View.FindName("TxtStage2Breadcrumb")
-        if ($s2Breadcrumb) {
-            $codeStr = if ($cCode) { " ($cCode)" } else { "" }
-            $upperName = $cName.ToUpper()
-            $s2Breadcrumb.Text = "COURSES > $upperName$codeStr > STAGE 2"
-        }
-
-        $panelResultsActive = $s2View.FindName("PanelExamResultsActive")
-        $txtResultsPath = $s2View.FindName("TxtExamResultsPath")
-        if ($Course.ExamResultsSheet -and (Test-Path -LiteralPath $Course.ExamResultsSheet -ErrorAction SilentlyContinue)) {
-            if ($panelResultsActive) { $panelResultsActive.Visibility = [System.Windows.Visibility]::Visible }
-            if ($txtResultsPath) { $txtResultsPath.Text = [string]$Course.ExamResultsSheet }
-        } else {
-            if ($panelResultsActive) { $panelResultsActive.Visibility = [System.Windows.Visibility]::Collapsed }
-        }
-    }
+    Update-Stage2View -Course $Course
 
     # -- Update Review View (if initialized) --
     if ($script:views.ContainsKey("ReviewView")) {
@@ -1000,6 +1066,235 @@ function Select-Course {
         # Already inside the Stage detail view or Review queue; keep user on the active view
     } else {
         Navigate-To "WorkspaceView"
+    }
+}
+
+function Update-Stage2View {
+    param(
+        $Course = $script:activeCourse
+    )
+    if (-not $Course) { $Course = $script:activeCourse }
+    if (-not $Course) { return }
+    $s2View = Get-OrCreateView "Stage2View"
+    if (-not $s2View) { return }
+
+    $cName = if ($Course.Name) { [string]$Course.Name } else { "Course" }
+    $cCode = if ($Course.Code) { [string]$Course.Code } else { "" }
+    $codeStr = if ($cCode) { " ($cCode)" } else { "" }
+    $upperName = $cName.ToUpper()
+
+    # 1. Breadcrumb
+    $s2Breadcrumb = $s2View.FindName("TxtStage2Breadcrumb")
+    if ($s2Breadcrumb) {
+        $s2Breadcrumb.Text = "COURSES > $upperName$codeStr > STAGE 2"
+    }
+
+    # 2. Stage 2 Attachment Card
+    $txtSheetPath = $s2View.FindName("TxtExamResultsSheetPath")
+    $btnPreview = $s2View.FindName("BtnPreviewExamSheet")
+    $btnOpen = $s2View.FindName("BtnOpenExamSheet")
+
+    $hasSheet = ($Course.ExamResultsSheet -and (Test-Path -LiteralPath $Course.ExamResultsSheet -ErrorAction SilentlyContinue))
+    if ($txtSheetPath) {
+        $txtSheetPath.Text = if ($hasSheet) { [string]$Course.ExamResultsSheet } else { "No examination results sheet linked." }
+    }
+    if ($btnPreview) { $btnPreview.IsEnabled = [bool]$hasSheet }
+    if ($btnOpen) { $btnOpen.IsEnabled = [bool]$hasSheet }
+
+    # 3. Load or Retrieve Exam Results Store
+    $store = $null
+    if ($hasSheet) {
+        $store = Get-CourseExamResultsStore -CourseId $Course.Id -CourseName $Course.Name -ExamResultsSheet $Course.ExamResultsSheet
+    }
+
+    $colMap = if ($store) { $store.ColumnMap } else { $null }
+    $students = if ($store -and $store.Students) { @($store.Students) } else { @() }
+    $rowCount = if ($store) { $store.RowCount } else { 0 }
+    $uniqueCount = $students.Count
+    $dupCount = if ($store) { $store.DuplicateCount } else { 0 }
+
+    # 4. Examination Sheet Health Metrics Strip
+    $hTotal = $s2View.FindName("TxtExamHealthTotalStudents")
+    $hUnique = $s2View.FindName("TxtExamHealthUniqueStudents")
+    $hDups = $s2View.FindName("TxtExamHealthDuplicates")
+    $dashToken = [string][char]0x2014
+    if ($hTotal) {
+        if ($hasSheet) { $hTotal.Text = [string]$rowCount } else { $hTotal.Text = $dashToken }
+    }
+    if ($hUnique) {
+        if ($hasSheet) { $hUnique.Text = [string]$uniqueCount } else { $hUnique.Text = $dashToken }
+    }
+    if ($hDups) {
+        if ($hasSheet) { $hDups.Text = [string]$dupCount } else { $hDups.Text = $dashToken }
+    }
+
+    # 5. Standard Column Detection Badges
+    $colKeys = @(
+        @{ Key = 'RollNo';          Label = 'Roll No';          Card = 'CardColExamRollNo';      Icon = 'IconColExamRollNo';      Txt = 'TxtColExamRollNo';      Critical = $true },
+        @{ Key = 'Name';            Label = 'Name';             Card = 'CardColExamName';        Icon = 'IconColExamName';        Txt = 'TxtColExamName';        Critical = $true },
+        @{ Key = 'Email';           Label = 'Email';            Card = 'CardColExamEmail';       Icon = 'IconColExamEmail';       Txt = 'TxtColExamEmail';       Critical = $false },
+        @{ Key = 'Subject';         Label = 'Subject';          Card = 'CardColExamSubject';     Icon = 'IconColExamSubject';     Txt = 'TxtColExamSubject';     Critical = $false },
+        @{ Key = 'AssignmentMarks'; Label = 'Assignment Marks'; Card = 'CardColExamAssignMarks'; Icon = 'IconColExamAssignMarks'; Txt = 'TxtColExamAssignMarks'; Critical = $true },
+        @{ Key = 'ExamMarks';       Label = 'Exam Marks';       Card = 'CardColExamExamMarks';   Icon = 'IconColExamExamMarks';   Txt = 'TxtColExamExamMarks';   Critical = $true },
+        @{ Key = 'TotalMarks';      Label = 'Total Marks';      Card = 'CardColExamTotalMarks';  Icon = 'IconColExamTotalMarks';  Txt = 'TxtColExamTotalMarks';  Critical = $true },
+        @{ Key = 'CertificateUrl';  Label = 'Certificate';      Card = 'CardColExamCert';        Icon = 'IconColExamCert';        Txt = 'TxtColExamCert';        Critical = $true },
+        @{ Key = 'Timestamp';       Label = 'Timestamp';        Card = 'CardColExamTimestamp';   Icon = 'IconColExamTimestamp';   Txt = 'TxtColExamTimestamp';   Critical = $false }
+    )
+
+    $detectedCount = 0
+    $missingCritical = @()
+
+    foreach ($item in $colKeys) {
+        $mappedHeader = $null
+        if ($colMap) {
+            if ($colMap -is [System.Collections.IDictionary] -and $colMap.Contains($item.Key)) {
+                $mappedHeader = $colMap[$item.Key]
+            } elseif ($colMap.PSObject -and $colMap.PSObject.Properties[$item.Key]) {
+                $mappedHeader = $colMap.PSObject.Properties[$item.Key].Value
+            }
+        }
+
+        $cCard = $s2View.FindName($item.Card)
+        $cIcon = $s2View.FindName($item.Icon)
+        $cTxt = $s2View.FindName($item.Txt)
+
+        if ($mappedHeader) {
+            $detectedCount++
+            if ($cIcon) { $cIcon.Text = [string][char]0x2713; $cIcon.Foreground = $sageBrush }
+            if ($cTxt) { $cTxt.Text = [string]$mappedHeader; $cTxt.Foreground = $textBrush }
+            if ($cCard) { $cCard.BorderBrush = $borderBrush }
+        } else {
+            if ($item.Critical) {
+                if ($cIcon) { $cIcon.Text = [string][char]0x26A0; $cIcon.Foreground = $accentBrush }
+                if ($cTxt) { $cTxt.Text = "MISSING"; $cTxt.Foreground = $accentBrush }
+                if ($cCard) { $cCard.BorderBrush = $accentBrush }
+                $missingCritical += $item.Label
+            } else {
+                if ($cIcon) { $cIcon.Text = [string][char]0x2014; $cIcon.Foreground = $mutedBrush }
+                if ($cTxt) { $cTxt.Text = "Not Provided"; $cTxt.Foreground = $mutedBrush }
+                if ($cCard) { $cCard.BorderBrush = $borderBrush }
+            }
+        }
+    }
+
+    # Health Header Badge & Warning
+    $badgeHealth = $s2View.FindName("BadgeOverallExamHealth")
+    $txtHealth = $s2View.FindName("TxtOverallExamHealth")
+    $pnlWarn = $s2View.FindName("PanelExamColumnWarning")
+    $txtWarnTitle = $s2View.FindName("TxtExamColumnWarningTitle")
+    $txtWarnMsg = $s2View.FindName("TxtExamColumnWarningMessage")
+
+    if ($hasSheet) {
+        if ($badgeHealth) { $badgeHealth.Visibility = [System.Windows.Visibility]::Visible }
+        if ($txtHealth) {
+            if ($missingCritical.Count -eq 0) {
+                $txtHealth.Text = "$detectedCount/9 Columns Detected " + [char]0x2713
+                $txtHealth.Foreground = $sageBrush
+                if ($badgeHealth) { $badgeHealth.BorderBrush = $sageBrush }
+                if ($pnlWarn) { $pnlWarn.Visibility = [System.Windows.Visibility]::Collapsed }
+            } else {
+                $txtHealth.Text = "$($missingCritical.Count) Critical Missing " + [char]0x26A0
+                $txtHealth.Foreground = $accentBrush
+                if ($badgeHealth) { $badgeHealth.BorderBrush = $accentBrush }
+                if ($pnlWarn) {
+                    $pnlWarn.Visibility = [System.Windows.Visibility]::Visible
+                    if ($txtWarnMsg) {
+                        $txtWarnMsg.Text = "The uploaded sheet is missing critical column(s): $(($missingCritical -join ', ')). Verification cannot proceed without them."
+                    }
+                }
+            }
+        }
+    } else {
+        if ($badgeHealth) { $badgeHealth.Visibility = [System.Windows.Visibility]::Collapsed }
+        if ($pnlWarn) { $pnlWarn.Visibility = [System.Windows.Visibility]::Collapsed }
+    }
+
+    # Audit Strip
+    $txtAudit = $s2View.FindName("TxtExamSheetAuditSummary")
+    $txtAuditTime = $s2View.FindName("TxtExamSheetAuditTimestamp")
+    if ($txtAudit) {
+        $txtAudit.Text = if ($hasSheet) { "$uniqueCount unique student responses ready for certificate verification." } else { "No sheet audited." }
+    }
+    if ($txtAuditTime) {
+        $txtAuditTime.Text = if ($store -and $store.LastSync) { [string]$store.LastSync } else { "" }
+    }
+
+    # 6. Result Verification Sheet Panel
+    $panelPrompt = $s2View.FindName("PanelResultVerificationPrompt")
+    $panelActive = $s2View.FindName("PanelResultVerificationActive")
+    $badgeVerStatus = $s2View.FindName("BadgeResultVerificationStatus")
+    $txtResultPath = $s2View.FindName("TxtResultSheetPath")
+
+    $vSheetPath = if ($Course.ExamVerificationSheet) { [string]$Course.ExamVerificationSheet } else { "" }
+    $vSheetExists = ($vSheetPath -and (Test-Path -LiteralPath $vSheetPath -ErrorAction SilentlyContinue))
+
+    if ($vSheetExists) {
+        if ($panelPrompt) { $panelPrompt.Visibility = [System.Windows.Visibility]::Collapsed }
+        if ($panelActive) { $panelActive.Visibility = [System.Windows.Visibility]::Visible }
+        if ($badgeVerStatus) { $badgeVerStatus.Visibility = [System.Windows.Visibility]::Visible }
+        if ($txtResultPath) { $txtResultPath.Text = $vSheetPath }
+
+        # Pipeline Status (Certificates on Disk)
+        $appRoot = Split-Path -Parent $PSScriptRoot
+        $dataParent = Join-Path $appRoot "data"
+        $cleanCourseName = ($cName -replace '[\\/:*?"<>|]', '_').Trim()
+        $certsDir = Join-Path $dataParent "Courses\$cleanCourseName\certificates"
+        $certCount = 0
+        if (Test-Path -LiteralPath $certsDir) {
+            $certCount = @(Get-ChildItem -LiteralPath $certsDir -File -ErrorAction SilentlyContinue).Count
+        }
+
+        $txtPipeStatus = $s2View.FindName("TxtExamPipelineStatus")
+        if ($txtPipeStatus) {
+            $txtPipeStatus.Text = "$certCount / $uniqueCount certificates on disk"
+        }
+
+        # Mini Dashboard Metrics
+        $verifiedCount = 0
+        $reviewCount = 0
+        $missingCount = 0
+
+        foreach ($st in $students) {
+            $stStatus = if ($st.ExamVerificationStatus) { [string]$st.ExamVerificationStatus } else { "Pending" }
+            if ($stStatus -eq "Verified") {
+                $verifiedCount++
+            } elseif ($stStatus -eq "Under Review") {
+                $reviewCount++
+            } else {
+                if ($st.LocalCertificatePath -and (Test-Path -LiteralPath $st.LocalCertificatePath -ErrorAction SilentlyContinue)) {
+                    $reviewCount++
+                } else {
+                    $missingCount++
+                }
+            }
+        }
+
+        $txtStatVer = $s2View.FindName("TxtExamStatVerified")
+        $txtStatRev = $s2View.FindName("TxtExamStatReview")
+        $txtStatMis = $s2View.FindName("TxtExamStatMissing")
+        $txtVerSummary = $s2View.FindName("TxtExamVerificationSummary")
+
+        if ($txtStatVer) { $txtStatVer.Text = [string]$verifiedCount }
+        if ($txtStatRev) { $txtStatRev.Text = [string]$reviewCount }
+        if ($txtStatMis) { $txtStatMis.Text = [string]$missingCount }
+        if ($txtVerSummary) {
+            $txtVerSummary.Text = "$verifiedCount Verified, $reviewCount Under Review, $missingCount Missing Certificates"
+        }
+
+        $btnToggleExamVer = $s2View.FindName("BtnToggleExamVerificationPanel")
+        $detailsExamVer = $s2View.FindName("ExamVerificationSheetDetailsContainer")
+        if ($btnToggleExamVer -and $detailsExamVer) {
+            if ($detailsExamVer.Visibility -eq [System.Windows.Visibility]::Visible) {
+                $btnToggleExamVer.Content = "Close Sheet " + [char]0x25B2
+            } else {
+                $btnToggleExamVer.Content = "Open Sheet " + [char]0x25BC
+            }
+        }
+
+    } else {
+        if ($panelPrompt) { $panelPrompt.Visibility = [System.Windows.Visibility]::Visible }
+        if ($panelActive) { $panelActive.Visibility = [System.Windows.Visibility]::Collapsed }
+        if ($badgeVerStatus) { $badgeVerStatus.Visibility = [System.Windows.Visibility]::Collapsed }
     }
 }
 
@@ -1906,7 +2201,7 @@ function Update-EmailView {
     }).Count
     $feeMismatchCount = @($flagged | Where-Object {
         $r = [string]$_.VerificationRemarks
-        $r -like "*Fee*" -or $r -like "*Amount*" -or $r -like "*₹*"
+        $r -like "*Fee*" -or $r -like "*Amount*" -or $r -like "*Rs*"
     }).Count
 
     if ($txtSummary) {
@@ -2689,6 +2984,25 @@ function Wire-ViewEvents {
                 })
             }
 
+            # Toggle Verification Sheet Details Panel (Open / Close Sheet)
+            $btnToggleVerPanel = $viewObj.FindName("BtnToggleVerificationPanel")
+            if ($btnToggleVerPanel) {
+                $btnToggleVerPanel.Add_Click({
+                    $s1 = $script:views["Stage1View"]
+                    $container = if ($s1) { $s1.FindName("VerificationSheetDetailsContainer") } else { $null }
+                    $btn = $this
+                    if ($container -and $btn) {
+                        if ($container.Visibility -eq [System.Windows.Visibility]::Visible) {
+                            $container.Visibility = [System.Windows.Visibility]::Collapsed
+                            $btn.Content = "Open Sheet " + [char]0x25BC
+                        } else {
+                            $container.Visibility = [System.Windows.Visibility]::Visible
+                            $btn.Content = "Close Sheet " + [char]0x25B2
+                        }
+                    }
+                })
+            }
+
             # -- Step 1: Import Local Receipts (Folder or .ZIP Archive) Handler --
             $btnImport = $viewObj.FindName("BtnImportReceipts")
             if ($btnImport) {
@@ -3119,25 +3433,246 @@ function Wire-ViewEvents {
                 })
             }
 
-            # Stage 2 Exam Results Upload Handler
-            $btnUploadResults = $viewObj.FindName("BtnUploadExamResults")
-            if ($btnUploadResults) {
-                $btnUploadResults.Add_Click({
-                    if (-not $script:activeCourse) {
-                        [System.Windows.MessageBox]::Show("Please select or register a course first.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            # Attach / Update Results Sheet Handler
+            $attachExamHandler = {
+                if (-not $script:activeCourse) {
+                    [System.Windows.MessageBox]::Show("Please select or register a course first.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                    return
+                }
+
+                $selected = Show-ExcelBrowseDialog "Select Official NPTEL Exam Results Spreadsheet"
+                if ($selected) {
+                    $script:activeCourse.ExamResultsSheet = $selected
+                    $script:activeCourse.Stage = "ResultsUploaded"
+                    Save-Courses
+
+                    # Ingest and save exam results store
+                    $null = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $script:activeCourse.Name -ExamResultsSheet $selected -Force
+
+                    # Refresh Stage 2 View
+                    Update-Stage2View -Course $script:activeCourse
+
+                    [System.Windows.MessageBox]::Show("Exam results spreadsheet attached for '$($script:activeCourse.Name)'.`nReady for certificate verification!", "Results Uploaded", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                }
+            }
+
+            $btnUpdate = $viewObj.FindName("BtnUpdateExamSheet")
+            if ($btnUpdate) { $btnUpdate.Add_Click($attachExamHandler) }
+
+            # Open Raw Exam Responses File in Windows default application
+            $openExamHandler = {
+                if ($script:activeCourse -and $script:activeCourse.ExamResultsSheet -and (Test-Path -LiteralPath $script:activeCourse.ExamResultsSheet)) {
+                    Start-Process -FilePath $script:activeCourse.ExamResultsSheet
+                } else {
+                    [System.Windows.MessageBox]::Show("No valid exam results sheet found on disk.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                }
+            }
+
+            $btnOpenSheet = $viewObj.FindName("BtnOpenExamSheet")
+            if ($btnOpenSheet) { $btnOpenSheet.Add_Click($openExamHandler) }
+
+            # Toggle Health Details
+            $btnToggleHealth = $viewObj.FindName("BtnToggleExamHealthDetails")
+            if ($btnToggleHealth) {
+                $btnToggleHealth.Add_Click({
+                    $s2 = $script:views["Stage2View"]
+                    $container = if ($s2) { $s2.FindName("ExamHealthDetailsContainer") } else { $null }
+                    $btn = $this
+                    if ($container -and $btn) {
+                        if ($container.Visibility -eq [System.Windows.Visibility]::Visible) {
+                            $container.Visibility = [System.Windows.Visibility]::Collapsed
+                            $btn.Content = "View Details " + [char]0x25BC
+                        } else {
+                            $container.Visibility = [System.Windows.Visibility]::Visible
+                            $btn.Content = "Hide Details " + [char]0x25B2
+                        }
+                    }
+                })
+            }
+
+            # Recheck Health
+            $btnRecheck = $viewObj.FindName("BtnRecheckExamHealth")
+            if ($btnRecheck) {
+                $btnRecheck.Add_Click({
+                    if ($script:activeCourse -and $script:activeCourse.ExamResultsSheet) {
+                        $null = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $script:activeCourse.Name -ExamResultsSheet $script:activeCourse.ExamResultsSheet -Force
+                        Update-Stage2View -Course $script:activeCourse
+                        [System.Windows.MessageBox]::Show("Examination sheet health rechecked successfully.", "Health Rechecked", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                    }
+                })
+            }
+
+            # Generate Result Verification Sheet Handler (State A Button)
+            $btnGenExamVer = $viewObj.FindName("BtnGenerateResultVerificationSheet")
+            if ($btnGenExamVer) {
+                $btnGenExamVer.Add_Click({
+                    if (-not $script:activeCourse -or -not $script:activeCourse.ExamResultsSheet -or -not (Test-Path -LiteralPath $script:activeCourse.ExamResultsSheet)) {
+                        [System.Windows.MessageBox]::Show("Please upload an examination results spreadsheet above first.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
                         return
                     }
 
-                    $selected = Show-ExcelBrowseDialog "Select Official NPTEL Exam Results Spreadsheet"
-                    if ($selected) {
-                        $script:activeCourse.ExamResultsSheet = $selected
-                        $script:activeCourse.Stage = "ResultsUploaded"
-                        Save-Courses
+                    try {
+                        $targetPath = New-CourseExamVerificationSheet -Course $script:activeCourse
+                        Update-Stage2View -Course $script:activeCourse
+                        [System.Windows.MessageBox]::Show(
+                            "Result verification sheet generated successfully at:`n$targetPath`n`nNew columns 'Verification Status' and 'Verification Remarks' were appended.",
+                            "Result Verification Sheet Ready",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Information
+                        )
+                    } catch {
+                        [System.Windows.MessageBox]::Show(
+                            "Failed to generate result verification sheet:`n$($_.Exception.Message)",
+                            "Generation Error",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Error
+                        )
+                    }
+                })
+            }
 
-                        # Refresh all views with updated state
-                        Select-Course $script:activeCourse
+            # Re-generate / Recreate Result Verification Sheet Handler
+            $btnRecreateExamVer = $viewObj.FindName("BtnRecreateExamVerSheet")
+            if ($btnRecreateExamVer) {
+                $btnRecreateExamVer.Add_Click({
+                    if (-not $script:activeCourse -or -not $script:activeCourse.ExamResultsSheet) { return }
+                    $res = [System.Windows.MessageBox]::Show(
+                        "Do you want to re-generate the Result Verification Sheet from the current examination responses?`n`nNote: This will refresh all rows and reset statuses to 'Pending'.",
+                        "Re-generate Result Verification Sheet",
+                        [System.Windows.MessageBoxButton]::YesNo,
+                        [System.Windows.MessageBoxImage]::Question
+                    )
+                    if ($res -eq [System.Windows.MessageBoxResult]::Yes) {
+                        try {
+                            $targetPath = New-CourseExamVerificationSheet -Course $script:activeCourse
+                            Update-Stage2View -Course $script:activeCourse
+                            [System.Windows.MessageBox]::Show("Result verification sheet re-generated successfully.", "Sheet Updated", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                        } catch {
+                            [System.Windows.MessageBox]::Show("Error re-generating result verification sheet:`n$($_.Exception.Message)", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                        }
+                    }
+                })
+            }
 
-                        [System.Windows.MessageBox]::Show("Exam results spreadsheet attached for '$($script:activeCourse.Name)'.`nReady for grade & credit reconciliation!", "Results Uploaded", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+            # Open Generated Result Verification Sheet File
+            $btnOpenExamVer = $viewObj.FindName("BtnOpenExamVerSheet")
+            if ($btnOpenExamVer) {
+                $btnOpenExamVer.Add_Click({
+                    if ($script:activeCourse -and $script:activeCourse.ExamVerificationSheet -and (Test-Path -LiteralPath $script:activeCourse.ExamVerificationSheet)) {
+                        Start-Process -FilePath $script:activeCourse.ExamVerificationSheet
+                    } else {
+                        [System.Windows.MessageBox]::Show("Result verification sheet not found on disk.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                    }
+                })
+            }
+
+            # Preview Modal Controls
+            $btnCloseModal = $viewObj.FindName("BtnCloseExamPreviewModal")
+            if ($btnCloseModal) {
+                $btnCloseModal.Add_Click({
+                    $s2 = $script:views["Stage2View"]
+                    $m = if ($s2) { $s2.FindName("ExamSheetPreviewModal") } else { $null }
+                    if ($m) {
+                        $m.Visibility = [System.Windows.Visibility]::Collapsed
+                    }
+                })
+            }
+
+            # Preview Raw Responses Sheet Handler
+            $previewExamHandler = {
+                if (-not $script:activeCourse -or -not $script:activeCourse.ExamResultsSheet -or -not (Test-Path -LiteralPath $script:activeCourse.ExamResultsSheet)) {
+                    [System.Windows.MessageBox]::Show("Please attach a valid exam results spreadsheet first.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                    return
+                }
+
+                $sheetRes = Import-ExamResultsSheet -Path $script:activeCourse.ExamResultsSheet
+                if ($sheetRes.Success -and $sheetRes.Rows.Count -gt 0) {
+                    $s2 = $script:views["Stage2View"]
+                    $m = if ($s2) { $s2.FindName("ExamSheetPreviewModal") } else { $null }
+                    $grid = if ($s2) { $s2.FindName("DataGridExamPreview") } else { $null }
+                    $txtCnt = if ($s2) { $s2.FindName("TxtExamPreviewRowCount") } else { $null }
+                    $search = if ($s2) { $s2.FindName("TxtExamPreviewSearch") } else { $null }
+
+                    $script:examPreviewAllRows = $sheetRes.Rows
+                    if ($grid) { $grid.ItemsSource = $sheetRes.Rows }
+                    if ($txtCnt) { $txtCnt.Text = "Showing $($sheetRes.Rows.Count) records (Raw Responses)" }
+                    if ($search) { $search.Text = "" }
+                    if ($m) { $m.Visibility = [System.Windows.Visibility]::Visible }
+                } else {
+                    [System.Windows.MessageBox]::Show("Failed to load sheet data: $($sheetRes.Error)", "Preview Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                }
+            }
+
+            $btnPrevSheet = $viewObj.FindName("BtnPreviewExamSheet")
+            if ($btnPrevSheet) { $btnPrevSheet.Add_Click($previewExamHandler) }
+
+            # Preview Generated Result Verification Sheet Handler
+            $btnPrevExamVer = $viewObj.FindName("BtnPreviewExamVerSheet")
+            if ($btnPrevExamVer) {
+                $btnPrevExamVer.Add_Click({
+                    if (-not $script:activeCourse -or -not $script:activeCourse.ExamVerificationSheet -or -not (Test-Path -LiteralPath $script:activeCourse.ExamVerificationSheet)) {
+                        [System.Windows.MessageBox]::Show("Please generate the result verification sheet first.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                        return
+                    }
+
+                    $sheetRes = Import-StudentSheet -Path $script:activeCourse.ExamVerificationSheet
+                    if ($sheetRes.Success -and $sheetRes.Rows.Count -gt 0) {
+                        $s2 = $script:views["Stage2View"]
+                        $m = if ($s2) { $s2.FindName("ExamSheetPreviewModal") } else { $null }
+                        $grid = if ($s2) { $s2.FindName("DataGridExamPreview") } else { $null }
+                        $txtCnt = if ($s2) { $s2.FindName("TxtExamPreviewRowCount") } else { $null }
+                        $search = if ($s2) { $s2.FindName("TxtExamPreviewSearch") } else { $null }
+
+                        $script:examPreviewAllRows = $sheetRes.Rows
+                        if ($grid) { $grid.ItemsSource = $sheetRes.Rows }
+                        if ($txtCnt) { $txtCnt.Text = "Showing $($sheetRes.Rows.Count) records (Result Verification Sheet)" }
+                        if ($search) { $search.Text = "" }
+                        if ($m) { $m.Visibility = [System.Windows.Visibility]::Visible }
+                    } else {
+                        [System.Windows.MessageBox]::Show("Failed to load sheet data: $($sheetRes.Error)", "Preview Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                    }
+                })
+            }
+
+            # Toggle Result Verification Sheet Details Panel (Open / Close Sheet)
+            $btnToggleExamVerPanel = $viewObj.FindName("BtnToggleExamVerificationPanel")
+            if ($btnToggleExamVerPanel) {
+                $btnToggleExamVerPanel.Add_Click({
+                    $s2 = $script:views["Stage2View"]
+                    $container = if ($s2) { $s2.FindName("ExamVerificationSheetDetailsContainer") } else { $null }
+                    $btn = $this
+                    if ($container -and $btn) {
+                        if ($container.Visibility -eq [System.Windows.Visibility]::Visible) {
+                            $container.Visibility = [System.Windows.Visibility]::Collapsed
+                            $btn.Content = "Open Sheet " + [char]0x25BC
+                        } else {
+                            $container.Visibility = [System.Windows.Visibility]::Visible
+                            $btn.Content = "Close Sheet " + [char]0x25B2
+                        }
+                    }
+                })
+            }
+
+            $txtSearch = $viewObj.FindName("TxtExamPreviewSearch")
+            if ($txtSearch) {
+                $txtSearch.Add_TextChanged({
+                    $s2 = $script:views["Stage2View"]
+                    $searchBox = $this
+                    $grid = if ($s2) { $s2.FindName("DataGridExamPreview") } else { $null }
+                    $txtCnt = if ($s2) { $s2.FindName("TxtExamPreviewRowCount") } else { $null }
+
+                    $q = if ($searchBox) { $searchBox.Text.Trim().ToLower() } else { "" }
+                    if (-not $script:examPreviewAllRows) { return }
+                    if ([string]::IsNullOrWhiteSpace($q)) {
+                        if ($grid) { $grid.ItemsSource = $script:examPreviewAllRows }
+                        if ($txtCnt) { $txtCnt.Text = "Showing $($script:examPreviewAllRows.Count) records" }
+                    } else {
+                        $filtered = @($script:examPreviewAllRows | Where-Object {
+                            $rowText = ($_.PSObject.Properties | ForEach-Object { [string]$_.Value }) -join ' '
+                            $rowText.ToLower().Contains($q)
+                        })
+                        if ($grid) { $grid.ItemsSource = $filtered }
+                        if ($txtCnt) { $txtCnt.Text = "Showing $($filtered.Count) of $($script:examPreviewAllRows.Count) records" }
                     }
                 })
             }
@@ -3905,7 +4440,7 @@ function Wire-ViewEvents {
                         $null = Mark-SelectedStudentsNotified -SelectedStudents $selectedStudents
 
                         [System.Windows.MessageBox]::Show(
-                            "Gmail Web Draft opened in your default browser!`n`n- Recipients: $($emails.Count) student email(s) placed in BCC`n- Flagged Students: $($selectedStudents.Count) marked as Notified in database.`n`nTip: If you do not send the email or the send fails, you can select the students and click '[ ↺ Unmark ]' to reset their status.",
+                            "Gmail Web Draft opened in your default browser!`n`n- Recipients: $($emails.Count) student email(s) placed in BCC`n- Flagged Students: $($selectedStudents.Count) marked as Notified in database.`n`nTip: If you do not send the email or the send fails, you can select the students and click '[ Unmark ]' to reset their status.",
                             "Gmail Draft Launched",
                             [System.Windows.MessageBoxButton]::OK,
                             [System.Windows.MessageBoxImage]::Information

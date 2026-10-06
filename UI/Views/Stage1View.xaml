@@ -458,21 +458,29 @@
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <Button x:Name="BtnPreviewVerificationSheet"
                                                 Content="Preview Sheet"
-                                                Style="{DynamicResource BtnPrimary}"
-                                                Padding="14,8"
+                                                Style="{DynamicResource BtnSecondary}"
+                                                Padding="12,8"
                                                 Margin="0,0,8,0"/>
                                         <Button x:Name="BtnOpenVerificationSheet"
-                                                Content="Open File"
+                                                Content="Open in Excel"
                                                 Style="{DynamicResource BtnSecondary}"
-                                                Padding="14,8"
+                                                Padding="12,8"
                                                 Margin="0,0,8,0"/>
                                         <Button x:Name="BtnRecreateVerificationSheet"
                                                 Content="Recreate Sheet..."
                                                 Style="{DynamicResource BtnSecondary}"
+                                                Padding="12,8"
+                                                Margin="0,0,8,0"/>
+                                        <Button x:Name="BtnToggleVerificationPanel"
+                                                Content="Open Sheet ▼"
+                                                Style="{DynamicResource BtnPrimary}"
                                                 Padding="14,8"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
+
+                            <!-- Collapsible Verification Sheet Details Container (Hidden by default) -->
+                            <StackPanel x:Name="VerificationSheetDetailsContainer" Visibility="Collapsed" Margin="0,0,0,0">
 
                             <!-- Automated Pipeline Bar (Adaptive & Streamlined) -->
                             <Border Background="{DynamicResource Panel2Brush}"
@@ -732,7 +740,9 @@
                                 </Grid>
                             </Border>
 
-                        </StackPanel>
+                            </StackPanel> <!-- End VerificationSheetDetailsContainer -->
+
+                        </StackPanel> <!-- End PanelVerificationSheetActive -->
 
                     </StackPanel>
                 </Border>

@@ -86,7 +86,8 @@ PDQA Project/
 | 1 | Main | Core build, in planned order | Paused |
 | 2 | Dealing with sheet in our app | Import, parse, validate student enrollment sheet & handle sheet operations | Paused |
 | 3 | Student Verification System | Batch download receipts, OCR extraction, rule-based verification, and discrepancy review | Paused |
-| 4 | Send Email | Student notification system for receipt resubmissions, discrepancy alerts, and coordinator updates | In progress |
+| 4 | Send Email | Student notification system for receipt resubmissions, discrepancy alerts, and coordinator updates | Paused |
+| 5 | Stage 2 Examination Results & Final Sheet | Import exam responses, verify certificate marks via WinRT OCR, review discrepancies, and generate college Final Result Sheet | In progress |
 
 ---
 
@@ -240,6 +241,45 @@ PDQA Project/
 - [x] Email Center UI Declutter & Modernization (streamlined headers, eliminated noisy descriptions, shortened button labels) `[Session 1]`
 - [x] 2-Way Delivery Status Management (added `[✓ Mark Notified]` and `[↺ Unmark]` manual roster controls with state rollback) `[Session 1]`
 - [x] Decommissioned Redundant 'Flag for Resubmit' Button & Modal (all review queue students are already flagged; simplified Mode B to single 'Approve (Override)' action) `[Session 1]`
+
+### Branch 5 (Stage 2: Examination Results & Final Sheet)
+
+#### Phase A — Exam Results Sheet Ingestion & Data Store
+- [x] Define Stage 2 response header schema and parser in `modules/Import-StudentSheet.ps1` (`Import-ExamResultsSheet`) `[Session 1]`
+- [x] Store Stage 2 student records in `data/Courses/<CourseName>/exam_results.json` (or merged in `students.json`) `[Session 1]`
+- [x] Update `courses.json` with `ExamResultsSheet` path and stage status `"ResultsUploaded"` `[Session 1]`
+
+#### Phase B — Certificate Ingestion & 4-Tier Matching
+- [ ] Reuse Google Drive direct batch downloader from `modules/Download-Receipts.ps1` (`Download-ReceiptsFromDrive`)
+- [ ] Reuse 4-tier local matching algorithm (`Import-ReceiptsFromLocalSource`) for local folders / ZIP archives
+- [ ] Store matched certificates in `data/Courses/<CourseName>/certificates/` with persistent cache
+
+#### Phase C — WinRT OCR & Certificate Data Extractor
+- [ ] Reuse WinRT PDF rasterizer (`ConvertTo-ReceiptImage` in `modules/OcrEngine.ps1`) to render certificate PDFs to 1600px PNGs
+- [ ] Reuse WinRT OCR engine (`Invoke-ReceiptOcr`) to extract raw lines and bounding boxes
+- [ ] Build specialized extractor `Extract-CertificateData` in `modules/ExamVerificationEngine.ps1` targeting NPTEL certificate fields (Candidate Name, Course Title, Assignment /25, Exam /75, Total /100, Roll No, Credits)
+
+#### Phase D — 5-Rule Exam Verification Engine & Under Review Policy
+- [ ] Implement `Test-ExamVerificationRules` in `modules/ExamVerificationEngine.ps1` (Course Match, Identity Match, Assignment Marks, Exam Marks, Total Marks)
+- [ ] Enforce strict Under Review policy: mark any decimal or rounding mismatch (e.g. 25 vs 24.67) and missing/unreadable certificates as `Under Review` with detailed remarks
+- [ ] Implement `Invoke-CourseExamVerificationPipeline` with batch processing, delta skipping, and progress reporting
+
+#### Phase E — Stage 2 UI Command Center (`UI/Views/Stage2View.xaml`)
+- [x] Replace "Coming Soon" in `Stage2View.xaml` with Results Sheet Attachment Card, Pipeline Control Bar, adaptive progress bar, and 4-metric summary cards `[Session 1]`
+- [ ] Wire Stage 2 Review Queue interaction with split-screen preview and 1-click `[ Accept Certificate Marks ]` override button
+- [ ] Update Workspace Navigation and Stage 2 status badge in `NPTEL-Manager.ps1`
+
+#### Phase F — Official College Final Result Sheet Generator
+- [ ] Build `Export-CourseFinalResultSheet` in `modules/Export-FinalResultSheet.ps1` using `ImportExcel`
+- [ ] Populate standard departmental columns (S.No, Enrollment No, Student Name, Assignment Marks /25, Exam Marks /75, Total Marks /100, NPTEL Roll No, Credits, Pass/Fail, Remarks) — without medal tiers
+- [ ] Apply clean institutional styling (Navy header `#1F4E79`, white bold text, alternating light rows, auto-fitted columns)
+- [ ] Add `[ 📊 Generate Final Result Sheet ]` button in `Stage2View.xaml` with direct system file launcher
+
+#### Extra / Ad-Hoc Completed Tasks
+- [x] Windows PowerShell 5.1 Unicode & String Hardening for Stage 2: Replaced literal em-dash strings with `[string][char]0x2014` and sanitized non-ASCII tokens to guarantee 100% parse stability in Windows PowerShell 5.1 `[Session 1]`
+- [x] Applied Skill 1 Dynamic Control Resolution to Stage 2 View: Refactored 'View Details' health toggle, preview modal close, and search filter event handlers in `NPTEL-Manager.ps1` to resolve controls dynamically via `$script:views["Stage2View"]` and `$this`, eliminating runtime property visibility/content errors `[Session 1]`
+- [x] Manual Result Verification Sheet Generation & Verification Columns: Aligned Stage 2 Card D with Stage 1 architecture — added State A prompt with `[ + Generate Result Verification Sheet ]`, built `New-CourseExamVerificationSheet` to generate `<Course>_Result_Verification_Sheet.xlsx` appending `Verification Status` and `Verification Remarks` columns, and wired Preview Sheet, Open File, and Recreate Sheet actions `[Session 1]`
+- [x] Collapsible Verification Sheet Panel in Stage 1 & Stage 2: Wrapped the large active verification details (pipeline bar, 3-card mini dashboard, and action buttons) inside a collapsible container (collapsed by default); added `[ Open Sheet ▼ ]` / `[ Close Sheet ▲ ]` toggle button in the File Location Bar following Skill 1 dynamic control resolution `[Session 1]`
 
 ---
 
@@ -570,6 +610,32 @@ Progress.md (Updated Branch 4 checklist and logged Session 1)
 - Sub-Branch 4.2: Direct in-app SMTP background dispatch with Windows DPAPI encryption in SettingsView.xaml and modules/EmailEngine.ps1.
 ```
 
+### Session 1 (Branch 5 (Stage 2: Examination Results & Final Sheet)) — Ingestion Engine, Health Auditing, Result Verification Sheet & Collapsible Workspace [COMPLETED]
+
+**Files created/updated**
+```
+modules/Import-StudentSheet.ps1 (Added Get-ExamResultsColumnMapping with defensive whitespace/colon trimming; added Import-ExamResultsSheet with Excel serial date conversion, declared marks extraction [/25, /75, /100], and Roll No de-duplication; added Get-CourseExamResultsStore and Save-CourseExamResultsStore persisting to data/Courses/<CourseName>/exam_results.json)
+UI/Views/Stage2View.xaml (Replaced placeholder with complete 3-card stack: Stage 2 Attachment Card with raw sheet update/open/preview; Examination Sheet Health panel with collapsible 9-column detection badges including Email and duplicate counter; Result Verification Sheet panel with State A [Prompt] and State B [Active with File Location Bar, pipeline bar, adaptive progress bar, 3-card mini dashboard: VERIFIED, UNDER REVIEW, CERTIFICATE MISSING, and export strip]; and in-app modal preview overlay)
+UI/Views/Stage1View.xaml (Added BtnToggleVerificationPanel ['Open Sheet ▼' / 'Close Sheet ▲'] and wrapped pipeline bar, mini cards, and summary strip inside collapsible VerificationSheetDetailsContainer)
+NPTEL-Manager.ps1 (Added New-CourseExamVerificationSheet duplicating exam responses and appending 'Verification Status' and 'Verification Remarks' columns; updated Update-Stage2View with breadcrumb, health numbers, column badge binding, and state toggle; sanitized non-ASCII strings to [string][char]0x2014 for Windows PowerShell 5.1; applied Skill 1 dynamic control resolution across all Stage 1 & Stage 2 event handlers)
+Progress.md (Registered Branch 5 phases A-F; logged Session 1; added ## 7. Skill with Skill 1: WPF Event Scoping & Dynamic Control Resolution in PowerShell)
+```
+
+**Decisions made this session**
+- *Non-Intrusive Email Column*: Included `Email` as an optional 9th standard column in Stage 2 health detection to assist coordinator communications without failing the critical health audit or blocking certificate OCR.
+- *Strict Under Review Policy for Decimal Marks*: Re-affirmed that student marks differences (including decimal/rounding mismatches like 25 vs 24.67) must strictly route to `Under Review` with detailed remarks, rather than being auto-rounded.
+- *College Final Result Sheet — No Medal Tiers*: Per college guidelines, the generated final result sheet will strictly list academic marks and credits without medal designations (Elite / Silver / Gold).
+- *Explicit Result Verification Sheet Generation*: Rather than automatically exposing the raw responses as the verification sheet, Card D starts in State A (`[ + Generate Result Verification Sheet ]`). Clicking this generates `<Course>_Result_Verification_Sheet.xlsx` alongside the raw responses sheet, appending official `Verification Status` and `Verification Remarks` columns.
+- *Collapsible Verification Sheet Panel Architecture*: Both Stage 1 and Stage 2 active verification panels are collapsed by default upon generation, displaying only the compact File Location Bar. Clicking `[ Open Sheet ▼ ]` dynamically expands the pipeline controls, mini dashboard cards, and export strip, and morphs the button to `[ Close Sheet ▲ ]`.
+- *Windows PowerShell 5.1 Parse Hardening*: Replaced non-ASCII literal Unicode characters (`—`, `₹`, `↺`) with runtime tokens (`[string][char]0x2014`) to prevent Windows PowerShell 5.1 from misinterpreting multi-byte UTF-8 sequences as Windows-1252 quotes.
+- *Skill 1: WPF Event Scoping in PowerShell*: Documented and applied the mandatory rule that `.NET` event scriptblocks (`Add_Click`) must dynamically resolve controls via `$script:views[...]` and `$this` rather than referencing outer function-local variables that evaluate to `$null`.
+
+**Known issues / TODO carried forward**
+```
+- Next piece: Branch 5 Phase B (Certificate Ingestion & 4-Tier Matching via modules/Download-Receipts.ps1).
+- Next unchecked checklist item for Branch 5: Task B.1 (Reuse Google Drive direct batch downloader from modules/Download-Receipts.ps1).
+```
+
 ---
 
 
@@ -636,3 +702,46 @@ Rules for this session:
 7. INCREMENTAL WRITES — after each finished file/task, give me a paste-ready update.
 8. When done, give me: new/changed files, plus the exact text to paste into Files, Decisions, Repo layout, and the checklist.
 ```
+
+---
+
+## 7. Skill
+
+### Skill 1: WPF Event Scoping & Dynamic Control Resolution in PowerShell
+
+**The Golden Rule:**  
+Never reference local outer-scope variables inside a `.NET` / WPF event scriptblock (e.g. `Add_Click({ ... })`, `Add_TextChanged({ ... })`, `Add_MouseLeftButtonUp({ ... })`). Event scriptblocks in PowerShell do NOT automatically close over outer function-local variables; at the time of execution, those local variables evaluate to `$null`, causing:
+`The property 'Visibility' cannot be found on this object` or `The property 'Content' cannot be found on this object`.
+
+**The Mandatory Resolution Pattern:**
+Whenever writing or modifying an event handler inside a view:
+1. **Always use `$this`** to access the element that triggered the event (e.g. the clicked Button, TextBox, or CheckBox):
+   ```powershell
+   $btn = $this
+   ```
+2. **Always resolve sibling/child controls dynamically** from the view container stored in `$script:views`:
+   ```powershell
+   # BAD (DO NOT DO THIS):
+   $btnToggle.Add_Click({
+       if ($detailsContainer.Visibility -eq [System.Windows.Visibility]::Visible) { ... }
+   })
+
+   # GOOD (ALWAYS DO THIS):
+   $btnToggle.Add_Click({
+       $view = $script:views["Stage2View"]
+       $container = if ($view) { $view.FindName("ExamHealthDetailsContainer") } else { $null }
+       $btn = $this
+       if ($container -and $btn) {
+           if ($container.Visibility -eq [System.Windows.Visibility]::Visible) {
+               $container.Visibility = [System.Windows.Visibility]::Collapsed
+               $btn.Content = "View Details " + [char]0x25BC
+           } else {
+               $container.Visibility = [System.Windows.Visibility]::Visible
+               $btn.Content = "Hide Details " + [char]0x25B2
+           }
+       }
+   })
+   ```
+3. **Pass contextual metadata via `.Tag`**:
+   If an element needs specific record data (like a student Roll No or file path), bind it to `$element.Tag` at initialization time and read `$this.Tag` inside the event handler.
+

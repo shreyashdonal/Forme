@@ -418,6 +418,318 @@ function Get-CourseStudents {
     return @()
 }
 
+# ==============================================================================
+# Stage 2: Examination Results Sheet Ingestion & Persistence
+# ==============================================================================
+
+function Get-ExamResultsColumnMapping {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Headers
+    )
+
+    $patterns = [ordered]@{
+        RollNo          = '^(enrollment(\s*number)?|roll\s*no|urn|reg(istration)?\s*no|student\s*id)'
+        Name            = '^(name|student\s*name|candidate\s*name|full\s*name)$'
+        Email           = '^(email(\s*address)?|mail)$'
+        Subject         = '^(subject|course\s*name|course\s*title)$'
+        AssignmentMarks = 'assign(ment)?\s*marks?'
+        ExamMarks       = '(main\s*)?exam\s*marks?'
+        TotalMarks      = '(final\s*exam\s*marks\s*)?total(\s*marks)?'
+        CertificateUrl  = '(upload\s*)?(exam\s*)?certificate.*|proof|drive\.google'
+        Timestamp       = 'timestamp|submission\s*time'
+    }
+
+    $mapping = [ordered]@{}
+    foreach ($key in $patterns.Keys) {
+        $pattern = $patterns[$key]
+        $matchedHeader = $null
+        foreach ($h in $Headers) {
+            $cleanH = $h.Trim()
+            $strippedH = ($h -replace '[:\s]+$', '').Trim()
+            if ($cleanH -match "(?i)$pattern" -or $strippedH -match "(?i)$pattern") {
+                $matchedHeader = $cleanH
+                break
+            }
+        }
+        $mapping[$key] = $matchedHeader
+    }
+
+    return $mapping
+}
+
+function Import-ExamResultsSheet {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $result = [PSCustomObject]@{
+        Success         = $false
+        FilePath        = $Path
+        RowCount        = 0
+        Headers         = @()
+        ColumnMap       = [ordered]@{}
+        Students        = @()
+        DuplicateCount  = 0
+        SupersededRolls = @()
+        Rows            = @()
+        Error           = $null
+    }
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        $result.Error = "File not found at specified path: $Path"
+        return $result
+    }
+
+    $ext = [System.IO.Path]::GetExtension($Path).ToLower()
+    if ($ext -notin @('.xlsx', '.xls', '.csv')) {
+        $result.Error = "Unsupported file format '$ext'. Please provide an .xlsx, .xls, or .csv file."
+        return $result
+    }
+
+    try {
+        $rawRows = @()
+        if ($ext -eq '.csv') {
+            $rawRows = @(Import-Csv -LiteralPath $Path -ErrorAction Stop)
+        }
+        else {
+            if (Get-Module -ListAvailable -Name ImportExcel) {
+                Import-Module ImportExcel -ErrorAction Stop
+                $rawRows = @(Import-Excel -Path $Path -ErrorAction Stop)
+            }
+            else {
+                throw "The 'ImportExcel' PowerShell module is required to read Excel files. Please run: Install-Module ImportExcel -Scope CurrentUser"
+            }
+        }
+
+        # Filter out completely blank rows, trim property names, and format date/timestamp values
+        $validRows = @()
+        foreach ($row in $rawRows) {
+            $hasData = $false
+            $cleanRowDict = [ordered]@{}
+            if ($row -is [System.Management.Automation.PSCustomObject]) {
+                foreach ($prop in $row.PSObject.Properties) {
+                    $val = $prop.Value
+                    if (-not [string]::IsNullOrWhiteSpace($val)) {
+                        $hasData = $true
+                    }
+                    if ($prop.Name -match '(?i)timestamp|date') {
+                        $val = ConvertTo-ReadableDate -Value $val
+                    }
+                    $cleanPropName = $prop.Name.Trim()
+                    $cleanRowDict[$cleanPropName] = $val
+                }
+            }
+            if ($hasData) {
+                $validRows += [PSCustomObject]$cleanRowDict
+            }
+        }
+
+        # Extract headers (all trimmed)
+        $headers = @()
+        if ($validRows.Count -gt 0) {
+            $headers = @($validRows[0].PSObject.Properties | Select-Object -ExpandProperty Name)
+        }
+        elseif ($rawRows.Count -gt 0) {
+            $headers = @($rawRows[0].PSObject.Properties | ForEach-Object { $_.Name.Trim() })
+        }
+
+        # Detect Stage 2 column mappings
+        $colMap = Get-ExamResultsColumnMapping -Headers $headers
+
+        # Build normalized Students collection with smart de-duplication (latest submission wins)
+        $studentMap = [ordered]@{}
+        $duplicateCount = 0
+        $supersededRolls = [System.Collections.ArrayList]@()
+        $mappedHeaders = @($colMap.Values | Where-Object { $_ })
+
+        foreach ($row in $validRows) {
+            $rollNo          = if ($colMap.RollNo)          { [string]$row.($colMap.RollNo) }          else { "" }
+            $name            = if ($colMap.Name)            { [string]$row.($colMap.Name) }            else { "" }
+            $email           = if ($colMap.Email)           { [string]$row.($colMap.Email) }           else { "" }
+            $subject         = if ($colMap.Subject)         { [string]$row.($colMap.Subject) }         else { "" }
+            $assignMarks     = if ($colMap.AssignmentMarks) { [string]$row.($colMap.AssignmentMarks) } else { "" }
+            $examMarks       = if ($colMap.ExamMarks)       { [string]$row.($colMap.ExamMarks) }       else { "" }
+            $totalMarks      = if ($colMap.TotalMarks)      { [string]$row.($colMap.TotalMarks) }      else { "" }
+            $certUrl         = if ($colMap.CertificateUrl)  { [string]$row.($colMap.CertificateUrl) }  else { "" }
+            $timestamp       = if ($colMap.Timestamp)       { [string]$row.($colMap.Timestamp) }       else { "" }
+
+            # Store unmapped properties in Raw dictionary
+            $rawDict = [ordered]@{}
+            foreach ($prop in $row.PSObject.Properties) {
+                if ($prop.Name -notin $mappedHeaders) {
+                    $rawDict[$prop.Name] = $prop.Value
+                }
+            }
+
+            $stObj = [PSCustomObject]@{
+                RollNo                  = $rollNo.Trim()
+                Name                    = $name.Trim()
+                Email                   = $email.Trim()
+                Subject                 = $subject.Trim()
+                DeclaredAssignmentMarks = $assignMarks.Trim()
+                DeclaredExamMarks       = $examMarks.Trim()
+                DeclaredTotalMarks      = $totalMarks.Trim()
+                CertificateUrl          = $certUrl.Trim()
+                Timestamp               = $timestamp.Trim()
+                Raw                     = $rawDict
+                LocalCertificatePath    = $null
+                ExamVerificationStatus  = "Pending"
+                ExamVerificationRemarks = "Awaiting Verification"
+                VerifiedAssignmentMarks = $null
+                VerifiedExamMarks       = $null
+                VerifiedTotalMarks      = $null
+                CertificateRollNo       = $null
+                Credits                 = $null
+            }
+
+            # De-duplication: match by RollNo (case-insensitive), fallback to Email
+            $key = if ($stObj.RollNo) { $stObj.RollNo.ToLower() } elseif ($stObj.Email) { $stObj.Email.ToLower() } else { [Guid]::NewGuid().ToString() }
+
+            if ($studentMap.Contains($key)) {
+                $duplicateCount++
+                $dispRoll = if ($stObj.RollNo) { $stObj.RollNo } else { $stObj.Email }
+                if ($dispRoll -notin $supersededRolls) {
+                    $null = $supersededRolls.Add($dispRoll)
+                }
+                $studentMap[$key] = $stObj
+            } else {
+                $studentMap[$key] = $stObj
+            }
+        }
+
+        $students = @($studentMap.Values)
+
+        $result.Success         = $true
+        $result.RowCount        = $validRows.Count
+        $result.Headers         = $headers
+        $result.ColumnMap       = $colMap
+        $result.Students        = $students
+        $result.DuplicateCount  = $duplicateCount
+        $result.SupersededRolls = @($supersededRolls)
+        $result.Rows            = $validRows
+        return $result
+    }
+    catch {
+        $result.Success = $false
+        $result.Error   = $_.Exception.Message
+        return $result
+    }
+}
+
+function Get-CourseExamResultsFilePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$CourseId,
+        [string]$CourseName = $null,
+        [string]$DataDir = $null
+    )
+    if (-not $DataDir) {
+        $appRoot = Split-Path -Parent $PSScriptRoot
+        $DataDir = Join-Path $appRoot "data"
+    }
+
+    $coursesParent = Join-Path $DataDir "Courses"
+
+    if (-not $CourseName -and $script:courses) {
+        foreach ($c in $script:courses) {
+            if ([string]$c.Id -eq $CourseId) {
+                $CourseName = $c.Name
+                break
+            }
+        }
+    }
+
+    $cleanCourseName = if ($CourseName) { ($CourseName -replace '[\\/:*?"<>|]', '_').Trim() } else { $CourseId }
+    $courseDir = Join-Path $coursesParent $cleanCourseName
+    if (-not (Test-Path -LiteralPath $courseDir)) {
+        $null = New-Item -ItemType Directory -Path $courseDir -Force
+    }
+
+    return (Join-Path $courseDir "exam_results.json")
+}
+
+function Save-CourseExamResultsStore {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        $Store,
+        [Parameter(Mandatory = $true)]
+        [string]$CourseId,
+        [string]$CourseName = $null,
+        [string]$DataDir = $null
+    )
+
+    $jsonPath = Get-CourseExamResultsFilePath -CourseId $CourseId -CourseName $CourseName -DataDir $DataDir
+    $tempFile = [System.IO.Path]::GetTempFileName()
+    try {
+        $Store | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $tempFile -Encoding UTF8 -Force
+        Move-Item -LiteralPath $tempFile -Destination $jsonPath -Force
+        return $true
+    }
+    catch {
+        if (Test-Path -LiteralPath $tempFile) { Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue }
+        throw "Failed to save exam results store to '$jsonPath': $_"
+    }
+}
+
+function Get-CourseExamResultsStore {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$CourseId,
+        [string]$CourseName = $null,
+        [string]$ExamResultsSheet = $null,
+        [string]$DataDir = $null,
+        [switch]$Force
+    )
+
+    $jsonPath = Get-CourseExamResultsFilePath -CourseId $CourseId -CourseName $CourseName -DataDir $DataDir
+
+    if (-not $Force -and (Test-Path -LiteralPath $jsonPath)) {
+        try {
+            $rawJson = Get-Content -LiteralPath $jsonPath -Raw -Encoding UTF8
+            $store = $rawJson | ConvertFrom-Json
+            if ($store -and $store.Students) {
+                return $store
+            }
+        } catch { }
+    }
+
+    # If Force or not cached, and sheet exists on disk, parse and save
+    if ($ExamResultsSheet -and (Test-Path -LiteralPath $ExamResultsSheet)) {
+        $importRes = Import-ExamResultsSheet -Path $ExamResultsSheet
+        if ($importRes.Success) {
+            $store = [PSCustomObject]@{
+                CourseId         = $CourseId
+                CourseName       = $CourseName
+                ExamResultsSheet = $ExamResultsSheet
+                LastSync         = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+                RowCount         = $importRes.RowCount
+                DuplicateCount   = $importRes.DuplicateCount
+                ColumnMap        = $importRes.ColumnMap
+                Students         = @($importRes.Students)
+            }
+            Save-CourseExamResultsStore -Store $store -CourseId $CourseId -CourseName $CourseName -DataDir $DataDir
+            return $store
+        }
+    }
+
+    return [PSCustomObject]@{
+        CourseId         = $CourseId
+        CourseName       = $CourseName
+        ExamResultsSheet = $ExamResultsSheet
+        LastSync         = $null
+        RowCount         = 0
+        DuplicateCount   = 0
+        ColumnMap        = $null
+        Students         = @()
+    }
+}
+
 # If executed directly with a Path parameter, run and return the result
 if ($Path) {
     Import-StudentSheet -Path $Path
