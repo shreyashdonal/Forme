@@ -63,6 +63,11 @@ if (Test-Path $verModule) {
     . $verModule
 }
 
+$examVerModule = Join-Path $appRoot "modules\ExamVerificationEngine.ps1"
+if (Test-Path $examVerModule) {
+    . $examVerModule
+}
+
 # 2. State Storage (data/courses.json)
 $dataDir = Join-Path $appRoot "data"
 $script:dataDir = $dataDir
@@ -101,6 +106,13 @@ $script:activeCourse = $null
 $script:reviewSessionCourseId = ""
 $script:reviewSessionSolvedRolls = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $script:reviewStagedSolved = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:examReviewSessionCourseId = ""
+$script:examReviewSessionSolvedRolls = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:examReviewStagedSolved = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:examReviewCurrentPage = 1
+$script:examReviewPageSize = 25
+$script:examReviewSearchQuery = ""
+$script:emailReturnView = "ReviewView"
 
 function Save-Courses {
     $json = ConvertTo-Json @($script:courses) -Depth 4
@@ -290,9 +302,16 @@ function New-CourseVerificationSheet {
     # Detect registration column from ColumnMap
     $isRegHeader = if ($parsed.ColumnMap) { $parsed.ColumnMap.IsRegistered } else { $null }
 
+    # Use de-duplicated rows (latest submission wins per student)
+    $sourceRows = if ($parsed.DeDuplicatedRows -and $parsed.DeDuplicatedRows.Count -gt 0) {
+        $parsed.DeDuplicatedRows
+    } else {
+        $parsed.Rows
+    }
+
     # Build verification rows (existing columns + 'Verification Status' + 'Verification Remarks')
     $verificationRows = [System.Collections.ArrayList]@()
-    foreach ($row in $parsed.Rows) {
+    foreach ($row in $sourceRows) {
         $rowDict = [ordered]@{}
         foreach ($prop in $row.PSObject.Properties) {
             $rowDict[$prop.Name] = $prop.Value
@@ -308,11 +327,25 @@ function New-CourseVerificationSheet {
         $null = $verificationRows.Add([PSCustomObject]$rowDict)
     }
 
+    # Proactively check if target Excel file is currently open/locked
+    if (Test-FileLocked -Path $targetPath) {
+        $fName = [System.IO.Path]::GetFileName($targetPath)
+        throw "FILE_LOCKED:$fName"
+    }
+
     # Export to Excel using Export-Excel (from ImportExcel module) or fallback to CSV
     $hasImportExcel = (Get-Module -Name ImportExcel -ListAvailable)
     if ($hasImportExcel) {
         Import-Module ImportExcel -ErrorAction SilentlyContinue
-        $verificationRows | Export-Excel -Path $targetPath -WorksheetName "Verification" -AutoSize -BoldTopRow -FreezeTopRow -ClearSheet
+        try {
+            $verificationRows | Export-Excel -Path $targetPath -WorksheetName "Verification" -AutoSize -BoldTopRow -FreezeTopRow -ClearSheet
+        } catch {
+            if ((Test-FileLocked -Path $targetPath) -or $_.Exception.Message -match "being used by another process|Error saving file|Save") {
+                $fName = [System.IO.Path]::GetFileName($targetPath)
+                throw "FILE_LOCKED:$fName"
+            }
+            throw
+        }
     } else {
         $targetPath = [System.IO.Path]::ChangeExtension($targetPath, ".csv")
         $verificationRows | Export-Csv -Path $targetPath -NoTypeInformation -Encoding UTF8
@@ -366,23 +399,67 @@ function New-CourseExamVerificationSheet {
         throw "Could not parse examination results sheet: $($parsed.Error)"
     }
 
+    # Use de-duplicated rows (latest submission wins per student)
+    $sourceRows = if ($parsed.DeDuplicatedRows -and $parsed.DeDuplicatedRows.Count -gt 0) {
+        $parsed.DeDuplicatedRows
+    } else {
+        $parsed.Rows
+    }
+
+    # Check existing store to preserve any already-verified statuses if re-generating
+    $existingStore = Get-CourseExamResultsStore -CourseId $Course.Id -CourseName $Course.Name
+    $existingStatusMap = @{}
+    $existingRemarksMap = @{}
+    if ($existingStore -and $existingStore.Students) {
+        foreach ($st in $existingStore.Students) {
+            $k = if ($st.RollNo) { $st.RollNo.Trim().ToLower() } elseif ($st.Email) { $st.Email.Trim().ToLower() } else { $null }
+            if ($k) {
+                if ($st.ExamVerificationStatus) { $existingStatusMap[$k] = $st.ExamVerificationStatus }
+                if ($st.ExamVerificationRemarks) { $existingRemarksMap[$k] = $st.ExamVerificationRemarks }
+            }
+        }
+    }
+
     # Build result verification rows (existing columns + 'Verification Status' + 'Verification Remarks')
     $verificationRows = [System.Collections.ArrayList]@()
-    foreach ($row in $parsed.Rows) {
+    foreach ($row in $sourceRows) {
         $rowDict = [ordered]@{}
         foreach ($prop in $row.PSObject.Properties) {
             $rowDict[$prop.Name] = $prop.Value
         }
-        $rowDict['Verification Status'] = 'Pending'
-        $rowDict['Verification Remarks'] = 'Awaiting Certificate Verification'
+
+        # Resolve student key to keep existing status if available
+        $rollVal = if ($parsed.ColumnMap -and $parsed.ColumnMap.RollNo -and $rowDict.Contains($parsed.ColumnMap.RollNo)) { [string]$rowDict[$parsed.ColumnMap.RollNo] } else { "" }
+        $emailVal = if ($parsed.ColumnMap -and $parsed.ColumnMap.Email -and $rowDict.Contains($parsed.ColumnMap.Email)) { [string]$rowDict[$parsed.ColumnMap.Email] } else { "" }
+        $k = if ($rollVal) { $rollVal.Trim().ToLower() } elseif ($emailVal) { $emailVal.Trim().ToLower() } else { $null }
+
+        $stStatus = if ($k -and $existingStatusMap.ContainsKey($k)) { $existingStatusMap[$k] } else { 'Pending' }
+        $stRemarks = if ($k -and $existingRemarksMap.ContainsKey($k)) { $existingRemarksMap[$k] } else { 'Awaiting Certificate Verification' }
+
+        $rowDict['Verification Status'] = $stStatus
+        $rowDict['Verification Remarks'] = $stRemarks
         $null = $verificationRows.Add([PSCustomObject]$rowDict)
+    }
+
+    # Proactively check if target Excel file is currently open/locked
+    if (Test-FileLocked -Path $targetPath) {
+        $fName = [System.IO.Path]::GetFileName($targetPath)
+        throw "FILE_LOCKED:$fName"
     }
 
     # Export to Excel using Export-Excel (from ImportExcel module) or fallback to CSV
     $hasImportExcel = (Get-Module -Name ImportExcel -ListAvailable)
     if ($hasImportExcel) {
         Import-Module ImportExcel -ErrorAction SilentlyContinue
-        $verificationRows | Export-Excel -Path $targetPath -WorksheetName "Result Verification" -AutoSize -BoldTopRow -FreezeTopRow -ClearSheet
+        try {
+            $verificationRows | Export-Excel -Path $targetPath -WorksheetName "Result Verification" -AutoSize -BoldTopRow -FreezeTopRow -ClearSheet
+        } catch {
+            if ((Test-FileLocked -Path $targetPath) -or $_.Exception.Message -match "being used by another process|Error saving file|Save") {
+                $fName = [System.IO.Path]::GetFileName($targetPath)
+                throw "FILE_LOCKED:$fName"
+            }
+            throw
+        }
     } else {
         $targetPath = [System.IO.Path]::ChangeExtension($targetPath, ".csv")
         $verificationRows | Export-Csv -Path $targetPath -NoTypeInformation -Encoding UTF8
@@ -396,25 +473,76 @@ function New-CourseExamVerificationSheet {
     }
     Save-Courses
 
-    # Update exam_results.json store with initial verification statuses
+    # Update exam_results.json store with verification statuses
     $store = Get-CourseExamResultsStore -CourseId $Course.Id -CourseName $Course.Name -ExamResultsSheet $examSheet -Force
     if ($store -and $store.Students) {
         foreach ($st in $store.Students) {
+            $k = if ($st.RollNo) { $st.RollNo.Trim().ToLower() } elseif ($st.Email) { $st.Email.Trim().ToLower() } else { $null }
+            $stStatus = if ($k -and $existingStatusMap.ContainsKey($k)) { $existingStatusMap[$k] } else { 'Pending' }
+            $stRemarks = if ($k -and $existingRemarksMap.ContainsKey($k)) { $existingRemarksMap[$k] } else { 'Awaiting Certificate Verification' }
+
             if ($st.PSObject.Properties['ExamVerificationStatus']) {
-                $st.ExamVerificationStatus = 'Pending'
+                $st.ExamVerificationStatus = $stStatus
             } else {
-                $st | Add-Member -NotePropertyName 'ExamVerificationStatus' -NotePropertyValue 'Pending' -Force
+                $st | Add-Member -NotePropertyName 'ExamVerificationStatus' -NotePropertyValue $stStatus -Force
             }
             if ($st.PSObject.Properties['ExamVerificationRemarks']) {
-                $st.ExamVerificationRemarks = 'Awaiting Certificate Verification'
+                $st.ExamVerificationRemarks = $stRemarks
             } else {
-                $st | Add-Member -NotePropertyName 'ExamVerificationRemarks' -NotePropertyValue 'Awaiting Certificate Verification' -Force
+                $st | Add-Member -NotePropertyName 'ExamVerificationRemarks' -NotePropertyValue $stRemarks -Force
             }
         }
         Save-CourseExamResultsStore -Store $store -CourseId $Course.Id -CourseName $Course.Name
     }
 
     return $targetPath
+}
+
+function Show-SheetGenerationErrorDialog {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SheetTypeName,
+        [string]$TargetPath = "",
+        [Parameter(Mandatory = $true)]
+        $Exception
+    )
+
+    $fileName = if ($TargetPath) { [System.IO.Path]::GetFileName($TargetPath) } else { "" }
+    $exMsg = [string]$Exception.Message
+
+    $isLocked = $false
+    $lockedName = ""
+
+    if ($exMsg -match "FILE_LOCKED:(.+)") {
+        $isLocked = $true
+        $lockedName = $Matches[1].Trim()
+    } elseif ($TargetPath -and (Test-FileLocked -Path $TargetPath)) {
+        $isLocked = $true
+        $lockedName = $fileName
+    } elseif ($exMsg -match "Error saving file\s+([^""`'\r\n]+)") {
+        $isLocked = $true
+        $lockedName = [System.IO.Path]::GetFileName($Matches[1].Trim())
+    } elseif ($exMsg -match "being used by another process|is denied|The process cannot access the file") {
+        $isLocked = $true
+        $lockedName = if ($fileName) { $fileName } else { "the Excel sheet" }
+    }
+
+    if ($isLocked) {
+        if (-not $lockedName) { $lockedName = if ($fileName) { $fileName } else { "the Excel sheet" } }
+        [System.Windows.MessageBox]::Show(
+            "The $SheetTypeName cannot be saved because`n`"$lockedName`" is currently open.`n`nPlease close the file in Excel and try again.",
+            "Generation Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Warning
+        )
+    } else {
+        [System.Windows.MessageBox]::Show(
+            "Failed to generate the $SheetTypeName.`n`nPlease try again.`n`n(Details: $exMsg)",
+            "Generation Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+    }
 }
 
 # 3. XAML Loader Helper
@@ -439,6 +567,20 @@ function Show-ExcelBrowseDialog {
     $dialog.Filter = "Spreadsheets (*.xlsx;*.xls;*.csv)|*.xlsx;*.xls;*.csv|All Files (*.*)|*.*"
     $dialog.InitialDirectory = [System.Environment]::GetFolderPath("MyDocuments")
     if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        return $dialog.FileName
+    }
+    return $null
+}
+
+function Show-FileBrowseDialog {
+    param(
+        [string]$Title = "Select File",
+        [string]$Filter = "All Files (*.*)|*.*"
+    )
+    $dialog = New-Object Microsoft.Win32.OpenFileDialog
+    $dialog.Title = $Title
+    $dialog.Filter = $Filter
+    if ($dialog.ShowDialog() -eq $true) {
         return $dialog.FileName
     }
     return $null
@@ -557,7 +699,7 @@ function Remove-Course {
     Refresh-CourseLists
 
     # 5. If currently viewing workspace or child view of deleted course, navigate to CoursesView
-    if ($script:currentView -in @("WorkspaceView", "Stage1View", "Stage2View", "ReviewView")) {
+    if ($script:currentView -in @("WorkspaceView", "Stage1View", "Stage2View", "ReviewView", "ExamReviewView")) {
         Navigate-To "CoursesView"
     }
 
@@ -701,6 +843,13 @@ function Select-Course {
         $script:reviewSessionCourseId = $Course.Id
         $script:reviewSessionSolvedRolls.Clear()
         $script:reviewStagedSolved.Clear()
+    }
+    if ($Course.Id -ne $script:examReviewSessionCourseId) {
+        $script:examReviewSessionCourseId = $Course.Id
+        $script:examReviewSessionSolvedRolls.Clear()
+        $script:examReviewStagedSolved.Clear()
+        $script:examReviewCurrentPage = 1
+        $script:examReviewSearchQuery = ""
     }
     $script:activeCourse = $Course
 
@@ -1060,9 +1209,14 @@ function Select-Course {
         Update-ReviewView -Course $Course -Students $students
     }
 
+    # -- Update Exam Review View (if initialized) --
+    if ($script:views.ContainsKey("ExamReviewView")) {
+        Update-ExamReviewView -Course $Course
+    }
+
     if ($TargetView) {
         Navigate-To $TargetView
-    } elseif ($script:currentView -eq "Stage1View" -or $script:currentView -eq "Stage2View" -or $script:currentView -eq "ReviewView") {
+    } elseif ($script:currentView -eq "Stage1View" -or $script:currentView -eq "Stage2View" -or $script:currentView -eq "ReviewView" -or $script:currentView -eq "ExamReviewView") {
         # Already inside the Stage detail view or Review queue; keep user on the active view
     } else {
         Navigate-To "WorkspaceView"
@@ -1083,23 +1237,51 @@ function Update-Stage2View {
     $codeStr = if ($cCode) { " ($cCode)" } else { "" }
     $upperName = $cName.ToUpper()
 
+    $sageBrush   = [System.Windows.Application]::Current.FindResource("SageBrush")
+    $accentBrush = [System.Windows.Application]::Current.FindResource("AccentBrush")
+    $mutedBrush  = [System.Windows.Application]::Current.FindResource("MutedBrush")
+    $textBrush   = [System.Windows.Application]::Current.FindResource("TextBrush")
+    $borderBrush = [System.Windows.Application]::Current.FindResource("BorderBrush")
+
+    $dashToken   = [string][char]0x2014
+    $checkToken  = [string][char]0x2713
+    $warnToken   = [string][char]0x26A0
+    $infoToken   = [string][char]0x2139
+    $bulletToken = [string][char]0x2022
+
     # 1. Breadcrumb
     $s2Breadcrumb = $s2View.FindName("TxtStage2Breadcrumb")
     if ($s2Breadcrumb) {
         $s2Breadcrumb.Text = "COURSES > $upperName$codeStr > STAGE 2"
     }
 
-    # 2. Stage 2 Attachment Card
+    # 2. Stage 2 Attachment Card (Dynamic 2-State Switch)
     $txtSheetPath = $s2View.FindName("TxtExamResultsSheetPath")
-    $btnPreview = $s2View.FindName("BtnPreviewExamSheet")
-    $btnOpen = $s2View.FindName("BtnOpenExamSheet")
+    $btnPreview   = $s2View.FindName("BtnPreviewExamSheet")
+    $btnOpen      = $s2View.FindName("BtnOpenExamSheet")
+    $btnUpdate    = $s2View.FindName("BtnUpdateExamSheet")
 
     $hasSheet = ($Course.ExamResultsSheet -and (Test-Path -LiteralPath $Course.ExamResultsSheet -ErrorAction SilentlyContinue))
     if ($txtSheetPath) {
         $txtSheetPath.Text = if ($hasSheet) { [string]$Course.ExamResultsSheet } else { "No examination results sheet linked." }
     }
-    if ($btnPreview) { $btnPreview.IsEnabled = [bool]$hasSheet }
-    if ($btnOpen) { $btnOpen.IsEnabled = [bool]$hasSheet }
+    if ($btnUpdate) {
+        if ($hasSheet) {
+            $btnUpdate.Content = "Update Sheet"
+            $btnUpdate.Style = [System.Windows.Application]::Current.FindResource("BtnSecondary")
+        } else {
+            $btnUpdate.Content = "Add Sheet"
+            $btnUpdate.Style = [System.Windows.Application]::Current.FindResource("BtnPrimary")
+        }
+    }
+    if ($btnPreview) {
+        $btnPreview.Visibility = if ($hasSheet) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $btnPreview.IsEnabled = [bool]$hasSheet
+    }
+    if ($btnOpen) {
+        $btnOpen.Visibility = if ($hasSheet) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $btnOpen.IsEnabled = [bool]$hasSheet
+    }
 
     # 3. Load or Retrieve Exam Results Store
     $store = $null
@@ -1107,17 +1289,16 @@ function Update-Stage2View {
         $store = Get-CourseExamResultsStore -CourseId $Course.Id -CourseName $Course.Name -ExamResultsSheet $Course.ExamResultsSheet
     }
 
-    $colMap = if ($store) { $store.ColumnMap } else { $null }
-    $students = if ($store -and $store.Students) { @($store.Students) } else { @() }
-    $rowCount = if ($store) { $store.RowCount } else { 0 }
+    $colMap      = if ($store) { $store.ColumnMap } else { $null }
+    $students    = if ($store -and $store.Students) { @($store.Students) } else { @() }
+    $rowCount    = if ($store) { $store.RowCount } else { 0 }
     $uniqueCount = $students.Count
-    $dupCount = if ($store) { $store.DuplicateCount } else { 0 }
+    $dupCount    = if ($store) { $store.DuplicateCount } else { 0 }
 
     # 4. Examination Sheet Health Metrics Strip
-    $hTotal = $s2View.FindName("TxtExamHealthTotalStudents")
+    $hTotal  = $s2View.FindName("TxtExamHealthTotalStudents")
     $hUnique = $s2View.FindName("TxtExamHealthUniqueStudents")
-    $hDups = $s2View.FindName("TxtExamHealthDuplicates")
-    $dashToken = [string][char]0x2014
+    $hDups   = $s2View.FindName("TxtExamHealthDuplicates")
     if ($hTotal) {
         if ($hasSheet) { $hTotal.Text = [string]$rowCount } else { $hTotal.Text = $dashToken }
     }
@@ -1143,10 +1324,11 @@ function Update-Stage2View {
 
     $detectedCount = 0
     $missingCritical = @()
+    $missingOptional = @()
 
     foreach ($item in $colKeys) {
         $mappedHeader = $null
-        if ($colMap) {
+        if ($hasSheet -and $colMap) {
             if ($colMap -is [System.Collections.IDictionary] -and $colMap.Contains($item.Key)) {
                 $mappedHeader = $colMap[$item.Key]
             } elseif ($colMap.PSObject -and $colMap.PSObject.Properties[$item.Key]) {
@@ -1156,52 +1338,90 @@ function Update-Stage2View {
 
         $cCard = $s2View.FindName($item.Card)
         $cIcon = $s2View.FindName($item.Icon)
-        $cTxt = $s2View.FindName($item.Txt)
+        $cTxt  = $s2View.FindName($item.Txt)
 
-        if ($mappedHeader) {
+        if (-not $hasSheet) {
+            if ($cIcon) { $cIcon.Text = $dashToken; $cIcon.Foreground = $mutedBrush }
+            if ($cTxt)  { $cTxt.Text = $dashToken;  $cTxt.Foreground = $mutedBrush }
+            if ($cCard) { $cCard.BorderBrush = $borderBrush }
+        } elseif ($mappedHeader) {
             $detectedCount++
-            if ($cIcon) { $cIcon.Text = [string][char]0x2713; $cIcon.Foreground = $sageBrush }
-            if ($cTxt) { $cTxt.Text = [string]$mappedHeader; $cTxt.Foreground = $textBrush }
+            if ($cIcon) { $cIcon.Text = $checkToken; $cIcon.Foreground = $sageBrush }
+            if ($cTxt)  { $cTxt.Text = [string]$mappedHeader; $cTxt.Foreground = $textBrush }
             if ($cCard) { $cCard.BorderBrush = $borderBrush }
         } else {
             if ($item.Critical) {
-                if ($cIcon) { $cIcon.Text = [string][char]0x26A0; $cIcon.Foreground = $accentBrush }
-                if ($cTxt) { $cTxt.Text = "MISSING"; $cTxt.Foreground = $accentBrush }
+                if ($cIcon) { $cIcon.Text = $warnToken; $cIcon.Foreground = $accentBrush }
+                if ($cTxt)  { $cTxt.Text = "MISSING";   $cTxt.Foreground = $accentBrush }
                 if ($cCard) { $cCard.BorderBrush = $accentBrush }
                 $missingCritical += $item.Label
             } else {
-                if ($cIcon) { $cIcon.Text = [string][char]0x2014; $cIcon.Foreground = $mutedBrush }
-                if ($cTxt) { $cTxt.Text = "Not Provided"; $cTxt.Foreground = $mutedBrush }
+                if ($cIcon) { $cIcon.Text = $dashToken; $cIcon.Foreground = $mutedBrush }
+                if ($cTxt)  { $cTxt.Text = "Not Provided"; $cTxt.Foreground = $mutedBrush }
                 if ($cCard) { $cCard.BorderBrush = $borderBrush }
+                $missingOptional += $item.Label
             }
         }
     }
 
-    # Health Header Badge & Warning
-    $badgeHealth = $s2View.FindName("BadgeOverallExamHealth")
-    $txtHealth = $s2View.FindName("TxtOverallExamHealth")
-    $pnlWarn = $s2View.FindName("PanelExamColumnWarning")
+    # Header Mini Health Summary Text
+    $txtMiniSummary = $s2View.FindName("TxtMiniExamHealthSummary")
+    if ($txtMiniSummary) {
+        if (-not $hasSheet) {
+            $txtMiniSummary.Text = "No examination results sheet linked. Click [Add Sheet] above to attach your spreadsheet."
+        } elseif ($missingCritical.Count -gt 0) {
+            $txtMiniSummary.Text = "$rowCount Total Submissions $bulletToken $uniqueCount Unique Students $bulletToken $($missingCritical.Count) Critical Column(s) Missing"
+        } else {
+            $txtMiniSummary.Text = "$rowCount Total Submissions $bulletToken $uniqueCount Unique Students $bulletToken $detectedCount/9 Columns Detected"
+        }
+    }
+
+    # Health Header Badge & Categorized Guidance Banner
+    $badgeHealth  = $s2View.FindName("BadgeOverallExamHealth")
+    $txtHealth    = $s2View.FindName("TxtOverallExamHealth")
+    $pnlWarn      = $s2View.FindName("PanelExamColumnWarning")
     $txtWarnTitle = $s2View.FindName("TxtExamColumnWarningTitle")
-    $txtWarnMsg = $s2View.FindName("TxtExamColumnWarningMessage")
+    $txtWarnMsg   = $s2View.FindName("TxtExamColumnWarningMessage")
 
     if ($hasSheet) {
         if ($badgeHealth) { $badgeHealth.Visibility = [System.Windows.Visibility]::Visible }
         if ($txtHealth) {
             if ($missingCritical.Count -eq 0) {
-                $txtHealth.Text = "$detectedCount/9 Columns Detected " + [char]0x2713
+                $txtHealth.Text = "$detectedCount/9 Columns Detected " + $checkToken
                 $txtHealth.Foreground = $sageBrush
                 if ($badgeHealth) { $badgeHealth.BorderBrush = $sageBrush }
-                if ($pnlWarn) { $pnlWarn.Visibility = [System.Windows.Visibility]::Collapsed }
             } else {
-                $txtHealth.Text = "$($missingCritical.Count) Critical Missing " + [char]0x26A0
+                $txtHealth.Text = "$($missingCritical.Count) Critical Missing " + $warnToken
                 $txtHealth.Foreground = $accentBrush
                 if ($badgeHealth) { $badgeHealth.BorderBrush = $accentBrush }
-                if ($pnlWarn) {
-                    $pnlWarn.Visibility = [System.Windows.Visibility]::Visible
-                    if ($txtWarnMsg) {
-                        $txtWarnMsg.Text = "The uploaded sheet is missing critical column(s): $(($missingCritical -join ', ')). Verification cannot proceed without them."
-                    }
+            }
+        }
+
+        if ($pnlWarn) {
+            if ($missingCritical.Count -gt 0) {
+                $pnlWarn.Visibility = [System.Windows.Visibility]::Visible
+                $pnlWarn.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A2215")
+                $pnlWarn.BorderBrush = $accentBrush
+                if ($txtWarnTitle) {
+                    $txtWarnTitle.Text = "$warnToken CRITICAL COLUMNS MISSING"
+                    $txtWarnTitle.Foreground = $accentBrush
                 }
+                if ($txtWarnMsg) {
+                    $txtWarnMsg.Text = "The uploaded sheet is missing critical column(s): $(($missingCritical -join ', ')). Result verification cannot proceed without them."
+                }
+            } elseif ($missingOptional -contains "Email") {
+                $pnlWarn.Visibility = [System.Windows.Visibility]::Visible
+                $pnlWarn.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#15222E")
+                $pnlWarn.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#3B82F6")
+                if ($txtWarnTitle) {
+                    $txtWarnTitle.Text = "$infoToken OPTIONAL COLUMN GUIDANCE: EMAIL NOT PROVIDED"
+                    $txtWarnTitle.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#60A5FA")
+                }
+                if ($txtWarnMsg) {
+                    $txtWarnMsg.Text = "All 6 critical exam and certificate columns are verified. Email is omitted in this Google Form response sheet, so certificate distribution will rely on Student Roll No / Enrollment ID."
+                }
+            } else {
+                $pnlWarn.Visibility = [System.Windows.Visibility]::Collapsed
             }
         }
     } else {
@@ -1210,7 +1430,7 @@ function Update-Stage2View {
     }
 
     # Audit Strip
-    $txtAudit = $s2View.FindName("TxtExamSheetAuditSummary")
+    $txtAudit     = $s2View.FindName("TxtExamSheetAuditSummary")
     $txtAuditTime = $s2View.FindName("TxtExamSheetAuditTimestamp")
     if ($txtAudit) {
         $txtAudit.Text = if ($hasSheet) { "$uniqueCount unique student responses ready for certificate verification." } else { "No sheet audited." }
@@ -1235,10 +1455,9 @@ function Update-Stage2View {
         if ($txtResultPath) { $txtResultPath.Text = $vSheetPath }
 
         # Pipeline Status (Certificates on Disk)
-        $appRoot = Split-Path -Parent $PSScriptRoot
-        $dataParent = Join-Path $appRoot "data"
+        $targetDataDir = if ($script:dataDir) { $script:dataDir } elseif ($PSScriptRoot) { Join-Path (Split-Path -Parent $PSScriptRoot) "data" } else { Join-Path (Get-Location).Path "data" }
         $cleanCourseName = ($cName -replace '[\\/:*?"<>|]', '_').Trim()
-        $certsDir = Join-Path $dataParent "Courses\$cleanCourseName\certificates"
+        $certsDir = Join-Path $targetDataDir "Courses\$cleanCourseName\certificates"
         $certCount = 0
         if (Test-Path -LiteralPath $certsDir) {
             $certCount = @(Get-ChildItem -LiteralPath $certsDir -File -ErrorAction SilentlyContinue).Count
@@ -1938,6 +2157,878 @@ function Open-ReviewView {
 }
 
 # =====================================================================
+# Branch 5: Stage 2 Review Queue Controller Helpers
+# =====================================================================
+
+function Find-LocalCertificateFile {
+    param(
+        $Course,
+        $Student
+    )
+    if (-not $Course -or -not $Student) { return $null }
+
+    if ($Student.LocalCertificatePath -and (Test-Path -LiteralPath $Student.LocalCertificatePath)) {
+        return $Student.LocalCertificatePath
+    }
+
+    $cName = if ($Course.Name) { [string]$Course.Name } else { "Default" }
+    $cleanCName = ($cName -replace '[\\/:*?"<>|]', '_').Trim()
+    $certDir = Join-Path $script:appRoot "data\Courses\$cleanCName\certificates"
+    if (-not (Test-Path -LiteralPath $certDir)) { return $null }
+
+    $cleanRoll = if ($Student.RollNo) { ($Student.RollNo -replace '[\\/:*?"<>|]', '_').Trim() } else { "" }
+    $certRoll = if ($Student.CertificateRollNo) { ($Student.CertificateRollNo -replace '[\\/:*?"<>|]', '_').Trim() } else { "" }
+
+    $patterns = [System.Collections.Generic.List[string]]::new()
+    if ($cleanRoll) {
+        $patterns.Add("${cleanRoll}_certificate.*")
+        $patterns.Add("${cleanRoll}.*")
+        $patterns.Add("*${cleanRoll}*.*")
+    }
+    if ($certRoll) {
+        $patterns.Add("${certRoll}_certificate.*")
+        $patterns.Add("${certRoll}.*")
+        $patterns.Add("*${certRoll}*.*")
+    }
+
+    foreach ($pat in $patterns) {
+        $found = @(Get-ChildItem -LiteralPath $certDir -Filter $pat -ErrorAction SilentlyContinue | Where-Object { $_.Length -gt 0 -and $_.Extension.ToLower() -ne ".png" })
+        if ($found.Count -gt 0) {
+            return ($found | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+        }
+    }
+
+    foreach ($pat in $patterns) {
+        $found = @(Get-ChildItem -LiteralPath $certDir -Filter $pat -ErrorAction SilentlyContinue | Where-Object { $_.Length -gt 0 })
+        if ($found.Count -gt 0) {
+            return ($found | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+        }
+    }
+
+    return $null
+}
+
+function Update-ExamReviewView {
+    param(
+        $Course = $script:activeCourse,
+        $Students = $null
+    )
+    if (-not $Course) { $Course = $script:activeCourse }
+    if (-not $Course) { return }
+    $erv = Get-OrCreateView "ExamReviewView"
+    if (-not $erv) { return }
+
+    if (-not $Students) {
+        $store = Get-CourseExamResultsStore -CourseId $Course.Id -CourseName $Course.Name -ExamResultsSheet $Course.ExamResultsSheet
+        $Students = if ($store -and $store.Students) { @($store.Students) } else { @() }
+    }
+
+    if ($script:examReviewSessionCourseId -ne $Course.Id) {
+        $script:examReviewSessionCourseId = $Course.Id
+        $script:examReviewSessionSolvedRolls.Clear()
+        $script:examReviewStagedSolved.Clear()
+        $script:examReviewCurrentPage = 1
+        $script:examReviewSearchQuery = ""
+    }
+
+    $cName = if ($Course.Name) { [string]$Course.Name } else { "Untitled Course" }
+    $cCode = if ($Course.Code) { [string]$Course.Code } else { "" }
+
+    # 1. Breadcrumb
+    $txtBreadcrumb = $erv.FindName("TxtExamReviewBreadcrumb")
+    if ($txtBreadcrumb) {
+        $codeStr = if ($cCode) { " ($cCode)" } else { "" }
+        $upperName = $cName.ToUpper()
+        $dash = [char]0x2014
+        $txtBreadcrumb.Text = "COURSES > $upperName$codeStr > STAGE 2 $dash EXAM REVIEW QUEUE"
+    }
+
+    # 2. Filter students (Under Review discrepancies + unverified students awaiting review with certificates)
+    $pendingStudents = [System.Collections.ArrayList]@()
+    foreach ($st in $Students) {
+        $stKey = if ($st.RollNo) { [string]$st.RollNo } else { [string]$st.Email }
+        if ($script:examReviewStagedSolved.ContainsKey($stKey)) {
+            continue
+        }
+        $stStatus = if ($st.ExamVerificationStatus) { [string]$st.ExamVerificationStatus } else { "Pending" }
+        $hasLocalCert = $st.LocalCertificatePath -and (Test-Path -LiteralPath $st.LocalCertificatePath -ErrorAction SilentlyContinue)
+        if ($stStatus -eq "Under Review" -or ($stStatus -ne "Verified" -and $hasLocalCert)) {
+            $null = $pendingStudents.Add($st)
+        }
+    }
+
+    # All candidate queue items: pending first, then staged solved students
+    $allQueueStudents = [System.Collections.ArrayList]@()
+    foreach ($st in $pendingStudents) { $null = $allQueueStudents.Add($st) }
+    foreach ($entry in $script:examReviewStagedSolved.Values) {
+        if ($entry.Student) { $null = $allQueueStudents.Add($entry.Student) }
+    }
+
+    $pendingCount = $pendingStudents.Count
+    $solvedSessionCount = $script:examReviewSessionSolvedRolls.Count
+    $totalIssuesCount = $pendingCount + $solvedSessionCount
+    $stagedChangesCount = $script:examReviewStagedSolved.Count
+
+    # 3. Mini Dashboard Progress Metrics
+    $txtTotal = $erv.FindName("TxtExamReviewTotalIssues")
+    $txtSolved = $erv.FindName("TxtExamReviewSolvedCount")
+    $txtPending = $erv.FindName("TxtExamReviewPendingCount")
+
+    if ($txtTotal)   { $txtTotal.Text = $totalIssuesCount.ToString() }
+    if ($txtSolved)  { $txtSolved.Text = $solvedSessionCount.ToString() }
+    if ($txtPending) { $txtPending.Text = $pendingCount.ToString() }
+
+    # 4. Header Count Badge
+    $txtBadge = $erv.FindName("TxtExamReviewCountBadge")
+    if ($txtBadge) {
+        if ($pendingCount -gt 0) {
+            $plural = if ($pendingCount -eq 1) { "1 Student Needs Review" } else { "$pendingCount Students Need Review" }
+            $txtBadge.Text = $plural
+            $txtBadge.Foreground = [System.Windows.Application]::Current.FindResource("AccentBrush")
+        } else {
+            $txtBadge.Text = "Queue is Clear"
+            $txtBadge.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+        }
+    }
+
+    # 5. Push Solved Changes Action Bar
+    $btnPush = $erv.FindName("BtnPushExamSolvedChanges")
+    $txtPushBadge = $erv.FindName("TxtPushExamChangesBadge")
+
+    if ($btnPush) {
+        $btnPush.IsEnabled = ($stagedChangesCount -gt 0)
+    }
+    if ($txtPushBadge) {
+        if ($stagedChangesCount -gt 0) {
+            $bullet = [char]0x25CF
+            $plural = if ($stagedChangesCount -eq 1) { "1 change ready to push to result sheet" } else { "$stagedChangesCount changes ready to push to result sheet" }
+            $txtPushBadge.Text = "$bullet $plural"
+            $txtPushBadge.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+        } else {
+            if ($solvedSessionCount -gt 0) {
+                $check = [char]0x2713
+                $txtPushBadge.Text = "$check All session changes pushed to result sheet ($solvedSessionCount pushed)"
+                $txtPushBadge.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+            } else {
+                $txtPushBadge.Text = "No pending changes in this session"
+                $txtPushBadge.Foreground = [System.Windows.Application]::Current.FindResource("MutedBrush")
+            }
+        }
+    }
+
+    # 5b. Notify Flagged Students Action Button
+    $btnNotify = $erv.FindName("BtnNotifyFlaggedExamStudents")
+    if ($btnNotify) {
+        $mailIcon = [char]0x2709
+        if ($pendingCount -gt 0) {
+            $plural = if ($pendingCount -eq 1) { "1 Student" } else { "$pendingCount Students" }
+            $btnNotify.Content = "$mailIcon Send Email to Flagged ($plural)"
+            $btnNotify.IsEnabled = $true
+        } else {
+            $btnNotify.Content = "$mailIcon Send Email to Flagged Students"
+            $btnNotify.IsEnabled = $false
+        }
+    }
+
+    # 5c. Apply Live Search Filter
+    $filterTrimmed = if ($script:examReviewSearchQuery) { $script:examReviewSearchQuery.Trim() } else { "" }
+    $filteredStudents = [System.Collections.ArrayList]@()
+    if ($filterTrimmed) {
+        foreach ($st in $allQueueStudents) {
+            $roll = if ($st.RollNo) { [string]$st.RollNo } else { "" }
+            $name = if ($st.Name) { [string]$st.Name } else { "" }
+            $email = if ($st.Email) { [string]$st.Email } else { "" }
+            $rem = if ($st.ExamVerificationRemarks) { [string]$st.ExamVerificationRemarks } else { "" }
+            if ($roll.IndexOf($filterTrimmed, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or
+                $name.IndexOf($filterTrimmed, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or
+                $email.IndexOf($filterTrimmed, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or
+                $rem.IndexOf($filterTrimmed, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                $null = $filteredStudents.Add($st)
+            }
+        }
+    } else {
+        $filteredStudents = $allQueueStudents
+    }
+
+    # 5d. Calculate Pagination Window
+    $totalFiltered = $filteredStudents.Count
+    $pageSize = if ($script:examReviewPageSize -gt 0) { $script:examReviewPageSize } else { 25 }
+    $totalPages = [Math]::Max(1, [int][Math]::Ceiling($totalFiltered / $pageSize))
+
+    if ($script:examReviewCurrentPage -lt 1) {
+        $script:examReviewCurrentPage = 1
+    } elseif ($script:examReviewCurrentPage -gt $totalPages) {
+        $script:examReviewCurrentPage = $totalPages
+    }
+
+    $startIndex = ($script:examReviewCurrentPage - 1) * $pageSize
+    $countToTake = [Math]::Min($pageSize, [Math]::Max(0, $totalFiltered - $startIndex))
+
+    $pagedStudents = [System.Collections.ArrayList]@()
+    if ($totalFiltered -gt 0 -and $countToTake -gt 0) {
+        for ($i = 0; $i -lt $countToTake; $i++) {
+            $null = $pagedStudents.Add($filteredStudents[$startIndex + $i])
+        }
+    }
+
+    # 5e. Update Pagination & Search UI Controls
+    $txtRange = $erv.FindName("TxtExamReviewPageRange")
+    $txtFooter = $erv.FindName("TxtExamReviewFooterInfo")
+    $txtBadgePage = $erv.FindName("TxtExamReviewPageBadge")
+    $btnPrev = $erv.FindName("BtnExamReviewPrevPage")
+    $btnNext = $erv.FindName("BtnExamReviewNextPage")
+    $txtSearch = $erv.FindName("TxtExamReviewSearch")
+    $txtPlaceholder = $erv.FindName("TxtExamReviewSearchPlaceholder")
+    $btnClearSearch = $erv.FindName("BtnClearExamReviewSearch")
+
+    $dash = [char]0x2013
+    if ($txtRange) {
+        if ($totalFiltered -eq 0) {
+            $txtRange.Text = if ($filterTrimmed) { "(No students match search filter)" } else { "" }
+        } else {
+            $startNum = $startIndex + 1
+            $endNum = $startIndex + $countToTake
+            if ($filterTrimmed) {
+                $txtRange.Text = "Showing $startNum$dash$endNum of $totalFiltered (filtered from $($allQueueStudents.Count))"
+            } else {
+                $txtRange.Text = "Showing $startNum$dash$endNum of $totalFiltered"
+            }
+        }
+    }
+
+    if ($txtFooter) {
+        $stWord = if ($totalFiltered -eq 1) { "student" } else { "students" }
+        $txtFooter.Text = "Page $($script:examReviewCurrentPage) of $totalPages ($totalFiltered $stWord)"
+    }
+
+    if ($txtBadgePage) {
+        $txtBadgePage.Text = "$($script:examReviewCurrentPage) / $totalPages"
+    }
+
+    if ($btnPrev) {
+        $btnPrev.IsEnabled = ($script:examReviewCurrentPage -gt 1)
+    }
+
+    if ($btnNext) {
+        $btnNext.IsEnabled = ($script:examReviewCurrentPage -lt $totalPages)
+    }
+
+    if ($txtSearch -and $txtSearch.Text -ne $script:examReviewSearchQuery) {
+        $txtSearch.Text = $script:examReviewSearchQuery
+    }
+
+    if ($txtPlaceholder) {
+        $txtPlaceholder.Visibility = if ([string]::IsNullOrEmpty($script:examReviewSearchQuery)) {
+            [System.Windows.Visibility]::Visible
+        } else {
+            [System.Windows.Visibility]::Collapsed
+        }
+    }
+
+    if ($btnClearSearch) {
+        $btnClearSearch.Visibility = if ([string]::IsNullOrEmpty($script:examReviewSearchQuery)) {
+            [System.Windows.Visibility]::Collapsed
+        } else {
+            [System.Windows.Visibility]::Visible
+        }
+    }
+
+    # 6. Populate Review Rows Table
+    $hostPanel = $erv.FindName("ExamReviewRowsHost")
+    $emptyNotice = $erv.FindName("ExamReviewEmptyStateNotice")
+    $txtEmptyTitle = $erv.FindName("TxtExamReviewEmptyTitle")
+    $txtEmptySub = $erv.FindName("TxtExamReviewEmptySub")
+
+    if ($hostPanel) {
+        $hostPanel.Children.Clear()
+
+        if ($pagedStudents.Count -gt 0) {
+            if ($emptyNotice) { $emptyNotice.Visibility = [System.Windows.Visibility]::Collapsed }
+
+            foreach ($st in $pagedStudents) {
+                $stKey = if ($st.RollNo) { [string]$st.RollNo } else { [string]$st.Email }
+                $isStaged = $script:examReviewStagedSolved.ContainsKey($stKey)
+                $isSolved = $script:examReviewSessionSolvedRolls.Contains($stKey)
+
+                $cardBorder = New-Object System.Windows.Controls.Border
+                $cardBorder.Background = if ($isStaged) {
+                    [System.Windows.Application]::Current.FindResource("PanelModBrush")
+                } else {
+                    [System.Windows.Application]::Current.FindResource("Panel2Brush")
+                }
+                $cardBorder.BorderBrush = if ($isStaged) {
+                    [System.Windows.Application]::Current.FindResource("SageBrush")
+                } else {
+                    [System.Windows.Application]::Current.FindResource("BorderBrush")
+                }
+                $cardBorder.BorderThickness = New-Object System.Windows.Thickness(1)
+                $cardBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
+                $cardBorder.Padding = New-Object System.Windows.Thickness(14, 10, 14, 10)
+                $cardBorder.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+                $cardBorder.Tag = $st
+
+                $rowGrid = New-Object System.Windows.Controls.Grid
+                $col0 = New-Object System.Windows.Controls.ColumnDefinition
+                $col0.Width = New-Object System.Windows.GridLength(200)
+                $col1 = New-Object System.Windows.Controls.ColumnDefinition
+                $col1.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+                $col2 = New-Object System.Windows.Controls.ColumnDefinition
+                $col2.Width = [System.Windows.GridLength]::Auto
+                $null = $rowGrid.ColumnDefinitions.Add($col0)
+                $null = $rowGrid.ColumnDefinitions.Add($col1)
+                $null = $rowGrid.ColumnDefinitions.Add($col2)
+
+                $remStr = if ($st.ExamVerificationRemarks) { [string]$st.ExamVerificationRemarks } else { "Flagged for manual certificate verification review" }
+
+                # Column 0: Enrollment (Roll Number)
+                $txtRoll = New-Object System.Windows.Controls.TextBlock
+                $txtRoll.Text = if ($st.RollNo) { [string]$st.RollNo } else { "No Roll No" }
+                $txtRoll.FontFamily = New-Object System.Windows.Media.FontFamily("IBM Plex Mono, Consolas")
+                $txtRoll.FontSize = 12
+                $txtRoll.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $txtRoll.Foreground = [System.Windows.Application]::Current.FindResource("TextBrush")
+                $txtRoll.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                [System.Windows.Controls.Grid]::SetColumn($txtRoll, 0)
+                $null = $rowGrid.Children.Add($txtRoll)
+
+                # Column 1: Student Name & Discrepancies
+                $nameStack = New-Object System.Windows.Controls.StackPanel
+                $nameStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $nameStack.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+                [System.Windows.Controls.Grid]::SetColumn($nameStack, 1)
+
+                $txtName = New-Object System.Windows.Controls.TextBlock
+                $txtName.Text = if ($st.Name) { [string]$st.Name } else { "Unnamed Student" }
+                $txtName.FontSize = 12
+                $txtName.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $txtName.Foreground = [System.Windows.Application]::Current.FindResource("TextBrush")
+                $txtName.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+                $txtName.ToolTip = $remStr
+                $null = $nameStack.Children.Add($txtName)
+
+                $cleanRemSnippet = ($remStr -replace '^Under Review:\s*', '').Trim()
+                $txtRem = New-Object System.Windows.Controls.TextBlock
+                $txtRem.Text = $cleanRemSnippet
+                $txtRem.FontSize = 11
+                $txtRem.Foreground = if ($isStaged -or $isSolved) {
+                    [System.Windows.Application]::Current.FindResource("SageBrush")
+                } else {
+                    [System.Windows.Application]::Current.FindResource("MutedBrush")
+                }
+                $txtRem.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+                $txtRem.ToolTip = $remStr
+                $txtRem.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
+                $null = $nameStack.Children.Add($txtRem)
+
+                $null = $rowGrid.Children.Add($nameStack)
+
+                # Column 2: Quick Actions Host
+                $actionsPanel = New-Object System.Windows.Controls.StackPanel
+                $actionsPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+                $actionsPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+                $actionsPanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                [System.Windows.Controls.Grid]::SetColumn($actionsPanel, 2)
+
+                if ($isStaged -or $isSolved) {
+                    $pillBorder = New-Object System.Windows.Controls.Border
+                    $pillBorder.Background = [System.Windows.Application]::Current.FindResource("SageTintBrush")
+                    $pillBorder.BorderBrush = [System.Windows.Application]::Current.FindResource("SageBrush")
+                    $pillBorder.BorderThickness = New-Object System.Windows.Thickness(1)
+                    $pillBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
+                    $pillBorder.Padding = New-Object System.Windows.Thickness(10, 5, 10, 5)
+                    $pillBorder.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+                    $pillBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+                    $pillTxt = New-Object System.Windows.Controls.TextBlock
+                    $pillTxt.Text = "Solved"
+                    $pillTxt.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI, IBM Plex Mono, Consolas")
+                    $pillTxt.FontSize = 11
+                    $pillTxt.FontWeight = [System.Windows.FontWeights]::SemiBold
+                    $pillTxt.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+                    $pillBorder.Child = $pillTxt
+                    $null = $actionsPanel.Children.Add($pillBorder)
+                }
+
+                # Button 1: Issues
+                $btnIssues = New-Object System.Windows.Controls.Button
+                $btnIssues.Content = "Issues"
+                $btnIssues.Style = [System.Windows.Application]::Current.FindResource("BtnSecondary")
+                $btnIssues.Padding = New-Object System.Windows.Thickness(10, 4, 10, 4)
+                $btnIssues.FontSize = 11
+                $btnIssues.Cursor = [System.Windows.Input.Cursors]::Hand
+                $btnIssues.Margin = New-Object System.Windows.Thickness(0, 0, 6, 0)
+                $btnIssues.Tag = $st
+                $btnIssues.ToolTip = "View flagged examination issues and marks discrepancy breakdown"
+                $btnIssues.Add_Click({
+                    $targetSt = $this.Tag
+                    if (-not $targetSt) { return }
+                    $stName = if ($targetSt.Name) { [string]$targetSt.Name } else { "Student" }
+                    $stRoll = if ($targetSt.RollNo) { [string]$targetSt.RollNo } else { "No Roll No" }
+                    $rem = if ($targetSt.ExamVerificationRemarks) { [string]$targetSt.ExamVerificationRemarks } else { "No specific issues logged." }
+
+                    $declAssign = if ($targetSt.DeclaredAssignmentMarks) { [string]$targetSt.DeclaredAssignmentMarks } else { "-" }
+                    $certAssign = if ($targetSt.VerifiedAssignmentMarks) { [string]$targetSt.VerifiedAssignmentMarks } else { "-" }
+                    $declExam   = if ($targetSt.DeclaredExamMarks) { [string]$targetSt.DeclaredExamMarks } else { "-" }
+                    $certExam   = if ($targetSt.VerifiedExamMarks) { [string]$targetSt.VerifiedExamMarks } else { "-" }
+                    $declTotal  = if ($targetSt.DeclaredTotalMarks) { [string]$targetSt.DeclaredTotalMarks } else { "-" }
+                    $certTotal  = if ($targetSt.VerifiedTotalMarks) { [string]$targetSt.VerifiedTotalMarks } else { "-" }
+
+                    $issuesText = "EXAMINATION VERIFICATION ISSUES`n" +
+                        "================================`n`n" +
+                        "Student : $stName`n" +
+                        "Roll No : $stRoll`n" +
+                        "Status  : $($targetSt.ExamVerificationStatus)`n`n" +
+                        "Marks Comparison (Declared vs Certificate):`n" +
+                        "- Assignment : $declAssign  vs  $certAssign`n" +
+                        "- Exam (/75) : $declExam  vs  $certExam`n" +
+                        "- Total (/100): $declTotal  vs  $certTotal`n`n" +
+                        "Audit Discrepancies:`n" +
+                        "$rem`n`n" +
+                        "Available Actions:`n" +
+                        "- [Certificate]  : View saved certificate file`n" +
+                        "- [Accept Marks] : Quick-accept certificate marks and stage for result sheet`n" +
+                        "- [Open Student] : Open full split-screen inspection workspace"
+
+                    [System.Windows.MessageBox]::Show(
+                        $issuesText,
+                        "Verification Issues - $stRoll",
+                        [System.Windows.MessageBoxButton]::OK,
+                        [System.Windows.MessageBoxImage]::Information
+                    )
+                })
+                $null = $actionsPanel.Children.Add($btnIssues)
+
+                # Button 2: Certificate
+                $btnCert = New-Object System.Windows.Controls.Button
+                $btnCert.Content = "Certificate"
+                $btnCert.Style = [System.Windows.Application]::Current.FindResource("BtnSecondary")
+                $btnCert.Padding = New-Object System.Windows.Thickness(10, 4, 10, 4)
+                $btnCert.FontSize = 11
+                $btnCert.Cursor = [System.Windows.Input.Cursors]::Hand
+                $btnCert.Margin = New-Object System.Windows.Thickness(0, 0, 6, 0)
+                $btnCert.Tag = $st
+                $btnCert.ToolTip = "Open saved certificate document in default viewer"
+                $btnCert.Add_Click({
+                    $targetSt = $this.Tag
+                    if (-not $targetSt -or -not $script:activeCourse) { return }
+                    $foundFile = Find-LocalCertificateFile -Course $script:activeCourse -Student $targetSt
+
+                    if ($foundFile -and (Test-Path -LiteralPath $foundFile)) {
+                        try {
+                            [System.Diagnostics.Process]::Start([System.Diagnostics.ProcessStartInfo]@{
+                                FileName = $foundFile
+                                UseShellExecute = $true
+                            }) | Out-Null
+                        } catch {
+                            [System.Windows.MessageBox]::Show("Unable to open certificate file:`n$_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                        }
+                    } else {
+                        [System.Windows.MessageBox]::Show(
+                            "No saved certificate file found on disk for $($targetSt.Name) ($($targetSt.RollNo)).`n`nPlease click [Open Student] to attach or inspect.",
+                            "Certificate Not Found",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                    }
+                })
+                $null = $actionsPanel.Children.Add($btnCert)
+
+                # Button 3: Accept Marks / Unapprove Toggle
+                if ($isStaged) {
+                    $btnUnapprove = New-Object System.Windows.Controls.Button
+                    $btnUnapprove.Content = "Unapprove"
+                    $btnUnapprove.Style = [System.Windows.Application]::Current.FindResource("BtnSecondary")
+                    $btnUnapprove.BorderBrush = [System.Windows.Application]::Current.FindResource("DangerBrush")
+                    $btnUnapprove.Foreground = [System.Windows.Application]::Current.FindResource("DangerBrush")
+                    $btnUnapprove.Padding = New-Object System.Windows.Thickness(10, 4, 10, 4)
+                    $btnUnapprove.FontSize = 11
+                    $btnUnapprove.Cursor = [System.Windows.Input.Cursors]::Hand
+                    $btnUnapprove.Margin = New-Object System.Windows.Thickness(0, 0, 6, 0)
+                    $btnUnapprove.Tag = $st
+                    $btnUnapprove.ToolTip = "Revert staged approval back to Under Review"
+                    $btnUnapprove.Add_Click({
+                        $targetSt = $this.Tag
+                        if (-not $targetSt -or -not $script:activeCourse) { return }
+                        $stName = if ($targetSt.Name) { [string]$targetSt.Name } else { "this student" }
+                        $stRoll = if ($targetSt.RollNo) { [string]$targetSt.RollNo } else { "No Roll No" }
+
+                        $confirm = [System.Windows.MessageBox]::Show(
+                            "Revert approval for:`n`nName: $stName`nRoll No: $stRoll`n`nStatus will be reverted to 'Under Review' and un-staged.",
+                            "Unapprove Student",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Question
+                        )
+                        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+                        $targetKey = if ($targetSt.RollNo) { [string]$targetSt.RollNo } else { [string]$targetSt.Email }
+
+                        $origStatus = "Under Review"
+                        $origRemarks = ""
+                        if ($script:examReviewStagedSolved.ContainsKey($targetKey)) {
+                            $stagedEntry = $script:examReviewStagedSolved[$targetKey]
+                            if ($stagedEntry.OriginalStatus) { $origStatus = [string]$stagedEntry.OriginalStatus }
+                            if ($stagedEntry.OriginalRemarks -ne $null) { $origRemarks = [string]$stagedEntry.OriginalRemarks }
+                            $null = $script:examReviewStagedSolved.Remove($targetKey)
+                        }
+
+                        $targetSt.ExamVerificationStatus = $origStatus
+                        $targetSt.ExamVerificationRemarks = $origRemarks
+
+                        if ($script:examReviewSessionSolvedRolls.Contains($targetKey)) {
+                            $null = $script:examReviewSessionSolvedRolls.Remove($targetKey)
+                        }
+
+                        Update-ExamReviewView -Course $script:activeCourse
+                    })
+                    $null = $actionsPanel.Children.Add($btnUnapprove)
+                } elseif (-not $isSolved) {
+                    $btnApprove = New-Object System.Windows.Controls.Button
+                    $btnApprove.Content = "Accept Marks"
+                    $btnApprove.Style = [System.Windows.Application]::Current.FindResource("BtnPrimary")
+                    $btnApprove.Background = [System.Windows.Application]::Current.FindResource("SageBrush")
+                    $btnApprove.Foreground = [System.Windows.Application]::Current.FindResource("BgBrush")
+                    $btnApprove.Padding = New-Object System.Windows.Thickness(10, 4, 10, 4)
+                    $btnApprove.FontSize = 11
+                    $btnApprove.Cursor = [System.Windows.Input.Cursors]::Hand
+                    $btnApprove.Margin = New-Object System.Windows.Thickness(0, 0, 6, 0)
+                    $btnApprove.Tag = $st
+                    $btnApprove.ToolTip = "Accept certificate marks, set status to Verified, and stage for Result Sheet push"
+                    $btnApprove.Add_Click({
+                        $targetSt = $this.Tag
+                        if (-not $targetSt -or -not $script:activeCourse) { return }
+                        $stName = if ($targetSt.Name) { [string]$targetSt.Name } else { "this student" }
+                        $stRoll = if ($targetSt.RollNo) { [string]$targetSt.RollNo } else { "No Roll No" }
+
+                        $confirm = [System.Windows.MessageBox]::Show(
+                            "Accept certificate marks and approve verification for:`n`nName: $stName`nRoll No: $stRoll`n`nStatus will be changed to 'Verified (Coordinator Override - Certificate Marks Accepted)' and staged to push to the Result Sheet.",
+                            "Accept Certificate Marks",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Question
+                        )
+                        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+                        $targetKey = if ($targetSt.RollNo) { [string]$targetSt.RollNo } else { [string]$targetSt.Email }
+                        $origStatus = if ($targetSt.ExamVerificationStatus -and $targetSt.ExamVerificationStatus -ne "Verified") { [string]$targetSt.ExamVerificationStatus } else { "Under Review" }
+                        $origRemarks = if ($targetSt.ExamVerificationRemarks) { [string]$targetSt.ExamVerificationRemarks } else { "" }
+
+                        $nowStr = (Get-Date).ToString("dd/MM/yyyy HH:mm")
+                        $newRem = "Verified (Coordinator Override - Certificate Marks Accepted on $nowStr)"
+
+                        $targetSt.ExamVerificationStatus = "Verified"
+                        $targetSt.ExamVerificationRemarks = $newRem
+
+                        $null = $script:examReviewSessionSolvedRolls.Add($targetKey)
+                        $script:examReviewStagedSolved[$targetKey] = @{
+                            Student         = $targetSt
+                            RollNo          = $targetSt.RollNo
+                            Email           = $targetSt.Email
+                            NewStatus       = "Verified"
+                            NewRemarks      = $newRem
+                            OriginalStatus  = $origStatus
+                            OriginalRemarks = $origRemarks
+                        }
+
+                        Update-ExamReviewView -Course $script:activeCourse
+                    })
+                    $null = $actionsPanel.Children.Add($btnApprove)
+                }
+
+                # Button 4: Open Student
+                $btnOpen = New-Object System.Windows.Controls.Button
+                $btnOpen.Content = "Open Student"
+                $btnOpen.Style = [System.Windows.Application]::Current.FindResource("BtnSecondary")
+                $btnOpen.BorderBrush = [System.Windows.Application]::Current.FindResource("AccentBrush")
+                $btnOpen.Foreground = [System.Windows.Application]::Current.FindResource("AccentBrush")
+                $btnOpen.Padding = New-Object System.Windows.Thickness(12, 4, 12, 4)
+                $btnOpen.FontSize = 11
+                $btnOpen.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $btnOpen.Cursor = [System.Windows.Input.Cursors]::Hand
+                $btnOpen.Tag = $st
+                $btnOpen.ToolTip = "Open split-screen inspection workspace with certificate viewer for this student"
+                $btnOpen.Add_Click({
+                    $targetSt = $this.Tag
+                    if (-not $targetSt) { return }
+                    $erV = $script:views["ExamReviewView"]
+                    if (-not $erV) { return }
+
+                    $panelOverview = $erV.FindName("ExamReviewQueueOverviewPanel")
+                    $panelDetail = $erV.FindName("ExamReviewStudentDetailPanel")
+
+                    if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Collapsed }
+                    if ($panelDetail) { $panelDetail.Visibility = [System.Windows.Visibility]::Visible }
+
+                    Show-ExamStudentReviewDetails -Student $targetSt
+                })
+                $null = $actionsPanel.Children.Add($btnOpen)
+
+                $null = $rowGrid.Children.Add($actionsPanel)
+                $cardBorder.Child = $rowGrid
+                $null = $hostPanel.Children.Add($cardBorder)
+            }
+        } else {
+            if ($emptyNotice) {
+                $emptyNotice.Visibility = [System.Windows.Visibility]::Visible
+                if ($allQueueStudents.Count -gt 0 -and $totalFiltered -eq 0) {
+                    if ($txtEmptyTitle) { $txtEmptyTitle.Text = "No Matching Students" }
+                    if ($txtEmptySub) { $txtEmptySub.Text = "No students under review match your search query." }
+                } else {
+                    if ($txtEmptyTitle) { $txtEmptyTitle.Text = "Queue is Clear" }
+                    if ($txtEmptySub) { $txtEmptySub.Text = "All student examination results have been verified or accepted." }
+                }
+            }
+        }
+    }
+}
+
+function Show-ExamStudentReviewDetails {
+    param(
+        $Student
+    )
+    if (-not $Student) { return }
+    $erv = Get-OrCreateView "ExamReviewView"
+    if (-not $erv) { return }
+
+    # Toggle View State: Mode B active, Mode A hidden
+    $panelOverview = $erv.FindName("ExamReviewQueueOverviewPanel")
+    $panelDetail = $erv.FindName("ExamReviewStudentDetailPanel")
+
+    if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Collapsed }
+    if ($panelDetail) { $panelDetail.Visibility = [System.Windows.Visibility]::Visible }
+
+    $workspace = $erv.FindName("ExamReviewWorkspaceGrid")
+    if ($workspace) {
+        $workspace.Visibility = [System.Windows.Visibility]::Visible
+        $workspace.Tag = $Student
+    }
+
+    $dash = [char]0x2014
+
+    # 1. Header & Identity
+    $txtName = $erv.FindName("TxtExamReviewStudentName")
+    $txtRoll = $erv.FindName("TxtExamReviewStudentRoll")
+    $txtStatus = $erv.FindName("TxtExamReviewStatus")
+    $badgeStatus = $erv.FindName("BadgeExamReviewStatus")
+    $btnApprove = $erv.FindName("BtnApproveExamOverride")
+
+    if ($txtName) { $txtName.Text = if ($Student.Name) { [string]$Student.Name } else { "Unnamed Student" } }
+    if ($txtRoll) { $txtRoll.Text = if ($Student.RollNo) { "Roll No: $($Student.RollNo)" } else { "Roll No: Not Assigned" } }
+
+    $stKey = if ($Student.RollNo) { [string]$Student.RollNo } else { [string]$Student.Email }
+    $isStaged = $script:examReviewStagedSolved.ContainsKey($stKey)
+    $stVal = if ($Student.ExamVerificationStatus) { [string]$Student.ExamVerificationStatus } else { "UNDER REVIEW" }
+
+    if ($txtStatus) {
+        $txtStatus.Text = $stVal.ToUpper()
+        if ($badgeStatus) {
+            if ($stVal -eq "Verified") {
+                $badgeStatus.BorderBrush = [System.Windows.Application]::Current.FindResource("SageBrush")
+                $badgeStatus.Background = [System.Windows.Application]::Current.FindResource("SageTintBrush")
+                $txtStatus.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+            } else {
+                $badgeStatus.BorderBrush = [System.Windows.Application]::Current.FindResource("AccentBrush")
+                $badgeStatus.Background = [System.Windows.Application]::Current.FindResource("AccentTintBrush")
+                $txtStatus.Foreground = [System.Windows.Application]::Current.FindResource("AccentBrush")
+            }
+        }
+    }
+
+    if ($btnApprove) {
+        $btnApprove.Tag = $Student
+        if ($isStaged -or $stVal -eq "Verified") {
+            $check = [char]0x2713
+            $btnApprove.Content = "$check Marks Accepted"
+            $btnApprove.IsEnabled = $false
+        } else {
+            $check = [char]0x2713
+            $btnApprove.Content = "$check Accept Certificate Marks"
+            $btnApprove.IsEnabled = $true
+        }
+    }
+
+    # 2. Audit Diagnostics & Remarks
+    $txtRemarks = $erv.FindName("TxtExamReviewRemarks")
+    if ($txtRemarks) {
+        $rem = if ($Student.ExamVerificationRemarks) { [string]$Student.ExamVerificationRemarks } else { "Submission flagged during examination results verification. Please inspect the certificate on the right against declared marks." }
+        $txtRemarks.Text = $rem
+    }
+
+    # 3. Academic Marks Comparison Table
+    $txtDeclCourse = $erv.FindName("TxtCmpDeclCourse")
+    $txtCertCourse = $erv.FindName("TxtCmpCertCourse")
+    $txtDeclName   = $erv.FindName("TxtCmpDeclName")
+    $txtCertName   = $erv.FindName("TxtCmpCertName")
+    $txtDeclAssign = $erv.FindName("TxtCmpDeclAssign")
+    $txtCertAssign = $erv.FindName("TxtCmpCertAssign")
+    $txtDeclExam   = $erv.FindName("TxtCmpDeclExam")
+    $txtCertExam   = $erv.FindName("TxtCmpCertExam")
+    $txtDeclTotal  = $erv.FindName("TxtCmpDeclTotal")
+    $txtCertTotal  = $erv.FindName("TxtCmpCertTotal")
+    $txtCertRoll   = $erv.FindName("TxtCmpCertRoll")
+    $txtCertCredits = $erv.FindName("TxtCmpCertCredits")
+
+    # Resolve certificate course and candidate name
+    $certCourseVal = if ($Student.CertificateCourseName) {
+        [string]$Student.CertificateCourseName
+    } elseif ($Student.ExamVerificationRemarks -match "Course mismatch \(Expected:.*?vs Certificate:\s*'([^']+)'\)") {
+        $Matches[1]
+    } elseif ($Student.ExamVerificationStatus -eq "Verified" -and $script:activeCourse) {
+        [string]$script:activeCourse.Name
+    } else {
+        "$dash"
+    }
+
+    $certNameVal = if ($Student.CertificateCandidateName) {
+        [string]$Student.CertificateCandidateName
+    } elseif ($Student.ExamVerificationRemarks -match "Student name mismatch \(Expected:.*?vs Certificate:\s*'([^']+)'\)") {
+        $Matches[1]
+    } elseif ($Student.ExamVerificationStatus -eq "Verified") {
+        [string]$Student.Name
+    } else {
+        "$dash"
+    }
+
+    if ($txtDeclCourse) { $txtDeclCourse.Text = if ($Student.Subject) { [string]$Student.Subject } elseif ($script:activeCourse) { [string]$script:activeCourse.Name } else { "$dash" } }
+    if ($txtCertCourse) { $txtCertCourse.Text = $certCourseVal }
+
+    if ($txtDeclName)   { $txtDeclName.Text = if ($Student.Name) { [string]$Student.Name } else { "$dash" } }
+    if ($txtCertName)   { $txtCertName.Text = $certNameVal }
+
+    if ($txtDeclAssign) { $txtDeclAssign.Text = if ($Student.DeclaredAssignmentMarks) { [string]$Student.DeclaredAssignmentMarks } else { "$dash" } }
+    if ($txtCertAssign) { $txtCertAssign.Text = if ($Student.VerifiedAssignmentMarks) { [string]$Student.VerifiedAssignmentMarks } else { "$dash" } }
+
+    if ($txtDeclExam)   { $txtDeclExam.Text = if ($Student.DeclaredExamMarks) { [string]$Student.DeclaredExamMarks } else { "$dash" } }
+    if ($txtCertExam)   { $txtCertExam.Text = if ($Student.VerifiedExamMarks) { [string]$Student.VerifiedExamMarks } else { "$dash" } }
+
+    if ($txtDeclTotal)  { $txtDeclTotal.Text = if ($Student.DeclaredTotalMarks) { [string]$Student.DeclaredTotalMarks } else { "$dash" } }
+    if ($txtCertTotal)  { $txtCertTotal.Text = if ($Student.VerifiedTotalMarks) { [string]$Student.VerifiedTotalMarks } else { "$dash" } }
+
+    if ($txtCertRoll)   { $txtCertRoll.Text = if ($Student.CertificateRollNo) { [string]$Student.CertificateRollNo } else { "$dash" } }
+    if ($txtCertCredits){ $txtCertCredits.Text = if ($Student.Credits) { "$($Student.Credits) Credits" } else { "$dash" } }
+
+    # 4. Submission Record Box
+    $txtEmail = $erv.FindName("TxtExamReviewEmail")
+    $txtTime  = $erv.FindName("TxtExamReviewTimestamp")
+    $txtUrl   = $erv.FindName("TxtExamReviewCertUrl")
+    $btnDrive = $erv.FindName("BtnOpenExamDriveLink")
+
+    if ($txtEmail) { $txtEmail.Text = if ($Student.Email) { [string]$Student.Email } else { "$dash" } }
+    if ($txtTime)  { $txtTime.Text = if ($Student.Timestamp) { [string]$Student.Timestamp } else { "$dash" } }
+    if ($txtUrl)   { $txtUrl.Text = if ($Student.CertificateUrl) { [string]$Student.CertificateUrl } else { "No link provided" } }
+    if ($btnDrive) {
+        $btnDrive.Tag = if ($Student.CertificateUrl) { [string]$Student.CertificateUrl } else { "" }
+        $btnDrive.IsEnabled = [bool]$Student.CertificateUrl
+    }
+
+    # 5. Attachment button tag
+    $btnAttach = $erv.FindName("BtnAttachLocalExamCert")
+    if ($btnAttach) { $btnAttach.Tag = $Student }
+
+    # 6. Load & Display Certificate Image in Zoom Viewer
+    $imgCert = $erv.FindName("ImgExamCertViewer")
+    $scrollViewer = $erv.FindName("ExamCertScrollViewer")
+    $missingPanel = $erv.FindName("ExamCertMissingPanel")
+    $txtBadge = $erv.FindName("TxtExamCertStatusBadge")
+    $btnOpenFile = $erv.FindName("BtnOpenExamCertFile")
+    $zoomScale = $erv.FindName("ExamCertZoomScale")
+    $txtZoom = $erv.FindName("TxtExamZoomLevel")
+
+    # Reset Zoom
+    if ($zoomScale) {
+        $zoomScale.ScaleX = 1.0
+        $zoomScale.ScaleY = 1.0
+    }
+    if ($txtZoom) { $txtZoom.Text = "100%" }
+
+    # Find certificate file on disk
+    $certFile = Find-LocalCertificateFile -Course $script:activeCourse -Student $Student
+    $displayImgPath = $null
+
+    if ($certFile -and (Test-Path -LiteralPath $certFile)) {
+        $ext = [System.IO.Path]::GetExtension($certFile).ToLower()
+        if ($ext -eq ".pdf") {
+            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($certFile)
+            $certDir = [System.IO.Path]::GetDirectoryName($certFile)
+            $expectedPng = Join-Path $certDir "${baseName}_page1.png"
+
+            if (Test-Path -LiteralPath $expectedPng) {
+                $displayImgPath = $expectedPng
+            } else {
+                try {
+                    $displayImgPath = ConvertTo-ReceiptImage -FilePath $certFile
+                } catch {
+                    $displayImgPath = $null
+                }
+            }
+        } elseif ($ext -in @('.png', '.jpg', '.jpeg', '.bmp', '.webp')) {
+            $displayImgPath = $certFile
+        }
+    }
+
+    if ($certFile -and $displayImgPath -and (Test-Path -LiteralPath $displayImgPath)) {
+        try {
+            if ($imgCert) { $imgCert.Source = $null }
+
+            $rawImgBytes = [System.IO.File]::ReadAllBytes($displayImgPath)
+            $memStream = New-Object System.IO.MemoryStream( ,$rawImgBytes )
+            $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+            $bmp.BeginInit()
+            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bmp.StreamSource = $memStream
+            $bmp.EndInit()
+            $bmp.Freeze()
+            $memStream.Close()
+            $memStream.Dispose()
+
+            if ($imgCert) { $imgCert.Source = $bmp }
+            if ($scrollViewer) { $scrollViewer.Visibility = [System.Windows.Visibility]::Visible }
+            if ($missingPanel) { $missingPanel.Visibility = [System.Windows.Visibility]::Collapsed }
+
+            if ($txtBadge) {
+                $extName = [System.IO.Path]::GetExtension($certFile).TrimStart('.').ToUpper()
+                $txtBadge.Text = "Saved ($extName)"
+                $txtBadge.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+            }
+
+            if ($btnOpenFile) {
+                $btnOpenFile.Tag = $certFile
+                $btnOpenFile.IsEnabled = $true
+            }
+        } catch {
+            $displayImgPath = $null
+        }
+    }
+
+    if (-not $certFile -or -not $displayImgPath) {
+        if ($imgCert) { $imgCert.Source = $null }
+        if ($scrollViewer) { $scrollViewer.Visibility = [System.Windows.Visibility]::Collapsed }
+        if ($missingPanel) { $missingPanel.Visibility = [System.Windows.Visibility]::Visible }
+
+        if ($txtBadge) {
+            $txtBadge.Text = "Not Saved"
+            $txtBadge.Foreground = [System.Windows.Application]::Current.FindResource("MutedBrush")
+        }
+
+        if ($btnOpenFile) {
+            $btnOpenFile.Tag = $null
+            $btnOpenFile.IsEnabled = $false
+        }
+    }
+}
+
+function Open-ExamReviewView {
+    if (-not $script:activeCourse) { return }
+    $erv = Get-OrCreateView "ExamReviewView"
+    if ($erv) {
+        $panelOverview = $erv.FindName("ExamReviewQueueOverviewPanel")
+        $panelDetail = $erv.FindName("ExamReviewStudentDetailPanel")
+        if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Visible }
+        if ($panelDetail) { $panelDetail.Visibility = [System.Windows.Visibility]::Collapsed }
+    }
+    $script:examReviewCurrentPage = 1
+    Navigate-To "ExamReviewView"
+}
+
+# =====================================================================
 # Branch 4: Email Management Center Helpers
 # =====================================================================
 $script:emailCurrentTemplate = "StandardTemplate"
@@ -2451,6 +3542,102 @@ function Update-PipelineBarState {
     }
 }
 
+function Update-ExamPipelineBarState {
+    param(
+        [string]$Mode,
+        [int]$Current = 0,
+        [int]$Total = 0,
+        [string]$ItemText = "",
+        [string]$Headline = ""
+    )
+
+    $s2 = if ($script:views) { $script:views["Stage2View"] } else { $null }
+    if (-not $s2) { return }
+
+    $panelProg  = $s2.FindName("PanelExamPipelineProgress")
+    $txtTitle   = $s2.FindName("TxtExamPipelineTitle")
+    $txtStatus  = $s2.FindName("TxtExamPipelineStatus")
+    $txtHead    = $s2.FindName("TxtExamProgressHeadline")
+    $txtCounter = $s2.FindName("TxtExamProgressCounter")
+    $txtDetail  = $s2.FindName("TxtExamProgressDetail")
+    $pBar       = $s2.FindName("ProgressBarExamPipeline")
+
+    $btnImport   = $s2.FindName("BtnImportCertificates")
+    $btnDownload = $s2.FindName("BtnDownloadCertificates")
+    $btnVerify   = $s2.FindName("BtnVerifyExamAll")
+
+    switch ($Mode) {
+        'Idle' {
+            if ($panelProg) { $panelProg.Visibility = [System.Windows.Visibility]::Collapsed }
+            if ($txtTitle) { $txtTitle.Text = "Certificate Verification & OCR" }
+            if ($btnImport) { $btnImport.IsEnabled = $true; $btnImport.Content = ([string][char]0xD83D + [char]0xDCC1 + " Import") }
+            if ($btnDownload) { $btnDownload.IsEnabled = $true; $btnDownload.Content = ([string][char]0xD83D + [char]0xDCE5 + " Download") }
+            if ($btnVerify) { $btnVerify.IsEnabled = $true; $btnVerify.Content = ([string][char]0x25B6 + " Run OCR") }
+        }
+        'Download' {
+            if ($panelProg) { $panelProg.Visibility = [System.Windows.Visibility]::Visible }
+            if ($txtTitle) { $txtTitle.Text = ([string][char]0xD83D + [char]0xDCE5 + " Downloading Certificates from Drive...") }
+            if ($txtStatus) { $txtStatus.Text = "Fetching certificates from Google Drive" }
+            if ($btnImport) { $btnImport.IsEnabled = $false }
+            if ($btnDownload) { $btnDownload.IsEnabled = $false; $btnDownload.Content = ([string][char]0x23F3 + " Downloading...") }
+            if ($btnVerify) { $btnVerify.IsEnabled = $false }
+
+            $pct = if ($Total -gt 0) { [math]::Min(100, [math]::Round(($Current / $Total) * 100)) } else { 0 }
+            if ($pBar) { $pBar.Value = $pct }
+            if ($txtHead) { $txtHead.Text = if ($Headline) { $Headline } else { "DOWNLOADING CERTIFICATES" } }
+            if ($txtCounter) { $txtCounter.Text = "$Current / $Total ($pct%)" }
+            if ($txtDetail) { $txtDetail.Text = $ItemText }
+        }
+        'Import' {
+            if ($panelProg) { $panelProg.Visibility = [System.Windows.Visibility]::Visible }
+            if ($txtTitle) { $txtTitle.Text = ([string][char]0xD83D + [char]0xDCC1 + " Ingesting Certificates from Archive...") }
+            if ($txtStatus) { $txtStatus.Text = "Extracting and matching certificates to roster" }
+            if ($btnImport) { $btnImport.IsEnabled = $false; $btnImport.Content = ([string][char]0x23F3 + " Importing...") }
+            if ($btnDownload) { $btnDownload.IsEnabled = $false }
+            if ($btnVerify) { $btnVerify.IsEnabled = $false }
+
+            $pct = if ($Total -gt 0) { [math]::Min(100, [math]::Round(($Current / $Total) * 100)) } else { 0 }
+            if ($pBar) { $pBar.Value = $pct }
+            if ($txtHead) { $txtHead.Text = if ($Headline) { $Headline } else { "INGESTING LOCAL CERTIFICATES" } }
+            if ($txtCounter) { $txtCounter.Text = "$Current / $Total ($pct%)" }
+            if ($txtDetail) { $txtDetail.Text = $ItemText }
+        }
+        'Verify' {
+            if ($panelProg) { $panelProg.Visibility = [System.Windows.Visibility]::Visible }
+            if ($txtTitle) { $txtTitle.Text = ([string][char]0xD83D + [char]0xDD0D + " Verifying Certificates (WinRT OCR)...") }
+            if ($txtStatus) { $txtStatus.Text = "Auditing exam rules with native OCR" }
+            if ($btnImport) { $btnImport.IsEnabled = $false }
+            if ($btnDownload) { $btnDownload.IsEnabled = $false }
+            if ($btnVerify) { $btnVerify.IsEnabled = $false; $btnVerify.Content = ([string][char]0x23F3 + " Verifying...") }
+
+            $pct = if ($Total -gt 0) { [math]::Min(100, [math]::Round(($Current / $Total) * 100)) } else { 0 }
+            if ($pBar) { $pBar.Value = $pct }
+            if ($txtHead) { $txtHead.Text = if ($Headline) { $Headline } else { "RUNNING OCR AUDIT" } }
+            if ($txtCounter) { $txtCounter.Text = "$Current / $Total ($pct%)" }
+            if ($txtDetail) { $txtDetail.Text = $ItemText }
+        }
+        'Complete' {
+            if ($pBar) { $pBar.Value = 100 }
+            if ($txtCounter) { $txtCounter.Text = "$Total / $Total (100%)" }
+            if ($txtHead) { $txtHead.Text = "COMPLETED" }
+            if ($txtDetail) { $txtDetail.Text = $ItemText }
+            if ($btnImport) { $btnImport.IsEnabled = $true; $btnImport.Content = ([string][char]0xD83D + [char]0xDCC1 + " Import") }
+            if ($btnDownload) { $btnDownload.IsEnabled = $true; $btnDownload.Content = ([string][char]0xD83D + [char]0xDCE5 + " Download") }
+            if ($btnVerify) { $btnVerify.IsEnabled = $true; $btnVerify.Content = ([string][char]0x25B6 + " Run OCR") }
+        }
+    }
+
+    # Dispatcher pump to immediately render UI changes
+    try {
+        [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke(
+            [Action]{},
+            [System.Windows.Threading.DispatcherPriority]::Render
+        )
+    } catch {
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+    }
+}
+
 # 10. Wire Events per View (Using dynamic lookups to prevent scope closure loss)
 function Wire-ViewEvents {
     param([string]$ViewName, $viewObj)
@@ -2894,12 +4081,7 @@ function Wire-ViewEvents {
                             [System.Windows.MessageBoxImage]::Information
                         )
                     } catch {
-                        [System.Windows.MessageBox]::Show(
-                            "Failed to generate verification sheet:`n$($_.Exception.Message)",
-                            "Generation Error",
-                            [System.Windows.MessageBoxButton]::OK,
-                            [System.Windows.MessageBoxImage]::Error
-                        )
+                        Show-SheetGenerationErrorDialog -SheetTypeName "verification sheet" -TargetPath $targetPath -Exception $_.Exception
                     }
                 })
             }
@@ -2978,7 +4160,7 @@ function Wire-ViewEvents {
                             Select-Course $script:activeCourse
                             [System.Windows.MessageBox]::Show("Verification sheet re-generated successfully.", "Sheet Updated", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
                         } catch {
-                            [System.Windows.MessageBox]::Show("Error re-generating verification sheet:`n$($_.Exception.Message)", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                            Show-SheetGenerationErrorDialog -SheetTypeName "verification sheet" -TargetPath $targetPath -Exception $_.Exception
                         }
                     }
                 })
@@ -3266,8 +4448,13 @@ function Wire-ViewEvents {
                                 [System.Windows.MessageBoxImage]::Question
                             )
                             if ($askGen -eq [System.Windows.MessageBoxResult]::Yes) {
-                                $vSheetPath = New-CourseVerificationSheet -Course $script:activeCourse
-                                Select-Course $script:activeCourse
+                                try {
+                                    $vSheetPath = New-CourseVerificationSheet -Course $script:activeCourse
+                                    Select-Course $script:activeCourse
+                                } catch {
+                                    Show-SheetGenerationErrorDialog -SheetTypeName "verification sheet" -TargetPath $vSheetPath -Exception $_.Exception
+                                    return
+                                }
                             } else {
                                 return
                             }
@@ -3494,10 +4681,12 @@ function Wire-ViewEvents {
             $btnRecheck = $viewObj.FindName("BtnRecheckExamHealth")
             if ($btnRecheck) {
                 $btnRecheck.Add_Click({
-                    if ($script:activeCourse -and $script:activeCourse.ExamResultsSheet) {
+                    if ($script:activeCourse -and $script:activeCourse.ExamResultsSheet -and (Test-Path -LiteralPath $script:activeCourse.ExamResultsSheet -ErrorAction SilentlyContinue)) {
                         $null = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $script:activeCourse.Name -ExamResultsSheet $script:activeCourse.ExamResultsSheet -Force
                         Update-Stage2View -Course $script:activeCourse
                         [System.Windows.MessageBox]::Show("Examination sheet health rechecked successfully.", "Health Rechecked", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                    } else {
+                        [System.Windows.MessageBox]::Show("No examination results sheet is attached to recheck. Please click [Add Sheet] first.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
                     }
                 })
             }
@@ -3514,19 +4703,19 @@ function Wire-ViewEvents {
                     try {
                         $targetPath = New-CourseExamVerificationSheet -Course $script:activeCourse
                         Update-Stage2View -Course $script:activeCourse
+                        $msgDetail = "Result verification sheet generated successfully at:`n$targetPath`n`nNew columns 'Verification Status' and 'Verification Remarks' were appended."
+                        $examStore = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $script:activeCourse.Name
+                        if ($examStore -and $examStore.DuplicateCount -gt 0) {
+                            $msgDetail += "`n`nNote: $($examStore.Students.Count) unique student rows written ($($examStore.DuplicateCount) superseded duplicate submissions excluded via latest timestamp)."
+                        }
                         [System.Windows.MessageBox]::Show(
-                            "Result verification sheet generated successfully at:`n$targetPath`n`nNew columns 'Verification Status' and 'Verification Remarks' were appended.",
+                            $msgDetail,
                             "Result Verification Sheet Ready",
                             [System.Windows.MessageBoxButton]::OK,
                             [System.Windows.MessageBoxImage]::Information
                         )
                     } catch {
-                        [System.Windows.MessageBox]::Show(
-                            "Failed to generate result verification sheet:`n$($_.Exception.Message)",
-                            "Generation Error",
-                            [System.Windows.MessageBoxButton]::OK,
-                            [System.Windows.MessageBoxImage]::Error
-                        )
+                        Show-SheetGenerationErrorDialog -SheetTypeName "result verification sheet" -TargetPath $targetPath -Exception $_.Exception
                     }
                 })
             }
@@ -3537,7 +4726,7 @@ function Wire-ViewEvents {
                 $btnRecreateExamVer.Add_Click({
                     if (-not $script:activeCourse -or -not $script:activeCourse.ExamResultsSheet) { return }
                     $res = [System.Windows.MessageBox]::Show(
-                        "Do you want to re-generate the Result Verification Sheet from the current examination responses?`n`nNote: This will refresh all rows and reset statuses to 'Pending'.",
+                        "Do you want to re-generate the Result Verification Sheet from the current examination responses?`n`nNote: This will refresh rows with latest timestamps and preserve existing verification statuses.",
                         "Re-generate Result Verification Sheet",
                         [System.Windows.MessageBoxButton]::YesNo,
                         [System.Windows.MessageBoxImage]::Question
@@ -3546,9 +4735,14 @@ function Wire-ViewEvents {
                         try {
                             $targetPath = New-CourseExamVerificationSheet -Course $script:activeCourse
                             Update-Stage2View -Course $script:activeCourse
-                            [System.Windows.MessageBox]::Show("Result verification sheet re-generated successfully.", "Sheet Updated", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                            $msgDetail = "Result verification sheet re-generated successfully at:`n$targetPath"
+                            $examStore = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $script:activeCourse.Name
+                            if ($examStore -and $examStore.DuplicateCount -gt 0) {
+                                $msgDetail += "`n`nNote: $($examStore.Students.Count) unique student rows written ($($examStore.DuplicateCount) superseded duplicate submissions excluded via latest timestamp)."
+                            }
+                            [System.Windows.MessageBox]::Show($msgDetail, "Sheet Updated", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
                         } catch {
-                            [System.Windows.MessageBox]::Show("Error re-generating result verification sheet:`n$($_.Exception.Message)", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                            Show-SheetGenerationErrorDialog -SheetTypeName "result verification sheet" -TargetPath $targetPath -Exception $_.Exception
                         }
                     }
                 })
@@ -3674,6 +4868,391 @@ function Wire-ViewEvents {
                         if ($grid) { $grid.ItemsSource = $filtered }
                         if ($txtCnt) { $txtCnt.Text = "Showing $($filtered.Count) of $($script:examPreviewAllRows.Count) records" }
                     }
+                })
+            }
+
+            # Import Certificates (Folder or .ZIP Archive) Handler
+            $btnImportCerts = $viewObj.FindName("BtnImportCertificates")
+            if ($btnImportCerts) {
+                $btnImportCerts.Add_Click({
+                    try {
+                        if (-not $script:activeCourse) {
+                            [System.Windows.MessageBox]::Show(
+                                "Please select a course first before importing certificates.",
+                                "No Active Course",
+                                [System.Windows.MessageBoxButton]::OK,
+                                [System.Windows.MessageBoxImage]::Warning
+                            )
+                            return
+                        }
+
+                        $store = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $script:activeCourse.Name -ExamResultsSheet $script:activeCourse.ExamResultsSheet
+                        $students = @($store.Students)
+
+                        if ($students.Count -eq 0) {
+                            [System.Windows.MessageBox]::Show(
+                                "No examination responses found for course '$($script:activeCourse.Name)'.",
+                                "No Students Found",
+                                [System.Windows.MessageBoxButton]::OK,
+                                [System.Windows.MessageBoxImage]::Information
+                            )
+                            return
+                        }
+
+                        $cName = [string]$script:activeCourse.Name
+                        $dDir = if ($script:dataDir) { $script:dataDir } else { (Join-Path $script:appRoot "data") }
+
+                        # Prompt coordinator for source type: .ZIP archive or Extracted Folder
+                        $sourceChoice = [System.Windows.MessageBox]::Show(
+                            "Import Student Certificates for '$cName':`n`n" +
+                            "Student responses queued: $($students.Count)`n`n" +
+                            "Choose your certificate source format:`n" +
+                            " [ Yes ]    Browse for a .ZIP archive (Google Forms / Drive export)`n" +
+                            " [ No ]     Browse for an extracted / local Folder`n" +
+                            " [ Cancel ] Abort import",
+                            "Import Student Certificates (Local / ZIP)",
+                            [System.Windows.MessageBoxButton]::YesNoCancel,
+                            [System.Windows.MessageBoxImage]::Question
+                        )
+
+                        if ($sourceChoice -eq [System.Windows.MessageBoxResult]::Cancel) { return }
+
+                        $chosenSourcePath = $null
+
+                        if ($sourceChoice -eq [System.Windows.MessageBoxResult]::Yes) {
+                            # OpenFileDialog for .zip archive
+                            $openDlg = New-Object Microsoft.Win32.OpenFileDialog
+                            $openDlg.Title = "Select Certificate ZIP Archive"
+                            $openDlg.Filter = "ZIP Archive (*.zip)|*.zip|All Files (*.*)|*.*"
+                            $openDlg.InitialDirectory = [Environment]::GetFolderPath("Desktop")
+                            if ($openDlg.ShowDialog() -eq $true) {
+                                $chosenSourcePath = $openDlg.FileName
+                            }
+                        } else {
+                            # FolderBrowserDialog for unzipped directory
+                            $folderDlg = New-Object System.Windows.Forms.FolderBrowserDialog
+                            $folderDlg.Description = "Select the folder containing student certificate files (PDF/Images)"
+                            $folderDlg.ShowNewFolderButton = $false
+                            $desktopPath = [Environment]::GetFolderPath("Desktop")
+                            if (Test-Path $desktopPath) { $folderDlg.SelectedPath = $desktopPath }
+                            if ($folderDlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+                                $chosenSourcePath = $folderDlg.SelectedPath
+                            }
+                        }
+
+                        if (-not $chosenSourcePath -or -not (Test-Path -LiteralPath $chosenSourcePath)) {
+                            return
+                        }
+
+                        $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
+                        try {
+                            [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+                            Update-ExamPipelineBarState -Mode 'Import' -Current 0 -Total $students.Count -Headline "INGESTING LOCAL CERTIFICATES" -ItemText "Reading and extracting files..."
+
+                            $importCb = {
+                                param($cur, $tot, $st, $msg)
+                                $stRoll = if ($st.RollNo) { [string]$st.RollNo } else { "" }
+                                $stName = if ($st.Name) { [string]$st.Name } else { "" }
+                                $nameStr = if ($stName) { " - $stName" } else { "" }
+                                $itemStr = "$stRoll$nameStr ($msg)"
+                                Update-ExamPipelineBarState -Mode 'Import' -Current $cur -Total $tot -Headline "INGESTING LOCAL CERTIFICATES" -ItemText $itemStr
+                            }
+
+                            $importSummary = Import-CertificatesFromLocalSource -CourseId $script:activeCourse.Id -CourseName $cName -SourcePath $chosenSourcePath -Students $students -DataDir $dDir -ProgressCallback $importCb
+
+                            # Refresh Stage 2 view to update on-disk counter immediately
+                            Update-Stage2View -Course $script:activeCourse
+
+                            # Format friendly, informative report
+                            $sourceDisplay = [System.IO.Path]::GetFileName($chosenSourcePath)
+                            $reportLines = [System.Collections.ArrayList]@()
+                            $null = $reportLines.Add("Certificate Ingestion Completed for '$cName'!")
+                            $null = $reportLines.Add("Source: $sourceDisplay")
+                            $null = $reportLines.Add("Total Student Responses: $($importSummary.TotalExamCount)`n")
+                            $null = $reportLines.Add("  [+] Newly Matched & Ingested: $($importSummary.IngestedCount)")
+                            $null = $reportLines.Add("  [*] Already on Disk: $($importSummary.ExistingCount)")
+                            $null = $reportLines.Add("  [-] Missing Certificates: $($importSummary.MissingCount)")
+                            if ($importSummary.UnassignedCount -gt 0) {
+                                $null = $reportLines.Add("  [i] Unassigned Files in Source: $($importSummary.UnassignedCount)")
+                            }
+
+                            if ($importSummary.MissingCount -gt 0) {
+                                $null = $reportLines.Add("`nMissing Students ($($importSummary.MissingCount)):")
+                                $sampleMissing = @($importSummary.MissingStudents | Select-Object -First 5 | ForEach-Object {
+                                    "  - $($_.RollNo) ($($_.Name))"
+                                }) -join "`n"
+                                $null = $reportLines.Add($sampleMissing)
+                                if ($importSummary.MissingCount -gt 5) {
+                                    $null = $reportLines.Add("  - ... and $($importSummary.MissingCount - 5) more")
+                                }
+                            }
+
+                            $null = $reportLines.Add("`nSaved location: data/Courses/$cName/certificates/")
+
+                            $msgIcon = if ($importSummary.MissingCount -gt 0) { [System.Windows.MessageBoxImage]::Warning } else { [System.Windows.MessageBoxImage]::Information }
+                            [System.Windows.MessageBox]::Show(
+                                ($reportLines -join "`n"),
+                                "Certificate Import Summary",
+                                [System.Windows.MessageBoxButton]::OK,
+                                $msgIcon
+                            )
+                        } finally {
+                            [System.Windows.Input.Mouse]::OverrideCursor = $origCursor
+                            Update-ExamPipelineBarState -Mode 'Idle'
+                        }
+                    } catch {
+                        Update-ExamPipelineBarState -Mode 'Idle'
+                        [System.Windows.MessageBox]::Show(
+                            "An unexpected error occurred during certificate import:`n$($_.Exception.Message)",
+                            "Import Error",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Error
+                        )
+                    }
+                })
+            }
+
+            # Download Certificates Handler
+            $btnDownloadCerts = $viewObj.FindName("BtnDownloadCertificates")
+            if ($btnDownloadCerts) {
+                $btnDownloadCerts.Add_Click({
+                    try {
+                        if (-not $script:activeCourse) {
+                            [System.Windows.MessageBox]::Show("Please select a course first before downloading certificates.", "No Active Course", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                            return
+                        }
+
+                        $store = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $script:activeCourse.Name -ExamResultsSheet $script:activeCourse.ExamResultsSheet
+                        $students = @($store.Students)
+
+                        if ($students.Count -eq 0) {
+                            [System.Windows.MessageBox]::Show("No examination responses found for course '$($script:activeCourse.Name)'.", "No Students Found", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                            return
+                        }
+
+                        $cName = [string]$script:activeCourse.Name
+                        $dDir = if ($script:dataDir) { $script:dataDir } else { (Join-Path $script:appRoot "data") }
+
+                        $confirm = [System.Windows.MessageBox]::Show(
+                            "Download completion certificates for '$cName'?`n`n" +
+                            "Student responses queued: $($students.Count)`n" +
+                            "Target directory: data/Courses/$cName/certificates/`n`n" +
+                            "Existing certificates will be skipped (resumable cache).",
+                            "Download Student Certificates",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Question
+                        )
+                        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+                        $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
+                        try {
+                            [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+                            Update-ExamPipelineBarState -Mode 'Download' -Current 0 -Total $students.Count -Headline "DOWNLOADING CERTIFICATES" -ItemText "Connecting to Google Drive..."
+
+                            $dlCb = {
+                                param($cur, $tot, $st, $msg)
+                                $stRoll = if ($st.RollNo) { [string]$st.RollNo } else { "" }
+                                $stName = if ($st.Name) { [string]$st.Name } else { "" }
+                                $nameStr = if ($stName) { " - $stName" } else { "" }
+                                $itemStr = "$stRoll$nameStr ($msg)"
+                                Update-ExamPipelineBarState -Mode 'Download' -Current $cur -Total $tot -Headline "DOWNLOADING CERTIFICATES" -ItemText $itemStr
+                            }
+
+                            $dlSummary = Invoke-CertificateBatchDownload -CourseId $script:activeCourse.Id -CourseName $cName -Students $students -DataDir $dDir -ProgressCallback $dlCb
+
+                            # Refresh Stage 2 view to update on-disk counter
+                            Update-Stage2View -Course $script:activeCourse
+
+                            # Build results report
+                            $reportText = "Batch Certificate Download Completed for '$cName'!`n`n" +
+                                "Total Responses: $($students.Count)`n" +
+                                "[Downloaded Now]: $($dlSummary.Downloaded)`n" +
+                                "[Already on Disk / Cached]: $($dlSummary.FromCache + $dlSummary.FromLocal)`n" +
+                                "[Failed / Inaccessible]: $($dlSummary.Failed)`n`n" +
+                                "Saved to: data/Courses/$cName/certificates/"
+
+                            if ($dlSummary.Failed -gt 0) {
+                                $failedList = @($dlSummary.Results | Where-Object { $_.Success -eq $false -and $_.Source -ne "Skipped" })
+                                $failedSample = @($failedList | Select-Object -First 5 | ForEach-Object { " - $($_.RollNo) ($($_.Name)): $($_.Error)" }) -join "`n"
+                                if ($failedList.Count -gt 5) {
+                                    $failedSample += "`n - ... and $($failedList.Count - 5) more."
+                                }
+
+                                $reportText += "`n`n[!] The following certificate(s) could not be downloaded:`n$failedSample`n`n" +
+                                    "Note: If Google Drive links fail with 'Access Denied', the student must set link sharing to 'Anyone with the link can view'."
+                            }
+
+                            $msgIcon = if ($dlSummary.Failed -gt 0) { [System.Windows.MessageBoxImage]::Warning } else { [System.Windows.MessageBoxImage]::Information }
+                            [System.Windows.MessageBox]::Show(
+                                $reportText,
+                                "Certificate Download Complete",
+                                [System.Windows.MessageBoxButton]::OK,
+                                $msgIcon
+                            )
+                        } finally {
+                            [System.Windows.Input.Mouse]::OverrideCursor = $origCursor
+                            Update-ExamPipelineBarState -Mode 'Idle'
+                        }
+                    } catch {
+                        Update-ExamPipelineBarState -Mode 'Idle'
+                        [System.Windows.MessageBox]::Show(
+                            "An unexpected error occurred during certificate download:`n$($_.Exception.Message)",
+                            "Download Error",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Error
+                        )
+                    }
+                })
+            }
+
+            # Run OCR Verification Handler
+            $btnVerifyExam = $viewObj.FindName("BtnVerifyExamAll")
+            if ($btnVerifyExam) {
+                $btnVerifyExam.Add_Click({
+                    if (-not $script:activeCourse) {
+                        [System.Windows.MessageBox]::Show(
+                            "Please select a course first before running verification.",
+                            "No Active Course",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                        return
+                    }
+
+                    if (-not $script:activeCourse.ExamResultsSheet -or -not (Test-Path -LiteralPath $script:activeCourse.ExamResultsSheet)) {
+                        [System.Windows.MessageBox]::Show(
+                            "Please attach an examination results sheet first before running verification.",
+                            "No Results Sheet",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                        return
+                    }
+
+                    $cName = if ($script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "Course" }
+                    $cleanCourseName = ($cName -replace '[\\/:*?"<>|]', '_').Trim()
+                    $dDir = if ($script:dataDir) { $script:dataDir } else { Join-Path (Get-Location).Path "data" }
+
+                    $store = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $script:activeCourse.Name -ExamResultsSheet $script:activeCourse.ExamResultsSheet -DataDir $dDir
+                    if (-not $store -or -not $store.Students -or $store.Students.Count -eq 0) {
+                        [System.Windows.MessageBox]::Show(
+                            "No student records found in the examination results sheet for '$cName'.",
+                            "Empty Roster",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                        return
+                    }
+
+                    $certsDir = Join-Path $dDir "Courses\$cleanCourseName\certificates"
+                    $diskCertsCount = if (Test-Path -LiteralPath $certsDir) { @(Get-ChildItem -LiteralPath $certsDir -File -ErrorAction SilentlyContinue).Count } else { 0 }
+
+                    $s2View = $script:views["Stage2View"]
+                    $chkRounding = if ($s2View) { $s2View.FindName("ChkAllowExamRounding") } else { $null }
+                    $allowRounding = ($chkRounding -and $chkRounding.IsChecked -eq $true)
+                    $policyDesc = if ($allowRounding) { "ENABLED (Rounded Match: Round(Declared) == Round(Certificate))" } else { "DISABLED (Strict exact match only)" }
+
+                    if ($diskCertsCount -eq 0) {
+                        $warnProceed = [System.Windows.MessageBox]::Show(
+                            "No certificate files were found in 'data/Courses/$cName/certificates/'.`n`nAll students will be flagged as 'Under Review' (Missing Certificate).`n`nDo you want to run OCR anyway?`n(Tip: Click [Import] or [Download] first to ingest certificates)",
+                            "No Certificates Found",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                        if ($warnProceed -ne [System.Windows.MessageBoxResult]::Yes) { return }
+                    } else {
+                        $ask = [System.Windows.MessageBox]::Show(
+                            "Run automated WinRT OCR verification for '$cName'?`n`n" +
+                            "Total Students: $($store.Students.Count)`n" +
+                            "Certificates on Disk: $diskCertsCount`n" +
+                            "Round-off Policy: $policyDesc`n`n" +
+                            "The engine will audit Course Name, Student Identity, and Assignment / Exam / Total Marks according to official NPTEL criteria.",
+                            "Run Certificate OCR Verification",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Question
+                        )
+                        if ($ask -ne [System.Windows.MessageBoxResult]::Yes) { return }
+                    }
+
+                    try {
+                        $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
+                        [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+
+                        Update-ExamPipelineBarState -Mode 'Verify' -Current 0 -Total $store.Students.Count -Headline "RUNNING OCR AUDIT" -ItemText "Initializing Windows WinRT OCR engine..."
+
+                        $ocrCb = {
+                            param($cur, $tot, $studentObj, $statusText)
+                            $stRoll = if ($studentObj.RollNo) { [string]$studentObj.RollNo } else { "Student" }
+                            $stName = if ($studentObj.Name) { [string]$studentObj.Name } else { "" }
+                            $itemStr = if ($stName) { "[$cur/$tot] $stRoll - $($stName): $statusText" } else { "[$cur/$tot] $($stRoll): $statusText" }
+                            Update-ExamPipelineBarState -Mode 'Verify' -Current $cur -Total $tot -Headline "RUNNING OCR AUDIT" -ItemText $itemStr
+                        }
+
+                        try {
+                            $summary = Invoke-CourseExamVerificationPipeline -Course $script:activeCourse -DataDir $dDir -ProgressCallback $ocrCb -AllowRounding:$allowRounding
+
+                            Update-ExamPipelineBarState -Mode 'Complete' -Current $summary.TotalCount -Total $summary.TotalCount -ItemText "Audit completed: $($summary.VerifiedCount) Verified, $($summary.ReviewCount) Under Review"
+
+                            # Refresh Stage 2 View with updated metrics
+                            Update-Stage2View -Course $script:activeCourse
+
+                            $preservedLine = if ($summary.SkippedCount -gt 0) { "[Preserved (Already Verified)]: $($summary.SkippedCount)`n" } else { "" }
+
+                            $reportText = "Certificate OCR Verification Completed for '$cName'!`n`n" +
+                                "Round-off Policy: $policyDesc`n" +
+                                "Total Students: $($summary.TotalCount)`n" +
+                                "[Verified (All 5 Rules Matched)]: $($summary.VerifiedCount)`n" +
+                                "[Under Review / Discrepancies]: $($summary.ReviewCount)`n" +
+                                "[Missing Certificates]: $($summary.MissingCount)`n" +
+                                $preservedLine
+
+                            $syncObj = if ($summary.PSObject.Properties['VerificationSheetSync']) { $summary.VerificationSheetSync } else { $null }
+                            if ($syncObj -and $syncObj.Error -eq "FILE_LOCKED") {
+                                $lName = if ($syncObj.FileName) { $syncObj.FileName } else { "Result Verification Sheet" }
+                                $reportText += "`nRecords saved to exam_results.json.`n`n" +
+                                    "[!] Notice: `"$lName`" is currently open in Excel and could not be updated with the latest verification statuses.`n`n" +
+                                    "Please close the file in Excel and click [Re-create Sheet] to synchronize."
+                            } else {
+                                $reportText += "`nRecords saved to exam_results.json and synchronized to the Result Verification Sheet."
+                            }
+
+                            $msgIcon = if ($summary.ReviewCount -gt 0 -or ($syncObj -and $syncObj.Error -eq "FILE_LOCKED")) { [System.Windows.MessageBoxImage]::Warning } else { [System.Windows.MessageBoxImage]::Information }
+                            [System.Windows.MessageBox]::Show(
+                                $reportText,
+                                "Verification Audit Complete",
+                                [System.Windows.MessageBoxButton]::OK,
+                                $msgIcon
+                            )
+                        } finally {
+                            [System.Windows.Input.Mouse]::OverrideCursor = $origCursor
+                            Update-ExamPipelineBarState -Mode 'Idle'
+                        }
+                    } catch {
+                        Update-ExamPipelineBarState -Mode 'Idle'
+                        [System.Windows.MessageBox]::Show(
+                            "An unexpected error occurred during certificate verification:`n$($_.Exception.Message)",
+                            "Verification Error",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Error
+                        )
+                    }
+                })
+            }
+
+            # Card: UNDER REVIEW -> Open ExamReviewView
+            $cardExamReview = $viewObj.FindName("CardExamStatReview")
+            if ($cardExamReview) {
+                $cardExamReview.Add_MouseLeftButtonUp({
+                    if (-not $script:activeCourse) {
+                        [System.Windows.MessageBox]::Show(
+                            "Please select or register a course first.",
+                            "Notice",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Information
+                        )
+                        return
+                    }
+                    Open-ExamReviewView
                 })
             }
         }
@@ -3833,6 +5412,7 @@ function Wire-ViewEvents {
             if ($btnNotifyFlagged) {
                 $btnNotifyFlagged.Add_Click({
                     if (-not $script:activeCourse) { return }
+                    $script:emailReturnView = "ReviewView"
                     Open-EmailView
                 })
             }
@@ -4241,13 +5821,636 @@ function Wire-ViewEvents {
             }
         }
 
+        "ExamReviewView" {
+            # Pagination Prev Page Button
+            $btnPrevPage = $viewObj.FindName("BtnExamReviewPrevPage")
+            if ($btnPrevPage) {
+                $btnPrevPage.Add_Click({
+                    if ($script:examReviewCurrentPage -gt 1) {
+                        $script:examReviewCurrentPage--
+                        if ($script:activeCourse) {
+                            Update-ExamReviewView -Course $script:activeCourse
+                        }
+                        $erv = $script:views["ExamReviewView"]
+                        $sv = if ($erv) { $erv.FindName("ExamReviewRowsScrollViewer") } else { $null }
+                        if ($sv) { $sv.ScrollToTop() }
+                    }
+                })
+            }
+
+            # Pagination Next Page Button
+            $btnNextPage = $viewObj.FindName("BtnExamReviewNextPage")
+            if ($btnNextPage) {
+                $btnNextPage.Add_Click({
+                    $script:examReviewCurrentPage++
+                    if ($script:activeCourse) {
+                        Update-ExamReviewView -Course $script:activeCourse
+                    }
+                    $erv = $script:views["ExamReviewView"]
+                    $sv = if ($erv) { $erv.FindName("ExamReviewRowsScrollViewer") } else { $null }
+                    if ($sv) { $sv.ScrollToTop() }
+                })
+            }
+
+            # Live Search Filter Input TextChanged
+            $txtSearchInput = $viewObj.FindName("TxtExamReviewSearch")
+            if ($txtSearchInput) {
+                $txtSearchInput.Add_TextChanged({
+                    $q = [string]$this.Text
+                    if ($q -ne $script:examReviewSearchQuery) {
+                        $script:examReviewSearchQuery = $q
+                        $script:examReviewCurrentPage = 1
+                        if ($script:activeCourse) {
+                            Update-ExamReviewView -Course $script:activeCourse
+                        }
+                    }
+                })
+            }
+
+            # Clear Search Filter Button
+            $btnClearSearch = $viewObj.FindName("BtnClearExamReviewSearch")
+            if ($btnClearSearch) {
+                $btnClearSearch.Add_Click({
+                    $erv = $script:views["ExamReviewView"]
+                    $txtSearchCtrl = if ($erv) { $erv.FindName("TxtExamReviewSearch") } else { $null }
+                    if ($txtSearchCtrl) {
+                        $txtSearchCtrl.Text = ""
+                    } else {
+                        $script:examReviewSearchQuery = ""
+                        $script:examReviewCurrentPage = 1
+                        if ($script:activeCourse) {
+                            Update-ExamReviewView -Course $script:activeCourse
+                        }
+                    }
+                })
+            }
+
+            # Back to Stage 2 (With staged unpushed changes safety check)
+            $btnBack = $viewObj.FindName("BtnBackToStage2")
+            if ($btnBack) {
+                $btnBack.Add_Click({
+                    if ($script:examReviewStagedSolved.Count -gt 0) {
+                        $ask = [System.Windows.MessageBox]::Show(
+                            "You have $($script:examReviewStagedSolved.Count) unpushed change(s) staged in this session.`n`nDo you want to return to Stage 2 anyway?`n(Your unpushed changes will remain staged until you click Push or exit the app.)",
+                            "Unpushed Changes Staged",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                        if ($ask -ne [System.Windows.MessageBoxResult]::Yes) { return }
+                    }
+
+                    if ($script:activeCourse) {
+                        Select-Course $script:activeCourse -TargetView "Stage2View"
+                    } else {
+                        Navigate-To "CoursesView"
+                    }
+                })
+            }
+
+            # Back to Queue Table (From Mode B Detail to Mode A Queue Overview)
+            $btnBackQueue = $viewObj.FindName("BtnBackToExamQueueTable")
+            if ($btnBackQueue) {
+                $btnBackQueue.Add_Click({
+                    $erv = $script:views["ExamReviewView"]
+                    if (-not $erv) { return }
+
+                    $panelOverview = $erv.FindName("ExamReviewQueueOverviewPanel")
+                    $panelDetail = $erv.FindName("ExamReviewStudentDetailPanel")
+
+                    if ($panelDetail) { $panelDetail.Visibility = [System.Windows.Visibility]::Collapsed }
+                    if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Visible }
+
+                    if ($script:activeCourse) {
+                        Update-ExamReviewView -Course $script:activeCourse
+                    }
+                })
+            }
+
+            # Push Solved Changes to Result Sheet
+            $btnPushSolved = $viewObj.FindName("BtnPushExamSolvedChanges")
+            if ($btnPushSolved) {
+                $btnPushSolved.Add_Click({
+                    if (-not $script:activeCourse) { return }
+                    $stagedCount = $script:examReviewStagedSolved.Count
+                    if ($stagedCount -le 0) {
+                        [System.Windows.MessageBox]::Show("There are no pending solved changes to push.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                        return
+                    }
+
+                    $cName = if ($script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "Default" }
+                    $targetExcel = if ($script:activeCourse.ExamVerificationSheet) { [string]$script:activeCourse.ExamVerificationSheet } else { "Result Verification Sheet" }
+
+                    $plural = if ($stagedCount -eq 1) { "1 solved student" } else { "$stagedCount solved students" }
+                    $confirm = [System.Windows.MessageBox]::Show(
+                        "Push $plural to Result Sheet?`n`n" +
+                        "Course: $cName`n" +
+                        "Target Sheet: $targetExcel`n`n" +
+                        "This will commit student statuses, update the result verification spreadsheet, and refresh the Stage 2 panel counts.",
+                        "Push Changes to Result Sheet",
+                        [System.Windows.MessageBoxButton]::YesNo,
+                        [System.Windows.MessageBoxImage]::Question
+                    )
+                    if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+                    $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
+                    try {
+                        [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+
+                        $store = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $cName -ExamResultsSheet $script:activeCourse.ExamResultsSheet
+                        $students = [System.Collections.ArrayList]@($store.Students)
+
+                        # Apply all staged changes to the store
+                        foreach ($entry in $script:examReviewStagedSolved.Values) {
+                            $eRoll = if ($entry.RollNo) { [string]$entry.RollNo } else { "" }
+                            $eEmail = if ($entry.Email) { [string]$entry.Email } else { "" }
+
+                            foreach ($s in $students) {
+                                $match = $false
+                                if ($eRoll -and $s.RollNo -and ($s.RollNo.Trim().ToLower() -eq $eRoll.Trim().ToLower())) {
+                                    $match = $true
+                                } elseif ($eEmail -and $s.Email -and ($s.Email.Trim().ToLower() -eq $eEmail.Trim().ToLower())) {
+                                    $match = $true
+                                }
+
+                                if ($match) {
+                                    $s.ExamVerificationStatus = $entry.NewStatus
+                                    $s.ExamVerificationRemarks = $entry.NewRemarks
+                                    break
+                                }
+                            }
+                        }
+
+                        # 1. Save exam_results.json
+                        $store.Students = $students
+                        $store.LastSync = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+                        Save-CourseExamResultsStore -Store $store -CourseId $script:activeCourse.Id -CourseName $cName
+
+                        # 2. Export / Sync Result Verification Sheet
+                        $syncRes = Export-CourseExamVerificationSheetData -Course $script:activeCourse -Students $students
+
+                        # 3. Clear staged changes
+                        $committedCount = $script:examReviewStagedSolved.Count
+                        $script:examReviewStagedSolved.Clear()
+
+                        # 4. Refresh Stage 2 View metrics in background
+                        Update-Stage2View -Course $script:activeCourse
+
+                        # 5. Refresh Review Queue
+                        Update-ExamReviewView -Course $script:activeCourse -Students $students
+
+                        $pushMsg = "Successfully pushed $committedCount change(s) to Result Sheet!`n`n" +
+                            "- Statuses updated in $targetExcel`n" +
+                            "- Stage 2 counts updated: Under Review decreased, Verified increased."
+                        $pushIcon = [System.Windows.MessageBoxImage]::Information
+                        if ($syncRes -and $syncRes.Error -eq "FILE_LOCKED") {
+                            $lName = if ($syncRes.FileName) { $syncRes.FileName } else { "Result Verification Sheet" }
+                            $pushMsg += "`n`n[!] Warning: `"$lName`" is currently open in Excel and could not be updated with these changes. Please close the file and click [Re-create Sheet] to sync Excel."
+                            $pushIcon = [System.Windows.MessageBoxImage]::Warning
+                        }
+
+                        [System.Windows.MessageBox]::Show(
+                            $pushMsg,
+                            "Push Complete",
+                            [System.Windows.MessageBoxButton]::OK,
+                            $pushIcon
+                        )
+                    } catch {
+                        [System.Windows.MessageBox]::Show(
+                            "Failed to push changes to result sheet:`n$($_.Exception.Message)",
+                            "Push Error",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Error
+                        )
+                    } finally {
+                        [System.Windows.Input.Mouse]::OverrideCursor = $origCursor
+                    }
+                })
+            }
+
+            # Send Email to Flagged Students -> Open Email Management Center
+            $btnNotifyFlagged = $viewObj.FindName("BtnNotifyFlaggedExamStudents")
+            if ($btnNotifyFlagged) {
+                $btnNotifyFlagged.Add_Click({
+                    if (-not $script:activeCourse) { return }
+                    $script:emailReturnView = "ExamReviewView"
+                    Open-EmailView
+                })
+            }
+
+            # Open Drive Link in Default Browser
+            $btnDrive = $viewObj.FindName("BtnOpenExamDriveLink")
+            if ($btnDrive) {
+                $btnDrive.Add_Click({
+                    $url = [string]$this.Tag
+                    if ($url -and ($url.StartsWith("http://") -or $url.StartsWith("https://"))) {
+                        try {
+                            [System.Diagnostics.Process]::Start([System.Diagnostics.ProcessStartInfo]@{
+                                FileName = $url
+                                UseShellExecute = $true
+                            }) | Out-Null
+                        } catch {
+                            [System.Windows.MessageBox]::Show("Unable to open URL in browser: $_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                        }
+                    }
+                })
+            }
+
+            # Open Cached Certificate in External Viewer
+            $btnOpenFile = $viewObj.FindName("BtnOpenExamCertFile")
+            if ($btnOpenFile) {
+                $btnOpenFile.Add_Click({
+                    $filePath = [string]$this.Tag
+                    if ($filePath -and (Test-Path -LiteralPath $filePath)) {
+                        try {
+                            [System.Diagnostics.Process]::Start([System.Diagnostics.ProcessStartInfo]@{
+                                FileName = $filePath
+                                UseShellExecute = $true
+                            }) | Out-Null
+                        } catch {
+                            [System.Windows.MessageBox]::Show("Unable to open certificate file: $_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                        }
+                    }
+                })
+            }
+
+            # Zoom In Control
+            $btnZoomIn = $viewObj.FindName("BtnExamZoomIn")
+            if ($btnZoomIn) {
+                $btnZoomIn.Add_Click({
+                    $erv = $script:views["ExamReviewView"]
+                    $scale = if ($erv) { $erv.FindName("ExamCertZoomScale") } else { $null }
+                    $lbl = if ($erv) { $erv.FindName("TxtExamZoomLevel") } else { $null }
+                    if ($scale) {
+                        $newVal = [Math]::Min(4.0, [Math]::Round($scale.ScaleX * 1.25, 2))
+                        $scale.ScaleX = $newVal
+                        $scale.ScaleY = $newVal
+                        if ($lbl) { $lbl.Text = "$([int]($newVal * 100))%" }
+                    }
+                })
+            }
+
+            # Zoom Out Control
+            $btnZoomOut = $viewObj.FindName("BtnExamZoomOut")
+            if ($btnZoomOut) {
+                $btnZoomOut.Add_Click({
+                    $erv = $script:views["ExamReviewView"]
+                    $scale = if ($erv) { $erv.FindName("ExamCertZoomScale") } else { $null }
+                    $lbl = if ($erv) { $erv.FindName("TxtExamZoomLevel") } else { $null }
+                    if ($scale) {
+                        $newVal = [Math]::Max(0.25, [Math]::Round($scale.ScaleX / 1.25, 2))
+                        $scale.ScaleX = $newVal
+                        $scale.ScaleY = $newVal
+                        if ($lbl) { $lbl.Text = "$([int]($newVal * 100))%" }
+                    }
+                })
+            }
+
+            # Reset Zoom Fit Control
+            $btnZoomFit = $viewObj.FindName("BtnExamZoomFit")
+            if ($btnZoomFit) {
+                $btnZoomFit.Add_Click({
+                    $erv = $script:views["ExamReviewView"]
+                    $scale = if ($erv) { $erv.FindName("ExamCertZoomScale") } else { $null }
+                    $lbl = if ($erv) { $erv.FindName("TxtExamZoomLevel") } else { $null }
+                    if ($scale) {
+                        $scale.ScaleX = 1.0
+                        $scale.ScaleY = 1.0
+                        if ($lbl) { $lbl.Text = "100%" }
+                    }
+                })
+            }
+
+            # Coordinator Action: Approve Override (Accept Certificate Marks)
+            $btnApprove = $viewObj.FindName("BtnApproveExamOverride")
+            if ($btnApprove) {
+                $btnApprove.Add_Click({
+                    $erv = $script:views["ExamReviewView"]
+                    $ws = if ($erv) { $erv.FindName("ExamReviewWorkspaceGrid") } else { $null }
+                    $st = if ($ws) { $ws.Tag } else { $null }
+                    if (-not $st -or -not $script:activeCourse) { return }
+
+                    $stName = if ($st.Name) { [string]$st.Name } else { "this student" }
+                    $stRoll = if ($st.RollNo) { [string]$st.RollNo } else { "No Roll No" }
+
+                    $confirm = [System.Windows.MessageBox]::Show(
+                        "Manually accept certificate marks and approve verification for:`n`nName: $stName`nRoll No: $stRoll`n`nStatus will be changed to 'Verified (Coordinator Override - Certificate Marks Accepted)' and staged to push to the Result Sheet.",
+                        "Accept Certificate Marks",
+                        [System.Windows.MessageBoxButton]::YesNo,
+                        [System.Windows.MessageBoxImage]::Question
+                    )
+                    if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+                    $targetKey = if ($st.RollNo) { [string]$st.RollNo } else { [string]$st.Email }
+                    $origStatus = if ($st.ExamVerificationStatus -and $st.ExamVerificationStatus -ne "Verified") { [string]$st.ExamVerificationStatus } else { "Under Review" }
+                    $origRemarks = if ($st.ExamVerificationRemarks) { [string]$st.ExamVerificationRemarks } else { "" }
+
+                    $nowStr = (Get-Date).ToString("dd/MM/yyyy HH:mm")
+                    $newRem = "Verified (Coordinator Override - Certificate Marks Accepted on $nowStr)"
+
+                    $st.ExamVerificationStatus = "Verified"
+                    $st.ExamVerificationRemarks = $newRem
+
+                    $null = $script:examReviewSessionSolvedRolls.Add($targetKey)
+                    $script:examReviewStagedSolved[$targetKey] = @{
+                        Student         = $st
+                        RollNo          = $st.RollNo
+                        Email           = $st.Email
+                        NewStatus       = "Verified"
+                        NewRemarks      = $newRem
+                        OriginalStatus  = $origStatus
+                        OriginalRemarks = $origRemarks
+                    }
+
+                    $askReturn = [System.Windows.MessageBox]::Show(
+                        "Student '$stName' ($stRoll) marks accepted and staged for this session!`n`nWould you like to return to the Review Queue now to push changes to the result sheet?",
+                        "Marks Accepted",
+                        [System.Windows.MessageBoxButton]::YesNo,
+                        [System.Windows.MessageBoxImage]::Information
+                    )
+                    if ($askReturn -eq [System.Windows.MessageBoxResult]::Yes) {
+                        $panelOverview = $erv.FindName("ExamReviewQueueOverviewPanel")
+                        $panelDetail = $erv.FindName("ExamReviewStudentDetailPanel")
+                        if ($panelDetail) { $panelDetail.Visibility = [System.Windows.Visibility]::Collapsed }
+                        if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Visible }
+                        Update-ExamReviewView -Course $script:activeCourse
+                    } else {
+                        Show-ExamStudentReviewDetails -Student $st
+                    }
+                })
+            }
+
+            # Coordinator Action: Attach Local Certificate File & Auto-Verify with OCR
+            $btnAttach = $viewObj.FindName("BtnAttachLocalExamCert")
+            if ($btnAttach) {
+                $btnAttach.Add_Click({
+                    $erv = $script:views["ExamReviewView"]
+                    $ws = if ($erv) { $erv.FindName("ExamReviewWorkspaceGrid") } else { $null }
+                    $st = if ($ws) { $ws.Tag } else { $null }
+                    if (-not $st -or -not $script:activeCourse) { return }
+
+                    $stName = if ($st.Name) { [string]$st.Name } else { "Student" }
+                    $cleanRoll = if ($st.RollNo) { ($st.RollNo -replace '[\\/:*?"<>|]', '_').Trim() } else { "cert" }
+
+                    $selectedFile = Show-FileBrowseDialog -Title "Select Certificate File for $stName ($cleanRoll)" -Filter "Certificate Files (*.pdf;*.png;*.jpg;*.jpeg)|*.pdf;*.png;*.jpg;*.jpeg|PDF Documents (*.pdf)|*.pdf|Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|All Files (*.*)|*.*"
+
+                    if ($selectedFile -and (Test-Path -LiteralPath $selectedFile)) {
+                        $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
+                        try {
+                            [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+
+                            $cName = if ($script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "Default" }
+                            $cleanCName = ($cName -replace '[\\/:*?"<>|]', '_').Trim()
+                            $certDir = Join-Path $script:appRoot "data\Courses\$cleanCName\certificates"
+
+                            if (-not (Test-Path -LiteralPath $certDir)) {
+                                $null = New-Item -ItemType Directory -Path $certDir -Force
+                            }
+
+                            # 1. Clean up old staged files
+                            Get-ChildItem -LiteralPath $certDir -Filter "${cleanRoll}_staged*" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+
+                            # 2. Stage new file
+                            $ext = [System.IO.Path]::GetExtension($selectedFile).ToLower()
+                            $stagedFile = Join-Path $certDir "${cleanRoll}_staged$ext"
+                            Copy-Item -LiteralPath $selectedFile -Destination $stagedFile -Force
+
+                            # 3. If PDF, rasterize Page 1 to PNG
+                            $stagedImg = ConvertTo-ReceiptImage -FilePath $stagedFile -Force
+
+                            # 4. OCR extraction
+                            if (-not (Get-Command "Invoke-ReceiptOcr" -ErrorAction SilentlyContinue)) {
+                                $ocrMod = Join-Path $script:appRoot "modules\OcrEngine.ps1"
+                                if (Test-Path -LiteralPath $ocrMod) { . $ocrMod }
+                            }
+                            if (-not (Get-Command "Extract-CertificateData" -ErrorAction SilentlyContinue)) {
+                                $examMod = Join-Path $script:appRoot "modules\ExamVerificationEngine.ps1"
+                                if (Test-Path -LiteralPath $examMod) { . $examMod }
+                            }
+
+                            $ocrRes = Invoke-ReceiptOcr -ImagePath $stagedImg
+                            $certExtracted = Extract-CertificateData -OcrText $ocrRes.Text -OcrLines $ocrRes.Lines -ExpectedCourse $cName -ExpectedCandidateName $st.Name
+                            $ruleRes = Test-ExamVerificationRules -Student $st -ExtractedData $certExtracted -CourseName $cName
+                            if (-not $ocrRes.Success -and $ocrRes.Error) {
+                                $ruleRes.Remarks = "OCR Read Error: $($ocrRes.Error); " + $ruleRes.Remarks
+                            }
+
+                            if ($ruleRes.Status -eq "Verified") {
+                                # --- CASE 1: Verified ---
+                                $approvePrompt = "All verification rules matched on the new certificate for '$stName' ($cleanRoll)!`n`n" +
+                                    "- Course Name: Matched ('$cName')`n" +
+                                    "- Student Name: Matched ('$stName')`n" +
+                                    "- Assignment Marks: $($certExtracted.AssignmentMarks)`n" +
+                                    "- Exam Marks: $($certExtracted.ExamMarks)`n" +
+                                    "- Total Marks: $($certExtracted.TotalMarks)`n" +
+                                    "- Roll No: $($certExtracted.CertificateRollNo)`n`n" +
+                                    "Would you like to approve this student now?`n" +
+                                    "(The previous certificate will be safely replaced with this verified certificate.)"
+
+                                $askApprove = [System.Windows.MessageBox]::Show(
+                                    $approvePrompt,
+                                    "Certificate Verified - Approve Student?",
+                                    [System.Windows.MessageBoxButton]::YesNo,
+                                    [System.Windows.MessageBoxImage]::Question
+                                )
+
+                                if ($askApprove -eq [System.Windows.MessageBoxResult]::Yes) {
+                                    $imgCertCtrl = if ($erv) { $erv.FindName("ImgExamCertViewer") } else { $null }
+                                    if ($imgCertCtrl) { $imgCertCtrl.Source = $null }
+
+                                    # Delete old files
+                                    $allOld = @(Get-ChildItem -LiteralPath $certDir -Filter "${cleanRoll}_certificate*" -ErrorAction SilentlyContinue)
+                                    foreach ($oldF in $allOld) {
+                                        Remove-Item -LiteralPath $oldF.FullName -Force -ErrorAction SilentlyContinue
+                                    }
+
+                                    $finalPath = Join-Path $certDir "${cleanRoll}_certificate$ext"
+                                    Move-Item -LiteralPath $stagedFile -Destination $finalPath -Force
+
+                                    if ($ext -eq ".pdf") {
+                                        $finalPng = Join-Path $certDir "${cleanRoll}_certificate_page1.png"
+                                        if (Test-Path -LiteralPath $stagedImg) {
+                                            Move-Item -LiteralPath $stagedImg -Destination $finalPng -Force
+                                        }
+                                    }
+
+                                    # Update Student in store
+                                    $store = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $cName -ExamResultsSheet $script:activeCourse.ExamResultsSheet
+                                    $students = [System.Collections.ArrayList]@($store.Students)
+                                    $nowStr = (Get-Date).ToString("dd/MM/yyyy HH:mm")
+
+                                    $matchedSt = $null
+                                    foreach ($s in $students) {
+                                        if ($st.RollNo -and $s.RollNo -and ($s.RollNo.Trim().ToLower() -eq $st.RollNo.Trim().ToLower())) {
+                                            $matchedSt = $s
+                                            break
+                                        } elseif ($st.Email -and $s.Email -and ($s.Email.Trim().ToLower() -eq $st.Email.Trim().ToLower())) {
+                                            $matchedSt = $s
+                                            break
+                                        }
+                                    }
+
+                                    $verRem = "Verified (OCR passed on newly attached certificate on $nowStr)"
+                                    if ($matchedSt) {
+                                        $matchedSt.ExamVerificationStatus = "Verified"
+                                        $matchedSt.ExamVerificationRemarks = $verRem
+                                        $matchedSt.VerifiedAssignmentMarks = [string]$certExtracted.AssignmentMarks
+                                        $matchedSt.VerifiedExamMarks = [string]$certExtracted.ExamMarks
+                                        $matchedSt.VerifiedTotalMarks = [string]$certExtracted.TotalMarks
+                                        $matchedSt.CertificateRollNo = [string]$certExtracted.CertificateRollNo
+                                        $matchedSt.Credits = [int]$certExtracted.Credits
+                                        $matchedSt.CertificateCourseName = [string]$certExtracted.CourseName
+                                        $matchedSt.CertificateCandidateName = [string]$certExtracted.CandidateName
+                                        $matchedSt.LocalCertificatePath = $finalPath
+                                    }
+
+                                    $st.ExamVerificationStatus = "Verified"
+                                    $st.ExamVerificationRemarks = $verRem
+                                    $st.VerifiedAssignmentMarks = [string]$certExtracted.AssignmentMarks
+                                    $st.VerifiedExamMarks = [string]$certExtracted.ExamMarks
+                                    $st.VerifiedTotalMarks = [string]$certExtracted.TotalMarks
+                                    $st.CertificateRollNo = [string]$certExtracted.CertificateRollNo
+                                    $st.Credits = [int]$certExtracted.Credits
+                                    $st.CertificateCourseName = [string]$certExtracted.CourseName
+                                    $st.CertificateCandidateName = [string]$certExtracted.CandidateName
+                                    $st.LocalCertificatePath = $finalPath
+
+                                    $stKey = if ($st.RollNo) { [string]$st.RollNo } else { [string]$st.Email }
+                                    $null = $script:examReviewSessionSolvedRolls.Add($stKey)
+                                    if ($script:examReviewStagedSolved.ContainsKey($stKey)) {
+                                        $null = $script:examReviewStagedSolved.Remove($stKey)
+                                    }
+
+                                    $store.Students = $students
+                                    Save-CourseExamResultsStore -Store $store -CourseId $script:activeCourse.Id -CourseName $cName
+                                    Export-CourseExamVerificationSheetData -Course $script:activeCourse -Students $students
+
+                                    Show-ExamStudentReviewDetails -Student $st
+                                    Update-ExamReviewView
+
+                                    [System.Windows.MessageBox]::Show(
+                                        "Student '$stName' ($cleanRoll) verified and approved successfully!",
+                                        "Approval Complete",
+                                        [System.Windows.MessageBoxButton]::OK,
+                                        [System.Windows.MessageBoxImage]::Information
+                                    )
+                                } else {
+                                    Remove-Item -LiteralPath $stagedFile -Force -ErrorAction SilentlyContinue
+                                    if ($stagedImg -and $stagedImg -ne $stagedFile) {
+                                        Remove-Item -LiteralPath $stagedImg -Force -ErrorAction SilentlyContinue
+                                    }
+                                    Show-ExamStudentReviewDetails -Student $st
+                                }
+                            } else {
+                                # --- CASE 2: Discrepancies ---
+                                $failRemarks = $ruleRes.Remarks
+                                $discrepancyPrompt = "The newly attached certificate for '$stName' was scanned, but verification discrepancies were found:`n`n" +
+                                    "Issues: $failRemarks`n`n" +
+                                    "Would you like to replace the old certificate with this new file anyway for manual inspection?`n`n" +
+                                    "[Yes] Replace with new certificate (you can still click Accept Certificate Marks).`n" +
+                                    "[No] Cancel and keep the previous certificate."
+
+                                $keepChoice = [System.Windows.MessageBox]::Show(
+                                    $discrepancyPrompt,
+                                    "Verification Discrepancies Found",
+                                    [System.Windows.MessageBoxButton]::YesNo,
+                                    [System.Windows.MessageBoxImage]::Warning
+                                )
+
+                                if ($keepChoice -eq [System.Windows.MessageBoxResult]::Yes) {
+                                    $imgCertCtrl = if ($erv) { $erv.FindName("ImgExamCertViewer") } else { $null }
+                                    if ($imgCertCtrl) { $imgCertCtrl.Source = $null }
+
+                                    $allOld = @(Get-ChildItem -LiteralPath $certDir -Filter "${cleanRoll}_certificate*" -ErrorAction SilentlyContinue)
+                                    foreach ($oldF in $allOld) {
+                                        Remove-Item -LiteralPath $oldF.FullName -Force -ErrorAction SilentlyContinue
+                                    }
+
+                                    $finalPath = Join-Path $certDir "${cleanRoll}_certificate$ext"
+                                    Move-Item -LiteralPath $stagedFile -Destination $finalPath -Force
+
+                                    if ($ext -eq ".pdf") {
+                                        $finalPng = Join-Path $certDir "${cleanRoll}_certificate_page1.png"
+                                        if (Test-Path -LiteralPath $stagedImg) {
+                                            Move-Item -LiteralPath $stagedImg -Destination $finalPng -Force
+                                        }
+                                    }
+
+                                    $store = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $cName -ExamResultsSheet $script:activeCourse.ExamResultsSheet
+                                    $students = [System.Collections.ArrayList]@($store.Students)
+
+                                    $matchedSt = $null
+                                    foreach ($s in $students) {
+                                        if ($st.RollNo -and $s.RollNo -and ($s.RollNo.Trim().ToLower() -eq $st.RollNo.Trim().ToLower())) {
+                                            $matchedSt = $s
+                                            break
+                                        } elseif ($st.Email -and $s.Email -and ($s.Email.Trim().ToLower() -eq $st.Email.Trim().ToLower())) {
+                                            $matchedSt = $s
+                                            break
+                                        }
+                                    }
+
+                                    $newRemarks = "Attached certificate: $failRemarks"
+                                    if ($matchedSt) {
+                                        $matchedSt.ExamVerificationRemarks = $newRemarks
+                                        if ($certExtracted.AssignmentMarks) { $matchedSt.VerifiedAssignmentMarks = [string]$certExtracted.AssignmentMarks }
+                                        if ($certExtracted.ExamMarks) { $matchedSt.VerifiedExamMarks = [string]$certExtracted.ExamMarks }
+                                        if ($certExtracted.TotalMarks) { $matchedSt.VerifiedTotalMarks = [string]$certExtracted.TotalMarks }
+                                        if ($certExtracted.CertificateRollNo) { $matchedSt.CertificateRollNo = [string]$certExtracted.CertificateRollNo }
+                                        if ($certExtracted.Credits) { $matchedSt.Credits = [int]$certExtracted.Credits }
+                                        if ($certExtracted.CourseName) { $matchedSt.CertificateCourseName = [string]$certExtracted.CourseName }
+                                        if ($certExtracted.CandidateName) { $matchedSt.CertificateCandidateName = [string]$certExtracted.CandidateName }
+                                        $matchedSt.LocalCertificatePath = $finalPath
+                                    }
+
+                                    $st.ExamVerificationRemarks = $newRemarks
+                                    if ($certExtracted.AssignmentMarks) { $st.VerifiedAssignmentMarks = [string]$certExtracted.AssignmentMarks }
+                                    if ($certExtracted.ExamMarks) { $st.VerifiedExamMarks = [string]$certExtracted.ExamMarks }
+                                    if ($certExtracted.TotalMarks) { $st.VerifiedTotalMarks = [string]$certExtracted.TotalMarks }
+                                    if ($certExtracted.CertificateRollNo) { $st.CertificateRollNo = [string]$certExtracted.CertificateRollNo }
+                                    if ($certExtracted.Credits) { $st.Credits = [int]$certExtracted.Credits }
+                                    if ($certExtracted.CourseName) { $st.CertificateCourseName = [string]$certExtracted.CourseName }
+                                    if ($certExtracted.CandidateName) { $st.CertificateCandidateName = [string]$certExtracted.CandidateName }
+                                    $st.LocalCertificatePath = $finalPath
+
+                                    $store.Students = $students
+                                    Save-CourseExamResultsStore -Store $store -CourseId $script:activeCourse.Id -CourseName $cName
+                                    Export-CourseExamVerificationSheetData -Course $script:activeCourse -Students $students
+
+                                    Show-ExamStudentReviewDetails -Student $st
+                                } else {
+                                    Remove-Item -LiteralPath $stagedFile -Force -ErrorAction SilentlyContinue
+                                    if ($stagedImg -and $stagedImg -ne $stagedFile) {
+                                        Remove-Item -LiteralPath $stagedImg -Force -ErrorAction SilentlyContinue
+                                    }
+                                    Show-ExamStudentReviewDetails -Student $st
+                                }
+                            }
+                        } catch {
+                            [System.Windows.MessageBox]::Show(
+                                "Failed to process attached certificate:`n$($_.Exception.Message)",
+                                "Processing Error",
+                                [System.Windows.MessageBoxButton]::OK,
+                                [System.Windows.MessageBoxImage]::Error
+                            )
+                        } finally {
+                            [System.Windows.Input.Mouse]::OverrideCursor = $origCursor
+                        }
+                    }
+                })
+            }
+        }
+
         "EmailView" {
-            # 1. Back button -> Return to ReviewView
+            # 1. Back button -> Return to ReviewView or ExamReviewView
             $btnBack = $viewObj.FindName("BtnBackToReview")
             if ($btnBack) {
                 $btnBack.Add_Click({
                     if ($script:activeCourse) {
-                        Open-ReviewView
+                        if ($script:emailReturnView -eq "ExamReviewView") {
+                            Open-ExamReviewView
+                        } else {
+                            Open-ReviewView
+                        }
                     } else {
                         Navigate-To "CoursesView"
                     }
@@ -4471,8 +6674,14 @@ function Navigate-To {
     $defaultStyle = [System.Windows.Application]::Current.FindResource("BtnNav")
 
     if ($NavBtnHome) { $NavBtnHome.Style = if ($ViewName -eq "HomeView") { $activeStyle } else { $defaultStyle } }
-    if ($NavBtnCourses) { $NavBtnCourses.Style = if ($ViewName -eq "CoursesView" -or $ViewName -eq "WorkspaceView" -or $ViewName -eq "Stage1View" -or $ViewName -eq "Stage2View" -or $ViewName -eq "ReviewView" -or $ViewName -eq "EmailView") { $activeStyle } else { $defaultStyle } }
+    if ($NavBtnCourses) { $NavBtnCourses.Style = if ($ViewName -eq "CoursesView" -or $ViewName -eq "WorkspaceView" -or $ViewName -eq "Stage1View" -or $ViewName -eq "Stage2View" -or $ViewName -eq "ReviewView" -or $ViewName -eq "ExamReviewView" -or $ViewName -eq "EmailView") { $activeStyle } else { $defaultStyle } }
     if ($NavBtnSettings) { $NavBtnSettings.Style = if ($ViewName -eq "SettingsView") { $activeStyle } else { $defaultStyle } }
+
+    if ($ViewName -eq "Stage2View" -and $script:activeCourse) {
+        Update-Stage2View -Course $script:activeCourse
+    } elseif ($ViewName -eq "ExamReviewView" -and $script:activeCourse) {
+        Update-ExamReviewView -Course $script:activeCourse
+    }
 
     Refresh-CourseLists
 }

@@ -45,6 +45,50 @@ function ConvertTo-ReadableDate {
     return [string]$Value
 }
 
+function ConvertTo-DateTimeSortable {
+    [CmdletBinding()]
+    param($Value)
+
+    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) {
+        return [DateTime]::MinValue
+    }
+
+    if ($Value -is [DateTime]) {
+        return $Value
+    }
+
+    # OLE Automation numeric date (e.g., 46146.719857)
+    $num = 0.0
+    if ([double]::TryParse([string]$Value, [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$num)) {
+        if ($num -ge 30000 -and $num -le 60000) {
+            try {
+                return [DateTime]::FromOADate($num)
+            }
+            catch { }
+        }
+    }
+
+    # Explicit format parsing
+    [string[]]$formats = @(
+        "dd/MM/yyyy HH:mm:ss", "d/M/yyyy HH:mm:ss", "dd-MM-yyyy HH:mm:ss", "d-M-yyyy HH:mm:ss",
+        "yyyy-MM-dd HH:mm:ss", "yyyy/MM/dd HH:mm:ss",
+        "dd/MM/yyyy", "d/M/yyyy", "dd-MM-yyyy", "d-M-yyyy",
+        "yyyy-MM-dd", "yyyy/MM/dd",
+        "M/d/yyyy h:mm:ss tt", "MM/dd/yyyy hh:mm:ss tt", "M/d/yyyy", "MM/dd/yyyy"
+    )
+    $parsedExact = [DateTime]::MinValue
+    if ([DateTime]::TryParseExact([string]$Value, $formats, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::None, [ref]$parsedExact)) {
+        return $parsedExact
+    }
+
+    $parsedGeneral = [DateTime]::MinValue
+    if ([DateTime]::TryParse([string]$Value, [ref]$parsedGeneral)) {
+        return $parsedGeneral
+    }
+
+    return [DateTime]::MinValue
+}
+
 function ConvertTo-BooleanValue {
     param($Value)
     if ($null -eq $Value) { return $false }
@@ -53,6 +97,30 @@ function ConvertTo-BooleanValue {
         return $true
     }
     return $false
+}
+
+function Test-FileLocked {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+    if (-not (Test-Path -LiteralPath $Path)) { return $false }
+    try {
+        $fileStream = [System.IO.File]::Open(
+            $Path,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::ReadWrite,
+            [System.IO.FileShare]::None
+        )
+        if ($fileStream) {
+            $fileStream.Close()
+            $fileStream.Dispose()
+        }
+        return $false
+    } catch {
+        return $true
+    }
 }
 
 function Get-ColumnMapping {
@@ -98,16 +166,17 @@ function Import-StudentSheet {
     )
 
     $result = [PSCustomObject]@{
-        Success         = $false
-        FilePath        = $Path
-        RowCount        = 0
-        Headers         = @()
-        ColumnMap       = [ordered]@{}
-        Students        = @()
-        DuplicateCount  = 0
-        SupersededRolls = @()
-        Rows            = @()
-        Error           = $null
+        Success          = $false
+        FilePath         = $Path
+        RowCount         = 0
+        Headers          = @()
+        ColumnMap        = [ordered]@{}
+        Students         = @()
+        DuplicateCount   = 0
+        SupersededRolls  = @()
+        Rows             = @()
+        DeDuplicatedRows = @()
+        Error            = $null
     }
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -176,6 +245,7 @@ function Import-StudentSheet {
 
         # Build normalized Students collection with smart de-duplication (latest submission wins)
         $studentMap = [ordered]@{}
+        $rowMap = [ordered]@{}
         $duplicateCount = 0
         $supersededRolls = [System.Collections.ArrayList]@()
         $mappedHeaders = @($colMap.Values | Where-Object { $_ })
@@ -216,28 +286,39 @@ function Import-StudentSheet {
             $key = if ($stObj.RollNo) { $stObj.RollNo.ToLower() } elseif ($stObj.Email) { $stObj.Email.ToLower() } else { [Guid]::NewGuid().ToString() }
 
             if ($studentMap.Contains($key)) {
-                # A previous submission exists for this student; latest row supersedes earlier row
+                # A previous submission exists for this student; latest timestamp wins
                 $duplicateCount++
                 $dispRoll = if ($stObj.RollNo) { $stObj.RollNo } else { $stObj.Email }
                 if ($dispRoll -notin $supersededRolls) {
                     $null = $supersededRolls.Add($dispRoll)
                 }
-                $studentMap[$key] = $stObj
+
+                $existingSt = $studentMap[$key]
+                $existingDt = ConvertTo-DateTimeSortable -Value $existingSt.Timestamp
+                $currentDt  = ConvertTo-DateTimeSortable -Value $stObj.Timestamp
+
+                if ($currentDt -ge $existingDt) {
+                    $studentMap[$key] = $stObj
+                    $rowMap[$key]     = $row
+                }
             } else {
                 $studentMap[$key] = $stObj
+                $rowMap[$key]     = $row
             }
         }
 
         $students = @($studentMap.Values)
+        $deDupRows = @($rowMap.Values)
 
-        $result.Success         = $true
-        $result.RowCount        = $validRows.Count
-        $result.Headers         = $headers
-        $result.ColumnMap       = $colMap
-        $result.Students        = $students
-        $result.DuplicateCount  = $duplicateCount
-        $result.SupersededRolls = @($supersededRolls)
-        $result.Rows            = $validRows
+        $result.Success          = $true
+        $result.RowCount         = $validRows.Count
+        $result.Headers          = $headers
+        $result.ColumnMap        = $colMap
+        $result.Students         = $students
+        $result.DuplicateCount   = $duplicateCount
+        $result.SupersededRolls  = @($supersededRolls)
+        $result.Rows             = $validRows
+        $result.DeDuplicatedRows = $deDupRows
         return $result
     }
     catch {
@@ -430,15 +511,15 @@ function Get-ExamResultsColumnMapping {
     )
 
     $patterns = [ordered]@{
-        RollNo          = '^(enrollment(\s*number)?|roll\s*no|urn|reg(istration)?\s*no|student\s*id)'
-        Name            = '^(name|student\s*name|candidate\s*name|full\s*name)$'
-        Email           = '^(email(\s*address)?|mail)$'
-        Subject         = '^(subject|course\s*name|course\s*title)$'
-        AssignmentMarks = 'assign(ment)?\s*marks?'
-        ExamMarks       = '(main\s*)?exam\s*marks?'
-        TotalMarks      = '(final\s*exam\s*marks\s*)?total(\s*marks)?'
-        CertificateUrl  = '(upload\s*)?(exam\s*)?certificate.*|proof|drive\.google'
-        Timestamp       = 'timestamp|submission\s*time'
+        RollNo          = 'roll\s*no|roll\s*number|enrollment(\s*no|\s*number)?|urn|reg(istration)?\s*(no|number)?|student\s*id'
+        Name            = '^(student(\x27s)?\s*name|candidate\s*name|full\s*name|applicant\s*name|name)$'
+        Email           = 'email|e-mail|mail\s*id'
+        Subject         = '^(subject|course(\s*name|\s*title)?|nptel\s*course(\s*name)?)$'
+        AssignmentMarks = 'assign(ment)?\s*(marks?|score)|internal\s*(marks?|score)|ca\s*(marks?|score)'
+        ExamMarks       = '^(proctored|main|online|theory|final)?\s*exam\s*(marks?|score)$|proctored\s*(marks?|score)'
+        TotalMarks      = '(final\s*exam\s*marks\s*)?total(\s*marks?|\s*score)?|consolidated(\s*total)?|grand\s*total|final\s*score'
+        CertificateUrl  = '(upload\s*)?(exam\s*)?cert(ificate)?.*|proof.*|drive\.google|cert(ificate)?\s*(url|link|file)'
+        Timestamp       = 'timestamp|submission\s*time|date\s*time'
     }
 
     $mapping = [ordered]@{}
@@ -467,16 +548,17 @@ function Import-ExamResultsSheet {
     )
 
     $result = [PSCustomObject]@{
-        Success         = $false
-        FilePath        = $Path
-        RowCount        = 0
-        Headers         = @()
-        ColumnMap       = [ordered]@{}
-        Students        = @()
-        DuplicateCount  = 0
-        SupersededRolls = @()
-        Rows            = @()
-        Error           = $null
+        Success          = $false
+        FilePath         = $Path
+        RowCount         = 0
+        Headers          = @()
+        ColumnMap        = [ordered]@{}
+        Students         = @()
+        DuplicateCount   = 0
+        SupersededRolls  = @()
+        Rows             = @()
+        DeDuplicatedRows = @()
+        Error            = $null
     }
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -542,6 +624,7 @@ function Import-ExamResultsSheet {
 
         # Build normalized Students collection with smart de-duplication (latest submission wins)
         $studentMap = [ordered]@{}
+        $rowMap = [ordered]@{}
         $duplicateCount = 0
         $supersededRolls = [System.Collections.ArrayList]@()
         $mappedHeaders = @($colMap.Values | Where-Object { $_ })
@@ -590,27 +673,39 @@ function Import-ExamResultsSheet {
             $key = if ($stObj.RollNo) { $stObj.RollNo.ToLower() } elseif ($stObj.Email) { $stObj.Email.ToLower() } else { [Guid]::NewGuid().ToString() }
 
             if ($studentMap.Contains($key)) {
+                # A previous submission exists for this student; latest timestamp wins
                 $duplicateCount++
                 $dispRoll = if ($stObj.RollNo) { $stObj.RollNo } else { $stObj.Email }
                 if ($dispRoll -notin $supersededRolls) {
                     $null = $supersededRolls.Add($dispRoll)
                 }
-                $studentMap[$key] = $stObj
+
+                $existingSt = $studentMap[$key]
+                $existingDt = ConvertTo-DateTimeSortable -Value $existingSt.Timestamp
+                $currentDt  = ConvertTo-DateTimeSortable -Value $stObj.Timestamp
+
+                if ($currentDt -ge $existingDt) {
+                    $studentMap[$key] = $stObj
+                    $rowMap[$key]     = $row
+                }
             } else {
                 $studentMap[$key] = $stObj
+                $rowMap[$key]     = $row
             }
         }
 
         $students = @($studentMap.Values)
+        $deDupRows = @($rowMap.Values)
 
-        $result.Success         = $true
-        $result.RowCount        = $validRows.Count
-        $result.Headers         = $headers
-        $result.ColumnMap       = $colMap
-        $result.Students        = $students
-        $result.DuplicateCount  = $duplicateCount
-        $result.SupersededRolls = @($supersededRolls)
-        $result.Rows            = $validRows
+        $result.Success          = $true
+        $result.RowCount         = $validRows.Count
+        $result.Headers          = $headers
+        $result.ColumnMap        = $colMap
+        $result.Students         = $students
+        $result.DuplicateCount   = $duplicateCount
+        $result.SupersededRolls  = @($supersededRolls)
+        $result.Rows             = $validRows
+        $result.DeDuplicatedRows = $deDupRows
         return $result
     }
     catch {
@@ -663,12 +758,16 @@ function Save-CourseExamResultsStore {
         [string]$DataDir = $null
     )
 
+    # Unwrap if passed as an array [true, $store]
+    if ($Store -is [System.Collections.IList] -and $Store.Count -ge 2 -and ($Store[0] -is [bool])) {
+        $Store = $Store[1]
+    }
+
     $jsonPath = Get-CourseExamResultsFilePath -CourseId $CourseId -CourseName $CourseName -DataDir $DataDir
     $tempFile = [System.IO.Path]::GetTempFileName()
     try {
         $Store | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $tempFile -Encoding UTF8 -Force
         Move-Item -LiteralPath $tempFile -Destination $jsonPath -Force
-        return $true
     }
     catch {
         if (Test-Path -LiteralPath $tempFile) { Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue }
@@ -693,6 +792,9 @@ function Get-CourseExamResultsStore {
         try {
             $rawJson = Get-Content -LiteralPath $jsonPath -Raw -Encoding UTF8
             $store = $rawJson | ConvertFrom-Json
+            if ($store -is [System.Collections.IList] -and $store.Count -ge 2 -and ($store[0] -is [bool])) {
+                $store = $store[1]
+            }
             if ($store -and $store.Students) {
                 return $store
             }
@@ -713,7 +815,7 @@ function Get-CourseExamResultsStore {
                 ColumnMap        = $importRes.ColumnMap
                 Students         = @($importRes.Students)
             }
-            Save-CourseExamResultsStore -Store $store -CourseId $CourseId -CourseName $CourseName -DataDir $DataDir
+            $null = Save-CourseExamResultsStore -Store $store -CourseId $CourseId -CourseName $CourseName -DataDir $DataDir
             return $store
         }
     }

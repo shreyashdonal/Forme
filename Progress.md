@@ -250,36 +250,62 @@ PDQA Project/
 - [x] Update `courses.json` with `ExamResultsSheet` path and stage status `"ResultsUploaded"` `[Session 1]`
 
 #### Phase B — Certificate Ingestion & 4-Tier Matching
-- [ ] Reuse Google Drive direct batch downloader from `modules/Download-Receipts.ps1` (`Download-ReceiptsFromDrive`)
-- [ ] Reuse 4-tier local matching algorithm (`Import-ReceiptsFromLocalSource`) for local folders / ZIP archives
-- [ ] Store matched certificates in `data/Courses/<CourseName>/certificates/` with persistent cache
+- [x] Reuse Google Drive direct batch downloader from `modules/Download-Receipts.ps1` (`Download-ReceiptsFromDrive` / `Invoke-CertificateBatchDownload`) `[Session 2]`
+- [x] Reuse 4-tier local matching algorithm for local folders / ZIP archives (`Import-CertificatesFromLocalSource`) `[Session 2]`
+- [x] Store matched certificates in `data/Courses/<CourseName>/certificates/` with persistent cache `[Session 2]`
 
 #### Phase C — WinRT OCR & Certificate Data Extractor
-- [ ] Reuse WinRT PDF rasterizer (`ConvertTo-ReceiptImage` in `modules/OcrEngine.ps1`) to render certificate PDFs to 1600px PNGs
-- [ ] Reuse WinRT OCR engine (`Invoke-ReceiptOcr`) to extract raw lines and bounding boxes
-- [ ] Build specialized extractor `Extract-CertificateData` in `modules/ExamVerificationEngine.ps1` targeting NPTEL certificate fields (Candidate Name, Course Title, Assignment /25, Exam /75, Total /100, Roll No, Credits)
+- [x] Reuse WinRT PDF rasterizer (`ConvertTo-CertificateImage` in `modules/OcrEngine.ps1`) to render certificate PDFs to 1600px PNGs `[Session 2]`
+- [x] Reuse WinRT OCR engine (`Invoke-CertificateOcr` in `modules/OcrEngine.ps1`) to extract raw lines and bounding boxes `[Session 2]`
+- [x] Build specialized extractor `Extract-CertificateData` in `modules/ExamVerificationEngine.ps1` targeting NPTEL certificate fields (Candidate Name, Course Title, Assignment /25, Exam /75, Total /100, Roll No, Credits) `[Session 2]`
 
 #### Phase D — 5-Rule Exam Verification Engine & Under Review Policy
-- [ ] Implement `Test-ExamVerificationRules` in `modules/ExamVerificationEngine.ps1` (Course Match, Identity Match, Assignment Marks, Exam Marks, Total Marks)
-- [ ] Enforce strict Under Review policy: mark any decimal or rounding mismatch (e.g. 25 vs 24.67) and missing/unreadable certificates as `Under Review` with detailed remarks
-- [ ] Implement `Invoke-CourseExamVerificationPipeline` with batch processing, delta skipping, and progress reporting
+- [x] Implement `Test-ExamVerificationRules` in `modules/ExamVerificationEngine.ps1` (Course Match, Identity Match, Assignment Marks, Exam Marks, Total Marks) `[Session 2]`
+- [x] Enforce strict Under Review policy: mark any decimal or rounding mismatch (e.g. 25 vs 24.67) and missing/unreadable certificates as `Under Review` with detailed remarks `[Session 2]`
+- [x] Implement `Invoke-CourseExamVerificationPipeline` with batch processing, delta skipping, and progress reporting `[Session 2]`
 
 #### Phase E — Stage 2 UI Command Center (`UI/Views/Stage2View.xaml`)
 - [x] Replace "Coming Soon" in `Stage2View.xaml` with Results Sheet Attachment Card, Pipeline Control Bar, adaptive progress bar, and 4-metric summary cards `[Session 1]`
-- [ ] Wire Stage 2 Review Queue interaction with split-screen preview and 1-click `[ Accept Certificate Marks ]` override button
-- [ ] Update Workspace Navigation and Stage 2 status badge in `NPTEL-Manager.ps1`
+- [x] Wire Stage 2 Review Queue interaction with split-screen preview and 1-click `[ Accept Certificate Marks ]` override button `[Session 2]`
+- [x] Update Workspace Navigation and Stage 2 status badge in `NPTEL-Manager.ps1` `[Session 2]`
 
-#### Phase F — Official College Final Result Sheet Generator
+#### Phase F — Stage 2 Verified Students Workspace (`UI/Views/ExamVerifiedView.xaml`)
+- [ ] Build `ExamVerifiedView.xaml` layout: Mini dashboard (Total Verified Students, Passed Students, New Changes), Push action bar without email button, and paginated Student List
+- [ ] Implement `Open-ExamVerifiedView` and `Update-ExamVerifiedView` in `NPTEL-Manager.ps1` with 25-per-page pagination and live search filtering
+- [ ] Implement Row Actions: Certificate viewer launcher, 1-click Unapprove / Undo staging pattern, and Open Student Mode B inspection workspace
+- [ ] Wire `CardExamStatVerified` on Stage 2 to open `ExamVerifiedView`
+- [ ] Implement `[ Push Changes to Result Sheet ]` committing reverted statuses to `exam_results.json` and synchronizing `Result Verification Sheet`
+
+#### Phase G — Coordinator Certificate Marks Editor & Manual Overrides (Mode B)
+- [ ] Upgrade Mode B Academic Marks Comparison card in `ExamReviewView.xaml` and `ExamVerifiedView.xaml` with `[ ✏️ Edit Certificate Marks ]` toggle and inline dark input fields (`/25`, `/75`, `/100`)
+- [ ] Implement numeric bounds validation (<= 25, <= 75, <= 100) and `[ ⚡ Auto-Sum ]` helper in `NPTEL-Manager.ps1`
+- [ ] Implement `[ ✓ Save & Apply Verified ]` staging handler in `NPTEL-Manager.ps1` (updates student record with `Verified (Manual Marks Correction)` and stages change in session)
+- [ ] Integrate edited marks persistence with `[ Push Changes to Result Sheet ]` (updating `exam_results.json` and `<Course>_Result_Verification_Sheet.xlsx`)
+
+#### Phase H — Official College Final Result Sheet Generator
 - [ ] Build `Export-CourseFinalResultSheet` in `modules/Export-FinalResultSheet.ps1` using `ImportExcel`
 - [ ] Populate standard departmental columns (S.No, Enrollment No, Student Name, Assignment Marks /25, Exam Marks /75, Total Marks /100, NPTEL Roll No, Credits, Pass/Fail, Remarks) — without medal tiers
 - [ ] Apply clean institutional styling (Navy header `#1F4E79`, white bold text, alternating light rows, auto-fitted columns)
 - [ ] Add `[ 📊 Generate Final Result Sheet ]` button in `Stage2View.xaml` with direct system file launcher
+
+#### Post-Stage 2 Follow-Up Tasks
+- [ ] Direct Certificate Marks Excel Sync: Append `Cert Assignment Marks`, `Cert Exam Marks`, and `Cert Total Marks` columns directly into `<Course>_Result_Verification_Sheet.xlsx` alongside `Verification Status` and `Verification Remarks` across `New-CourseExamVerificationSheet` and `Export-CourseExamVerificationSheetData`.
+- [ ] Port Stage 2 Sheet Health UI Enhancements to Stage 1: After completing Stage 2, update Stage 1 Sheet Health (`UI/Views/Stage1View.xaml` & `NPTEL-Manager.ps1`) to surface the `Timestamp` column detection badge (8th card) and add the `Duplicates / Superseded` counter card to the basic numbers strip, bringing visual parity with Stage 2's de-duplication transparency.
 
 #### Extra / Ad-Hoc Completed Tasks
 - [x] Windows PowerShell 5.1 Unicode & String Hardening for Stage 2: Replaced literal em-dash strings with `[string][char]0x2014` and sanitized non-ASCII tokens to guarantee 100% parse stability in Windows PowerShell 5.1 `[Session 1]`
 - [x] Applied Skill 1 Dynamic Control Resolution to Stage 2 View: Refactored 'View Details' health toggle, preview modal close, and search filter event handlers in `NPTEL-Manager.ps1` to resolve controls dynamically via `$script:views["Stage2View"]` and `$this`, eliminating runtime property visibility/content errors `[Session 1]`
 - [x] Manual Result Verification Sheet Generation & Verification Columns: Aligned Stage 2 Card D with Stage 1 architecture — added State A prompt with `[ + Generate Result Verification Sheet ]`, built `New-CourseExamVerificationSheet` to generate `<Course>_Result_Verification_Sheet.xlsx` appending `Verification Status` and `Verification Remarks` columns, and wired Preview Sheet, Open File, and Recreate Sheet actions `[Session 1]`
 - [x] Collapsible Verification Sheet Panel in Stage 1 & Stage 2: Wrapped the large active verification details (pipeline bar, 3-card mini dashboard, and action buttons) inside a collapsible container (collapsed by default); added `[ Open Sheet ▼ ]` / `[ Close Sheet ▲ ]` toggle button in the File Location Bar following Skill 1 dynamic control resolution `[Session 1]`
+- [x] Smart Exam Sheet De-Duplication & "Latest Timestamp Wins": Result Verification Sheet generation excludes superseded duplicate entries using true DateTime comparison, ensuring 1:1 parity between exam_results.json and the exported Excel verification sheet `[Session 2]`
+- [x] Stage 2 Attachment Card Dynamic 2-State Switch & Examination Sheet Health Overhaul: Transformed Attachment Card to toggle between [Add Sheet] (primary) and [Update Sheet] (secondary) hiding preview/open buttons when empty; overhauled Sheet Health with live mini header metrics, safe neutral empty state (dashes instead of false "MISSING" alerts), tolerant column regex in Get-ExamResultsColumnMapping, and categorized impact guidance banner for optional columns (e.g. Email) `[Session 2]`
+- [x] Safe ZIP Archive Ingestion & Path Normalization (Trailing Space Fix): Built `Expand-ZipArchiveSafe` in `modules/Download-Receipts.ps1` replacing standard `ExtractToDirectory` to sanitize path segments with trailing spaces (e.g. `'Exam Certificate '`) and extract files via streams with explicit parent directory creation, resolving `ExtractToFile` "Could not find a part of the path" crashes `[Session 2]`
+- [x] Automated WinRT OCR Pipeline Button Wiring: Wired `[▶ Run OCR]` (`BtnVerifyExamAll`) in `NPTEL-Manager.ps1` with dynamic Wait cursor, adaptive progress updates, live status ticks, result summary dialog, and automatic synchronization with both `exam_results.json` and `<Course>_Result_Verification_Sheet.xlsx` `[Session 2]`
+- [x] Exam Review Queue High-Performance Pagination & Live Search Engine: Eliminated duplicate `Update-ExamReviewView` invocation in `Open-ExamReviewView` reducing initial queue opening freeze from >3.2s to instantaneous; added 25-students-per-page pagination with range badge (`Showing 1-25 of 147`), Next/Previous navigation buttons, and instant live search filtering by roll number, name, or discrepancy with contextual empty notice and zero-freeze responsive scrolling `[Session 2]`
+- [x] Configurable Round-off Toggle & Pure Mathematical Rounding Engine: Added `[ ] Allow Round-offs` checkbox toggle (`ChkAllowExamRounding`) in `UI/Views/Stage2View.xaml` alongside OCR pipeline controls. Completely removed any delta/tolerance rules. Rules 3, 4, 5 in `modules/ExamVerificationEngine.ps1` check exact equality first, and if AllowRounding is ON, strictly evaluate `[Math]::Round($Declared, 0, [MidpointRounding]::AwayFromZero) -eq [Math]::Round($Certificate, 0, [MidpointRounding]::AwayFromZero)`. Matching cases mark `Verified (Rounded Match)`. Non-matching cases mark `Under Review — ... mismatch after rounding` without assumptions `[Session 2]`
+- [x] Graceful Excel File-Lock Detection & Actionable Error Dialog: Built `Test-FileLocked` in `modules/Import-StudentSheet.ps1` using exclusive stream locking; implemented `Show-SheetGenerationErrorDialog` in `NPTEL-Manager.ps1` replacing raw .NET `Exception calling "Save"` with user-friendly `"The result verification sheet cannot be saved because '<FileName>' is currently open"`; hardened Stage 1 & Stage 2 generators, Review push actions, and automated OCR sync `[Session 3]`
+- [x] Windows PowerShell 5.1 Parser Hardening for Verification Summary Report: Fixed runtime `The term 'if' is not recognized as a cmdlet` error in `NPTEL-Manager.ps1` caused by statement-in-expression evaluation in PS 5.1 by isolating conditional evaluations to `$preservedLine` before string concatenation `[Session 3]`
+- [x] Pure Mathematical Nearest-Integer Rounding Engine: Completely eliminated the previous `≤ 1.0` tolerance/delta rule. When Allow Round-offs is enabled, Rules 3, 4, 5 in `modules/ExamVerificationEngine.ps1` strictly compare `[Math]::Round($Declared, 0, [MidpointRounding]::AwayFromZero) -eq [Math]::Round($Certificate, 0, [MidpointRounding]::AwayFromZero)`, marking `Verified (Rounded Match)` or `Under Review — ... mismatch after rounding` without speculation `[Session 3]`
 
 ---
 
@@ -632,8 +658,65 @@ Progress.md (Registered Branch 5 phases A-F; logged Session 1; added ## 7. Skill
 
 **Known issues / TODO carried forward**
 ```
-- Next piece: Branch 5 Phase B (Certificate Ingestion & 4-Tier Matching via modules/Download-Receipts.ps1).
-- Next unchecked checklist item for Branch 5: Task B.1 (Reuse Google Drive direct batch downloader from modules/Download-Receipts.ps1).
+- Next piece: Branch 5 Phase E (Review Queue interaction with split-screen preview and override actions).
+- Next unchecked checklist item for Branch 5: Wire Stage 2 Review Queue interaction with split-screen preview and 1-click [ Accept Certificate Marks ] override button.
+```
+
+### Session 2 (Branch 5 (Stage 2: Examination Results & Final Sheet)) -- Ingestion Hardening, OCR Extraction & Stage 2 Review Queue [COMPLETED]
+
+**Files created/updated**
+```
+modules/Download-Receipts.ps1 (Added Expand-ZipArchiveSafe replacing standard ExtractToDirectory to sanitize path segments with trailing spaces and extract files via streams with explicit parent directory creation; added Invoke-CertificateBatchDownload and Import-CertificatesFromLocalSource with 4-tier student matching for certificates)
+modules/OcrEngine.ps1 (Added ConvertTo-CertificateImage, Invoke-CertificateOcr, and Get-CertificateOcrText wrappers for native WinRT OCR and PDF rasterization)
+modules/ExamVerificationEngine.ps1 (Built Extract-CertificateData with artifact tolerance for candidate name, course, assignment /25, exam /75, total /100, NPTEL roll no, and credits; implemented Compare-ExamTextFuzzy and Test-ExamVerificationRules enforcing strict Under Review policy; implemented Invoke-CourseExamVerificationPipeline with batch processing, delta skipping, certificate resolution, and Excel/JSON synchronization; added Export-CourseExamVerificationSheetData helper and CertificateCourseName/CertificateCandidateName persistence)
+UI/Views/ExamReviewView.xaml (Created Stage 2 Review Queue user control with Mode A: Queue Overview with 3-card mini dashboard [TOTAL ISSUES, SOLVED IN THIS SESSION, PENDING], push action bar, 25-per-page pagination header and footer, live search filter bar, and enrollment/name/discrepancies table with quick actions [Issues, Certificate, Accept Marks, Open Student]; Mode B: split-screen student inspection workspace with diagnostics, side-by-side Academic Marks Comparison [Declared vs Certificate], manual attachment card, and zoomable memory-stream certificate viewer)
+NPTEL-Manager.ps1 (Wired [▶ Run OCR] BtnVerifyExamAll with dynamic Wait cursor, adaptive progress updates, live status ticks, result summary dialog, and automatic synchronization; hardened variable interpolation before colons; added Show-FileBrowseDialog; wired CardExamStatReview on Stage2View to open ExamReviewView; eliminated duplicate Update-ExamReviewView invocation in Open-ExamReviewView reducing initial queue freeze from >3.2s to instantaneous; added session pagination state [$script:examReviewCurrentPage, $script:examReviewPageSize = 25, $script:examReviewSearchQuery] and controller functions Open-ExamReviewView, Update-ExamReviewView, Show-ExamStudentReviewDetails, and Find-LocalCertificateFile; wired ExamReviewView event handlers including Prev/Next page navigation, live search filtering by roll/name/discrepancies with clear button and contextual empty notices, Mode A to Mode B transitions, zoom controls, 1-click Accept Certificate Marks override, manual certificate attachment with immediate OCR re-scan, Push Changes to Result Sheet committing to exam_results.json and synchronizing Result Verification Sheet, and updated Navigate-To router)
+Progress.md (Completed Phase B, Phase C, Phase D, and Phase E checklist items; logged Session 2 completion; added Skill 2 for Windows PowerShell 5.1 Unicode & Character Encoding Hardening; documented Exam Review Queue pagination and search engine optimization)
+```
+
+**Decisions made this session**
+```
+- *Safe ZIP Ingestion & Trailing Whitespace Sanitization*: Built Expand-ZipArchiveSafe trimming all segment paths before stream extraction, preventing Windows path normalization crashes.
+- *Strict Under Review Policy for Marks Mismatches*: Enforced that any discrepancy between student declared marks and certificate marks (including decimal rounding differences) is strictly flagged as Under Review.
+- *Defensive Null/Empty Binding in Fuzzy Comparison*: Added [AllowNull()] and [AllowEmptyString()] to Compare-ExamTextFuzzy parameters, preventing parameter binding validation exceptions on missing OCR text.
+- *Real-World OCR Artifact Resilience*: Enhanced regex patterns in Extract-CertificateData to handle fused OCR characters (such as slashes read as '1' or 'l' in /25 and /75, and typos like 'successfrlly').
+- *Two-Way Verification Record Synchronization*: Successful pipeline execution saves enriched records to exam_results.json and synchronizes 'Verification Status' and 'Verification Remarks' in the course's <Course>_Result_Verification_Sheet.xlsx.
+- *Stage 2 Review Queue Parity (Mode A & Mode B)*: Provided the exact ergonomic experience from Stage 1: Mode A offers an issues table with instant [Accept Marks] quick action and [Issues] dialog; Mode B provides a split-screen workspace with declared vs certificate marks comparison, manual certificate attachment, and a zero-file-lock zoomable certificate viewer.
+- *Push Staging Pattern*: Coordinator overrides stage solved changes in session memory with remarks 'Verified (Coordinator Override - Certificate Marks Accepted)'. Changes are safely batch-pushed to exam_results.json and the Result Verification Sheet on demand, instantly updating Stage 2 dashboard metrics.
+- *Exam Review Queue High-Performance Pagination & Live Search Engine*: Solved the slow opening performance for courses with 147+ students under review by eliminating a duplicate view render call in Open-ExamReviewView (which was triggering Update-ExamReviewView twice) and slicing row card instantiation in Update-ExamReviewView to 25 items per page with instant search filtering. This dropped WPF UI instantiation time from >1.4s per call (3.2s total) to a responsive ~25ms-50ms render, and provided intuitive Prev/Next page controls, range indicator ("Showing 1-25 of 147"), and instant typing-filter feedback with auto-reset to page 1.
+```
+
+**Known issues / TODO carried forward**
+```
+- Completed Session 2 roadmap and performance optimization.
+```
+
+---
+
+### Session 3 (Branch 5 (Stage 2: Examination Results & Final Sheet)) -- File-Lock Resilience, PS 5.1 Hardening & Pure Mathematical Rounding
+
+**Files created/updated**
+```
+modules/Import-StudentSheet.ps1 (Added Test-FileLocked using [System.IO.File]::Open with ReadWrite and FileShare None for cross-module file lock detection)
+modules/ExamVerificationEngine.ps1 (Hardened Export-CourseExamVerificationSheetData to safely detect locked files and return structured status objects without unhandled exceptions; updated Confirm-ExamStudentRules to strictly use pure [Math]::Round with AwayFromZero and zero delta tolerance, updating mismatch remarks to neutral format)
+NPTEL-Manager.ps1 (Implemented Show-SheetGenerationErrorDialog extracting locked filenames and presenting friendly actionable instructions to close Excel; wired dialog across Stage 1, Stage 2, and Review push handlers; fixed PowerShell 5.1 statement-in-expression parsing crash in BtnVerifyExamAll by isolating $preservedLine; aligned confirmation dialog and status labels with pure rounded matching policy)
+UI/Views/Stage2View.xaml (Updated Round-off Policy tooltip to clarify Round(Declared) == Round(Certificate))
+Progress.md (Logged Session 3; added file lock handling, PS 5.1 parser fix, and pure mathematical rounding to Extra / Ad-Hoc Completed Tasks; tracked pending Certificate Marks Excel sync task)
+```
+
+**Decisions made this session**
+```
+- *Proactive File-Lock Detection & Actionable Modals*: Replaced technical .NET EPPlus stack traces ("Exception calling Save with 0 arguments") with a clean user-facing dialog: "The result verification sheet cannot be saved because '<FileName>' is currently open. Please close the file in Excel and try again."
+- *Non-Fatal Automated OCR Sync*: If Microsoft Excel is open while running verification on 100+ students, the OCR pipeline safely completes and persists records to exam_results.json, while the completion popup informs the user that the Excel sheet was locked and can be synced via [Re-create Sheet] once closed.
+- *Pure Mathematical Rounding (No Delta/Tolerance)*: Completely eliminated the <= 1.0 delta rule. Rounding comparisons strictly test whether [Math]::Round(Declared) equals [Math]::Round(Certificate). Non-matching cases are flagged neutrally as "Under Review — marks mismatch after rounding".
+- *Windows PowerShell 5.1 Statement Isolation*: Avoided statement-in-expression syntax (such as + (if (...) { ... })) that caused Windows PowerShell 5.1 to misinterpret 'if' as a cmdlet name.
+- *Stage 2 Verified Students Workspace Architecture (Phase F)*: Brainstormed and finalized the UX layout for `ExamVerifiedView.xaml` mirroring `ExamReviewView.xaml`. Top mini dashboard displays `TOTAL VERIFIED STUDENTS`, `PASSED STUDENTS` (`TotalMarks >= 40`), and `NEW CHANGES` (staged unapprovals in session). Action bar features `[ Push Changes to Result Sheet ]` without email dispatch. Table rows offer `[ Certificate ]`, 1-click `[ Unapprove ]` (toggles to `[ Undo ]`), and `[ Open Student ]` leading to a Mode B split inspection workspace. Replaced `Exam Review Queue` title with `Student List`. Implementation scheduled for next session.
+```
+
+**Known issues / TODO carried forward**
+```
+- Next piece: Branch 5 Phase F (Stage 2 Verified Students Workspace).
+- Next unchecked checklist item for Branch 5: Build ExamVerifiedView.xaml layout: Mini dashboard (Total Verified Students, Passed Students, New Changes), Push action bar without email button, and paginated Student List.
 ```
 
 ---
@@ -744,4 +827,52 @@ Whenever writing or modifying an event handler inside a view:
    ```
 3. **Pass contextual metadata via `.Tag`**:
    If an element needs specific record data (like a student Roll No or file path), bind it to `$element.Tag` at initialization time and read `$this.Tag` inside the event handler.
+
+
+### Skill 2: Windows PowerShell 5.1 Unicode & Character Encoding Hardening
+
+**The Golden Rule:**  
+Never write literal non-ASCII characters (e.g. `•`, `—`, `✓`, `⚠`, `₹`, `ℹ`, `▲`, `▼`) directly inside PowerShell script files (`.ps1`).  
+Modern editors and Git save files in **UTF-8 without BOM**. When Windows PowerShell 5.1 (the default built into Windows) executes a `.ps1` file, it reads bytes using the system's legacy **Windows-1252 (ANSI)** code page. This causes multi-byte UTF-8 sequences to decode into garbled characters (*mojibake*), such as:
+- Bullet `•` (`0xE2 0x80 0xA2`) becoming `â€¢`
+- Em dash `—` (`0xE2 0x80 0x94`) becoming `â€”`
+- Checkmark `✓` (`0xE2 0x9C 0x93`) becoming `âœ“`
+- Warning `⚠` (`0xE2 0x9A 0xA0`) becoming `âš`
+
+**The Mandatory Token Pattern:**  
+Whenever using symbols, bullets, or non-ASCII characters in PowerShell scripts, construct them dynamically in memory using their numeric Unicode code points with `[string][char]0x<HEX>`:
+
+```powershell
+# BAD (DO NOT DO THIS — will corrupt as â€¢, â€”, âœ“ in Windows PowerShell 5.1):
+$summary = "$total Total • $unique Unique • $detected/9 Columns"
+$icon.Text = "✓"
+$dash = "—"
+$warning = "⚠ Warning"
+
+# GOOD (ALWAYS DO THIS — 100% immune to file encoding mismatches):
+$bulletToken = [string][char]0x2022  # •
+$dashToken   = [string][char]0x2014  # —
+$checkToken  = [string][char]0x2713  # ✓
+$warnToken   = [string][char]0x26A0  # ⚠
+$infoToken   = [string][char]0x2139  # ℹ
+$upToken     = [string][char]0x25B2  # ▲
+$downToken   = [string][char]0x25BC  # ▼
+$rupeeToken  = [string][char]0x20B9  # ₹
+
+# String interpolation using tokens:
+$summary = "$total Total $bulletToken $unique Unique $bulletToken $detected/9 Columns"
+$icon.Text = $checkToken
+$cardText.Text = $dashToken
+$btn.Content = "View Details " + $downToken
+```
+
+**In XAML Files (`.xaml`):**
+In WPF XAML files, always use XML entity hex escapes instead of literal UTF-8:
+- Bullet: `&#x2022;`
+- Em dash: `&#x2014;`
+- Checkmark: `&#x2713;`
+- Warning: `&#x26A0;`
+- Rupee: `&#x20B9;`
+- Up/Down arrows: `&#x25B2;` / `&#x25BC;`
+
 

@@ -272,3 +272,72 @@ function Get-ReceiptText {
     )
     return Invoke-ReceiptOcr -ImagePath $ImagePath
 }
+
+# ==============================================================================
+# Stage 2: Certificate Image Rasterization & OCR Wrappers
+# ==============================================================================
+
+function ConvertTo-CertificateImage {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FilePath,
+        [string]$OutputPath = $null,
+        [int]$RenderWidth = 1600,
+        [switch]$Force
+    )
+    return ConvertTo-ReceiptImage -FilePath $FilePath -OutputPath $OutputPath -RenderWidth $RenderWidth -Force:$Force
+}
+
+function Invoke-CertificateOcr {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ImagePath
+    )
+    return Invoke-ReceiptOcr -ImagePath $ImagePath
+}
+
+function Get-CertificateOcrText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$CertificateFilePath,
+        [switch]$Force
+    )
+
+    $output = [PSCustomObject]@{
+        Success        = $false
+        ProcessedImage = $null
+        RawText        = ""
+        Lines          = @()
+        Error          = $null
+    }
+
+    if (-not (Test-Path -LiteralPath $CertificateFilePath)) {
+        $output.Error = "Certificate file not found: $CertificateFilePath"
+        return $output
+    }
+
+    try {
+        $imagePath = ConvertTo-CertificateImage -FilePath $CertificateFilePath -Force:$Force
+        $output.ProcessedImage = $imagePath
+
+        $ocr = Invoke-CertificateOcr -ImagePath $imagePath
+        if ($ocr.Success) {
+            $output.Success = $true
+            $output.RawText = $ocr.Text
+            $output.Lines   = $ocr.Lines
+        } else {
+            $output.Error = $ocr.Error
+        }
+
+        return $output
+    }
+    catch {
+        $output.Success = $false
+        $output.Error   = $_.Exception.Message
+        return $output
+    }
+}
+

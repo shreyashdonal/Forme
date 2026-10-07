@@ -77,19 +77,21 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button x:Name="BtnPreviewExamSheet"
                                     Content="Preview Sheet"
+                                    Visibility="Collapsed"
                                     Style="{DynamicResource BtnPrimary}"
                                     Padding="14,8"
                                     Margin="0,0,8,0"/>
                             <Button x:Name="BtnOpenExamSheet"
                                     Content="Open File"
+                                    Visibility="Collapsed"
                                     Style="{DynamicResource BtnSecondary}"
                                     Padding="14,8"
                                     Margin="0,0,8,0"/>
                             <Button x:Name="BtnUpdateExamSheet"
-                                    Content="Update Sheet"
-                                    Style="{DynamicResource BtnSecondary}"
+                                    Content="Add Sheet"
+                                    Style="{DynamicResource BtnPrimary}"
                                     Padding="14,8"
-                                    ToolTip="Update or select exam results spreadsheet with latest student responses."/>
+                                    ToolTip="Upload or select official NPTEL exam results spreadsheet."/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -119,20 +121,21 @@
                                            Foreground="{DynamicResource TextBrush}"
                                            Margin="0,0,0,4"/>
                                 <TextBlock x:Name="TxtMiniExamHealthSummary"
-                                           Text="Column detection and data integrity summary."
+                                           Text="No examination results sheet attached yet."
                                            FontSize="12"
                                            Foreground="{DynamicResource MutedBrush}"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Border x:Name="BadgeOverallExamHealth"
+                                        Visibility="Collapsed"
                                         Background="{DynamicResource Panel2Brush}"
                                         BorderBrush="{DynamicResource SageBrush}"
                                         BorderThickness="1"
                                         CornerRadius="6"
                                         Padding="12,5">
                                     <TextBlock x:Name="TxtOverallExamHealth"
-                                               Text="Standard Columns Detected ✓"
+                                               Text=""
                                                FontFamily="IBM Plex Mono"
                                                FontSize="11"
                                                FontWeight="SemiBold"
@@ -220,9 +223,9 @@
                                         Padding="10,6"
                                         Margin="0,0,8,8">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="IconColExamRollNo" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="IconColExamRollNo" Text="&#x2014;" Foreground="{DynamicResource MutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="RollNo" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="TxtColExamRollNo" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtColExamRollNo" Text="&#x2014;" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
@@ -235,9 +238,9 @@
                                         Padding="10,6"
                                         Margin="0,0,8,8">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="IconColExamName" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="IconColExamName" Text="&#x2014;" Foreground="{DynamicResource MutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="Name" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="TxtColExamName" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtColExamName" Text="&#x2014;" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
@@ -250,9 +253,9 @@
                                         Padding="10,6"
                                         Margin="0,0,8,8">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="IconColExamEmail" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="IconColExamEmail" Text="&#x2014;" Foreground="{DynamicResource MutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="Email" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="TxtColExamEmail" Text="Not Provided" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtColExamEmail" Text="&#x2014;" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
@@ -265,9 +268,9 @@
                                         Padding="10,6"
                                         Margin="0,0,8,8">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="IconColExamSubject" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="IconColExamSubject" Text="&#x2014;" Foreground="{DynamicResource MutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="Subject" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="TxtColExamSubject" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtColExamSubject" Text="&#x2014;" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
@@ -280,9 +283,9 @@
                                         Padding="10,6"
                                         Margin="0,0,8,8">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="IconColExamAssignMarks" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="IconColExamAssignMarks" Text="&#x2014;" Foreground="{DynamicResource MutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="Assignment Marks" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="TxtColExamAssignMarks" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtColExamAssignMarks" Text="&#x2014;" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
@@ -295,9 +298,9 @@
                                         Padding="10,6"
                                         Margin="0,0,8,8">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="IconColExamExamMarks" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="IconColExamExamMarks" Text="&#x2014;" Foreground="{DynamicResource MutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="Exam Marks" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="TxtColExamExamMarks" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtColExamExamMarks" Text="&#x2014;" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
@@ -310,9 +313,9 @@
                                         Padding="10,6"
                                         Margin="0,0,8,8">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="IconColExamTotalMarks" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="IconColExamTotalMarks" Text="&#x2014;" Foreground="{DynamicResource MutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="Total Marks" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="TxtColExamTotalMarks" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtColExamTotalMarks" Text="&#x2014;" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
@@ -325,9 +328,9 @@
                                         Padding="10,6"
                                         Margin="0,0,8,8">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="IconColExamCert" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="IconColExamCert" Text="&#x2014;" Foreground="{DynamicResource MutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="Certificate" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="TxtColExamCert" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtColExamCert" Text="&#x2014;" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
@@ -340,9 +343,9 @@
                                         Padding="10,6"
                                         Margin="0,0,8,8">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="IconColExamTimestamp" Text="✓" FontWeight="Bold" Foreground="{DynamicResource SageBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="IconColExamTimestamp" Text="&#x2014;" Foreground="{DynamicResource MutedBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="Timestamp" FontSize="11" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock x:Name="TxtColExamTimestamp" Text="Not Detected" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TxtColExamTimestamp" Text="&#x2014;" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </WrapPanel>
@@ -542,6 +545,25 @@
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                            <!-- Round-off Policy Toggle -->
+                                            <Border Background="{DynamicResource Panel2Brush}"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="10,6"
+                                                    Margin="0,0,10,0"
+                                                    ToolTip="When checked: Allows round-off matching (Round(Declared) == Round(Certificate), e.g. 81.84 vs 82, 25 vs 24.63). When unchecked: Enforces strict exact match.">
+                                                <CheckBox x:Name="ChkAllowExamRounding"
+                                                          Content="Allow Round-offs"
+                                                          IsChecked="False"
+                                                          FontFamily="IBM Plex Mono, Consolas"
+                                                          FontSize="11"
+                                                          FontWeight="SemiBold"
+                                                          Foreground="{DynamicResource TextBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Cursor="Hand"/>
+                                            </Border>
+
                                             <Button x:Name="BtnImportCertificates"
                                                     Content="📁 Import"
                                                     Style="{DynamicResource BtnSecondary}"
