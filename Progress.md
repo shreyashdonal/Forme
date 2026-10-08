@@ -270,11 +270,11 @@ PDQA Project/
 - [x] Update Workspace Navigation and Stage 2 status badge in `NPTEL-Manager.ps1` `[Session 2]`
 
 #### Phase F — Stage 2 Verified Students Workspace (`UI/Views/ExamVerifiedView.xaml`)
-- [ ] Build `ExamVerifiedView.xaml` layout: Mini dashboard (Total Verified Students, Passed Students, New Changes), Push action bar without email button, and paginated Student List
-- [ ] Implement `Open-ExamVerifiedView` and `Update-ExamVerifiedView` in `NPTEL-Manager.ps1` with 25-per-page pagination and live search filtering
-- [ ] Implement Row Actions: Certificate viewer launcher, 1-click Unapprove / Undo staging pattern, and Open Student Mode B inspection workspace
-- [ ] Wire `CardExamStatVerified` on Stage 2 to open `ExamVerifiedView`
-- [ ] Implement `[ Push Changes to Result Sheet ]` committing reverted statuses to `exam_results.json` and synchronizing `Result Verification Sheet`
+- [x] Build `ExamVerifiedView.xaml` layout: Mini dashboard (Passed Students, Failed Students, New Changes), Push action bar without email button, and paginated Student List `[Session 4]`
+- [x] Implement `Open-ExamVerifiedView` and `Update-ExamVerifiedView` in `NPTEL-Manager.ps1` with 25-per-page pagination and live search filtering `[Session 4]`
+- [x] Implement Row Actions: Certificate viewer launcher, 1-click Unapprove / Undo staging pattern, and Open Student Mode B inspection workspace `[Session 4]`
+- [x] Wire `CardExamStatVerified` on Stage 2 to open `ExamVerifiedView` `[Session 4]`
+- [x] Implement `[ Push Changes to Result Sheet ]` committing reverted statuses to `exam_results.json` and synchronizing `Result Verification Sheet` `[Session 4]`
 
 #### Phase G — Coordinator Certificate Marks Editor & Manual Overrides (Mode B)
 - [ ] Upgrade Mode B Academic Marks Comparison card in `ExamReviewView.xaml` and `ExamVerifiedView.xaml` with `[ ✏️ Edit Certificate Marks ]` toggle and inline dark input fields (`/25`, `/75`, `/100`)
@@ -306,6 +306,11 @@ PDQA Project/
 - [x] Graceful Excel File-Lock Detection & Actionable Error Dialog: Built `Test-FileLocked` in `modules/Import-StudentSheet.ps1` using exclusive stream locking; implemented `Show-SheetGenerationErrorDialog` in `NPTEL-Manager.ps1` replacing raw .NET `Exception calling "Save"` with user-friendly `"The result verification sheet cannot be saved because '<FileName>' is currently open"`; hardened Stage 1 & Stage 2 generators, Review push actions, and automated OCR sync `[Session 3]`
 - [x] Windows PowerShell 5.1 Parser Hardening for Verification Summary Report: Fixed runtime `The term 'if' is not recognized as a cmdlet` error in `NPTEL-Manager.ps1` caused by statement-in-expression evaluation in PS 5.1 by isolating conditional evaluations to `$preservedLine` before string concatenation `[Session 3]`
 - [x] Pure Mathematical Nearest-Integer Rounding Engine: Completely eliminated the previous `≤ 1.0` tolerance/delta rule. When Allow Round-offs is enabled, Rules 3, 4, 5 in `modules/ExamVerificationEngine.ps1` strictly compare `[Math]::Round($Declared, 0, [MidpointRounding]::AwayFromZero) -eq [Math]::Round($Certificate, 0, [MidpointRounding]::AwayFromZero)`, marking `Verified (Rounded Match)` or `Under Review — ... mismatch after rounding` without speculation `[Session 3]`
+- [x] Option C Multi-Column Single-Line Table Layout: Transformed Verified Students table rows into an ultra-compact single-line ledger (~40px height) featuring a 5-column grid: `ENROLLMENT` (140px), `STUDENT NAME` (180px), `CERTIFICATE (A / E / T)` (190px in Sage Green), `SUBMITTED (A / E / T)` (190px in Muted Grey), and `STATUS & ACTIONS` (flexible). Eliminates vertical card bloat while enabling instant side-by-side marks comparison `[Session 4]`
+- [x] Row-Level 1-Click Unapproval Action: Added solid Sage Green `[ ↺ Unapprove ]` button (matching `Unapprove.png` `#5B8C7B` fill with dark `#151513` text) directly to the left of `[ Open Student ]` on each row card; prompts confirmation, stages unapproval in session memory, updates `NEW CHANGES` counter, and toggles dynamically to `[ ↩ Undo ]` in Crimson `[Session 4]`
+- [x] Mode B Unapprove Button Visual Parity with `Unapprove.png`: Restyled `BtnUnapproveFromExamVerifiedDetail` from ghost outline (`BtnSecondary`) to primary solid filled button (`BtnPrimary`) with `SageBrush` background and dark text matching the user-provided `Unapprove.png` design asset `[Session 4]`
+- [x] Marks Legend Capsule & Explanatory Tooltips: Positioned a sleek information capsule (`ℹ A: Assign (/25) • E: Exam (/75, Pass ≥ 30) • T: Total (/100)`) in the vacant space between the student page range and search filter box; added multi-line hover tooltips on `CERTIFICATE (A / E / T)` and `SUBMITTED (A / E / T)` column headers `[Session 4]`
+- [x] Full Application-Level Router & Lifecycle Integration for `ExamVerifiedView`: Registered `ExamVerifiedView` in `Select-Course` (auto-updating if initialized and maintaining active sub-view), `Navigate-To` (highlighting Courses tab and triggering view refresh), and `Remove-Course` (safely redirecting back to `CoursesView` if course is deleted) in `NPTEL-Manager.ps1` `[Session 4]`
 
 ---
 
@@ -715,8 +720,54 @@ Progress.md (Logged Session 3; added file lock handling, PS 5.1 parser fix, and 
 
 **Known issues / TODO carried forward**
 ```
-- Next piece: Branch 5 Phase F (Stage 2 Verified Students Workspace).
-- Next unchecked checklist item for Branch 5: Build ExamVerifiedView.xaml layout: Mini dashboard (Total Verified Students, Passed Students, New Changes), Push action bar without email button, and paginated Student List.
+- Next piece: Branch 5 Phase F (Stage 2 Verified Students Workspace) -- COMPLETED in Session 4.
+```
+
+---
+
+### Session 4 (Branch 5 (Stage 2: Examination Results & Final Sheet)) -- Stage 2 Verified Students Workspace, Option C Ledger & Staged Unapproval Sync
+
+**Files created/updated**
+```
+UI/Views/ExamVerifiedView.xaml (Created Stage 2 Verified Students Workspace UserControl with Mode A overview, 3-card mini dashboard: Passed Students, Failed Students, New Changes; Push action bar without email button; paginated 25/page Student List; Option C 5-column table header; A/E/T marks legend capsule; column header explanatory tooltips; and Mode B split inspection workspace with zoomable certificate viewer and solid Sage Green unapprove button matching Unapprove.png)
+NPTEL-Manager.ps1 (Implemented session state variables: $script:examVerifiedCurrentPage, $script:examVerifiedPageSize, $script:examVerifiedSearchQuery, $script:examVerifiedStagedUnapproved; added controller functions Update-ExamVerifiedView, Show-ExamVerifiedStudentDetails, Open-ExamVerifiedView; wired Stage 2 CardExamStatVerified click navigation; implemented Option C single-line row card generation with side-by-side marks; added row-level 1-click unapproval button to left of Open Student with confirmation dialog and undo staging toggle; wired all event handlers including pagination, live search filter, clear search, and Push Changes committing to exam_results.json and Result Verification Sheet; fully registered ExamVerifiedView in Select-Course, Navigate-To, and Remove-Course)
+Progress.md (Checked off all 5 items of Phase F; logged 5 extra/ad-hoc tasks under Extra / Ad-Hoc Completed Tasks; updated Session 4 log entry)
+walkthrough.md (Documented complete Phase F walkthrough, Option C single-line multi-column layout, marks legend capsule, and row-level unapproval action)
+```
+
+**Official Tasks Completed**
+```
+- [x] Task F1: Built ExamVerifiedView.xaml layout with 3-card mini dashboard, push action bar without email button, and paginated student list
+- [x] Task F2: Implemented Open-ExamVerifiedView, Update-ExamVerifiedView, and Show-ExamVerifiedStudentDetails with 25-per-page pagination and live search filter
+- [x] Task F3: Implemented Row Actions, Mode B inspection workspace, and Unapprove / Undo staging pattern
+- [x] Task F4: Wired CardExamStatVerified on Stage 2 to open ExamVerifiedView
+- [x] Task F5: Implemented [ Push Changes to Result Sheet ] committing reverted statuses to exam_results.json and synchronizing Result Verification Sheet
+```
+
+**Extra / Ad-Hoc Features Delivered**
+```
+- Option C Multi-Column Single-Line Table Layout: Transformed Verified Students table rows into an ultra-compact single-line ledger (~40px height) featuring a 5-column grid: ENROLLMENT (140px), STUDENT NAME (180px), CERTIFICATE (A / E / T) (190px in Sage Green), SUBMITTED (A / E / T) (190px in Muted Grey), and STATUS & ACTIONS (flexible). Eliminates vertical card bloat while enabling instant side-by-side marks comparison.
+- Row-Level 1-Click Unapproval Action: Added solid Sage Green [ ↺ Unapprove ] button (matching Unapprove.png #5B8C7B fill with dark #151513 text) directly to the left of [ Open Student ] on each row card; prompts confirmation, stages unapproval in session memory, updates NEW CHANGES counter, and toggles dynamically to [ ↩ Undo ] in Crimson.
+- Mode B Unapprove Button Visual Parity with Unapprove.png: Restyled BtnUnapproveFromExamVerifiedDetail from ghost outline (BtnSecondary) to primary solid filled button (BtnPrimary) with SageBrush background and dark text matching the user-provided Unapprove.png design asset.
+- Marks Legend Capsule & Explanatory Tooltips: Positioned a sleek information capsule (ℹ A: Assign /25 • E: Exam /75, Pass ≥ 30 • T: Total /100) in the vacant space between the student page range and search filter box; added multi-line hover tooltips on CERTIFICATE (A / E / T) and SUBMITTED (A / E / T) column headers.
+- Full Application-Level Router & Lifecycle Integration for ExamVerifiedView: Registered ExamVerifiedView in Select-Course (auto-updating if initialized and maintaining active sub-view), Navigate-To (highlighting Courses tab and triggering view refresh), and Remove-Course (safely redirecting back to CoursesView if course is deleted) in NPTEL-Manager.ps1.
+```
+
+**Decisions made this session**
+```
+- *Stage 2 Verified Students UI Layout & Passing Rule*: Finalized 3-card mini dashboard structure: `PASSED STUDENTS` (Sage Green), `FAILED STUDENTS` (Crimson), and `NEW CHANGES` (Warm Amber). Total verified student count moved to the header pill badge (`TxtExamVerifiedHeaderCount`). Passing threshold strictly evaluated as `VerifiedExamMarks >= 30 / 75` (proctored exam marks only, NOT total marks).
+- *Option C Multi-Column Table Layout*: Selected 5-column single-line ledger layout (~40px per student) over stacked 2/3-line cards to preserve vertical screen estate and allow faculty to review scores with minimal scrolling.
+- *Row-Level Quick Unapproval*: Placed `[ ↺ Unapprove ]` directly on each student row card to the left of `[ Open Student ]`, allowing faculty to immediately unapprove any student from the table without opening the full split-screen inspection workspace.
+- *Asset-Matching Visual Styling*: Inspected `Unapprove.png` and applied identical solid Sage Green (`#5B8C7B`) background, dark text (`#151513`), and rounded 6px button geometry across both the row unapprove button and the Mode B detail unapprove button.
+- *Staged Unapproval Workflow*: Clicking `[ Unapprove ]` stages the student in session (`$script:examVerifiedStagedUnapproved`), increments `NEW CHANGES` count, turns the card Amber, changes status pill to `UNAPPROVE STAGED`, and enables `[ Push Changes to Result Sheet ]`. Unapprovals can be reversed with `[ Undo ]` before pushing.
+- *Push Synchronization*: Commits staged unapprovals by changing student statuses to `Under Review` in `exam_results.json`, synchronizing `<Course>_Result_Verification_Sheet.xlsx`, and updating Stage 2 dashboard metrics in real time.
+- *Windows PowerShell 5.1 & WPF Hardening*: All strings use dynamic Unicode token creation (`[string][char]0xHEX`), and all event handlers strictly use dynamic control resolution (`$script:views["ExamVerifiedView"].FindName(...)` and `$this`).
+```
+
+**Known issues / TODO carried forward**
+```
+- Next piece: Branch 5 Phase G (Coordinator Certificate Marks Editor & Manual Overrides in Mode B).
+- Next unchecked checklist item for Branch 5: Upgrade Mode B Academic Marks Comparison card in ExamReviewView.xaml and ExamVerifiedView.xaml with [ Edit Certificate Marks ] toggle and inline dark input fields (/25, /75, /100).
 ```
 
 ---
@@ -758,7 +809,13 @@ Progress.md (Logged Session 3; added file lock handling, PS 5.1 parser fix, and 
   4. Record the file and decisions in the active session's log and session notes.
   5. Resume the scheduled roadmap.
 
-- **End of session:** Provide the exact text to paste into Files, Decisions, Repo layout, and the checklist.
+- **Closing handshake — when ending or closing a session:**
+  When the user says *"close session"*, *"wrap up session"*, *"end session"*, or *"close session N"*:
+  1. **Mark Phase Tasks Completed**: Audit and check off all completed official tasks for that phase in Section 2 under the active branch: `- [x] <task> [Session N]`.
+  2. **Catalog Extra / Ad-Hoc Tasks**: Append all unlisted/spontaneous work done during the session under the active branch's `#### Extra / Ad-Hoc Completed Tasks`: `- [x] <extra task> [Session N]`.
+  3. **Log the Session**: Under Section 3, write the full `### Session N (...)` entry with Files created/updated, Official Tasks Completed, Extra / Ad-Hoc Features Delivered, Decisions made, and Known issues / TODO carried forward.
+  4. **Run Verification**: Execute `pwsh -File "test_parse.ps1"` to guarantee the session closes with 0 errors across all XAML views and PowerShell scripts.
+  5. **State Back Closing Confirmation**: Provide a concise closing summary confirming tasks marked complete, extras logged, and the exact next checklist item for Session N+1.
 
 ---
 
@@ -783,7 +840,12 @@ Rules for this session:
 5. Write the simplest, most beginner-friendly code possible.
 6. Don't scaffold future folders. Only create files this piece needs.
 7. INCREMENTAL WRITES — after each finished file/task, give me a paste-ready update.
-8. When done, give me: new/changed files, plus the exact text to paste into Files, Decisions, Repo layout, and the checklist.
+8. CLOSING HANDSHAKE — when I say "close session", "wrap up session", or "end session":
+   a. Check off completed phase tasks: - [x] <task> [Session N].
+   b. Catalog all spontaneous/extra work under '#### Extra / Ad-Hoc Completed Tasks': - [x] <extra task> [Session N].
+   c. Write the comprehensive Session N log in Section 3 (Files, Official Tasks, Extra Features, Decisions, Next Item).
+   d. Run test_parse.ps1 to prove 0 errors across all views and modules.
+   e. State back the closing summary and handoff item for Session N+1.
 ```
 
 ---

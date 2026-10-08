@@ -112,6 +112,10 @@ $script:examReviewStagedSolved = [System.Collections.Generic.Dictionary[string, 
 $script:examReviewCurrentPage = 1
 $script:examReviewPageSize = 25
 $script:examReviewSearchQuery = ""
+$script:examVerifiedCurrentPage      = 1
+$script:examVerifiedPageSize         = 25
+$script:examVerifiedSearchQuery      = ""
+$script:examVerifiedStagedUnapproved = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $script:emailReturnView = "ReviewView"
 
 function Save-Courses {
@@ -699,7 +703,7 @@ function Remove-Course {
     Refresh-CourseLists
 
     # 5. If currently viewing workspace or child view of deleted course, navigate to CoursesView
-    if ($script:currentView -in @("WorkspaceView", "Stage1View", "Stage2View", "ReviewView", "ExamReviewView")) {
+    if ($script:currentView -in @("WorkspaceView", "Stage1View", "Stage2View", "ReviewView", "ExamReviewView", "ExamVerifiedView")) {
         Navigate-To "CoursesView"
     }
 
@@ -1214,10 +1218,15 @@ function Select-Course {
         Update-ExamReviewView -Course $Course
     }
 
+    # -- Update Exam Verified View (if initialized) --
+    if ($script:views.ContainsKey("ExamVerifiedView")) {
+        Update-ExamVerifiedView -Course $Course
+    }
+
     if ($TargetView) {
         Navigate-To $TargetView
-    } elseif ($script:currentView -eq "Stage1View" -or $script:currentView -eq "Stage2View" -or $script:currentView -eq "ReviewView" -or $script:currentView -eq "ExamReviewView") {
-        # Already inside the Stage detail view or Review queue; keep user on the active view
+    } elseif ($script:currentView -eq "Stage1View" -or $script:currentView -eq "Stage2View" -or $script:currentView -eq "ReviewView" -or $script:currentView -eq "ExamReviewView" -or $script:currentView -eq "ExamVerifiedView") {
+        # Already inside the Stage detail view or Review queue / Verified roster; keep user on the active view
     } else {
         Navigate-To "WorkspaceView"
     }
@@ -3026,6 +3035,712 @@ function Open-ExamReviewView {
     }
     $script:examReviewCurrentPage = 1
     Navigate-To "ExamReviewView"
+}
+
+# =====================================================================
+# Branch 5: Stage 2 Verified Students Workspace (ExamVerifiedView)
+# =====================================================================
+
+function Update-ExamVerifiedView {
+    param(
+        $Course = $script:activeCourse,
+        $Students = $null
+    )
+    if (-not $Course) { $Course = $script:activeCourse }
+    if (-not $Course) { return }
+    $evv = Get-OrCreateView "ExamVerifiedView"
+    if (-not $evv) { return }
+
+    if (-not $Students) {
+        $store = Get-CourseExamResultsStore -CourseId $Course.Id -CourseName $Course.Name -ExamResultsSheet $Course.ExamResultsSheet
+        $Students = if ($store -and $store.Students) { @($store.Students) } else { @() }
+    }
+
+    # 1. Filter: only Verified students
+    $verifiedStudents = [System.Collections.ArrayList]@()
+    foreach ($st in $Students) {
+        $stStatus = if ($st.ExamVerificationStatus) { [string]$st.ExamVerificationStatus } else { "Pending" }
+        if ($stStatus -eq "Verified") {
+            $null = $verifiedStudents.Add($st)
+        }
+    }
+
+    # 2. Compute Passed / Failed (ExamMarks >= 30 = PASS)
+    $passedCount   = 0
+    $failedCount   = 0
+    foreach ($st in $verifiedStudents) {
+        $examVal = 0
+        $rawExam = if ($st.VerifiedExamMarks) { [string]$st.VerifiedExamMarks } else { "0" }
+        [double]$parsedExam = 0
+        if ([double]::TryParse($rawExam, [System.Globalization.NumberStyles]::Any, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$parsedExam)) {
+            $examVal = $parsedExam
+        }
+        if ($examVal -ge 30) { $passedCount++ } else { $failedCount++ }
+    }
+    $newChangesCount = $script:examVerifiedStagedUnapproved.Count
+
+    # 3. Header count pill
+    $txtHeader = $evv.FindName("TxtExamVerifiedHeaderCount")
+    if ($txtHeader) {
+        $total = $verifiedStudents.Count
+        $word = if ($total -eq 1) { "Student" } else { "Students" }
+        $txtHeader.Text = "$total Verified $word"
+    }
+
+    # 4. Dashboard cards
+    $txtPassed   = $evv.FindName("TxtExamVerifiedPassed")
+    $txtFailed   = $evv.FindName("TxtExamVerifiedFailed")
+    $txtNewChg   = $evv.FindName("TxtExamVerifiedNewChanges")
+    $cardNewChg  = $evv.FindName("CardExamVerifiedNewChanges")
+    $txtNewChgLbl = $evv.FindName("TxtExamVerifiedNewChangesLabel")
+
+    if ($txtPassed)  { $txtPassed.Text  = $passedCount.ToString() }
+    if ($txtFailed)  { $txtFailed.Text  = $failedCount.ToString() }
+    if ($txtNewChg)  { $txtNewChg.Text  = $newChangesCount.ToString() }
+
+    if ($cardNewChg) {
+        if ($newChangesCount -gt 0) {
+            $cardNewChg.BorderBrush = [System.Windows.Application]::Current.FindResource("AccentBrush")
+            $cardNewChg.Background  = [System.Windows.Application]::Current.FindResource("AccentTintBrush")
+        } else {
+            $cardNewChg.BorderBrush = [System.Windows.Application]::Current.FindResource("BorderBrush")
+            $cardNewChg.Background  = [System.Windows.Application]::Current.FindResource("Panel2Brush")
+        }
+    }
+    if ($txtNewChgLbl) {
+        $txtNewChgLbl.Foreground = if ($newChangesCount -gt 0) {
+            [System.Windows.Application]::Current.FindResource("AccentBrush")
+        } else {
+            [System.Windows.Application]::Current.FindResource("MutedBrush")
+        }
+    }
+
+    # 5. Push bar
+    $btnPush     = $evv.FindName("BtnPushExamVerifiedChanges")
+    $txtPushStat = $evv.FindName("TxtExamVerifiedPushStatus")
+
+    if ($btnPush) { $btnPush.IsEnabled = ($newChangesCount -gt 0) }
+    if ($txtPushStat) {
+        if ($newChangesCount -gt 0) {
+            $bullet = [char]0x25CF
+            $plural = if ($newChangesCount -eq 1) { "1 unapproval staged" } else { "$newChangesCount unapprovals staged" }
+            $txtPushStat.Text = "$bullet $plural - click Push to apply to result sheet"
+            $txtPushStat.Foreground = [System.Windows.Application]::Current.FindResource("AccentBrush")
+        } else {
+            $txtPushStat.Text = "No pending changes in this session"
+            $txtPushStat.Foreground = [System.Windows.Application]::Current.FindResource("MutedBrush")
+        }
+    }
+
+    # 6. Live search filter
+    $filterTrimmed = if ($script:examVerifiedSearchQuery) { $script:examVerifiedSearchQuery.Trim() } else { "" }
+    $filteredStudents = [System.Collections.ArrayList]@()
+    if ($filterTrimmed) {
+        foreach ($st in $verifiedStudents) {
+            $roll  = if ($st.RollNo) { [string]$st.RollNo } else { "" }
+            $name  = if ($st.Name) { [string]$st.Name } else { "" }
+            $email = if ($st.Email) { [string]$st.Email } else { "" }
+            if ($roll.IndexOf($filterTrimmed, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or
+                $name.IndexOf($filterTrimmed, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or
+                $email.IndexOf($filterTrimmed, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                $null = $filteredStudents.Add($st)
+            }
+        }
+    } else {
+        $filteredStudents = $verifiedStudents
+    }
+
+    # 7. Pagination
+    $totalFiltered = $filteredStudents.Count
+    $pageSize = if ($script:examVerifiedPageSize -gt 0) { $script:examVerifiedPageSize } else { 25 }
+    $totalPages = [Math]::Max(1, [int][Math]::Ceiling($totalFiltered / $pageSize))
+
+    if ($script:examVerifiedCurrentPage -lt 1) {
+        $script:examVerifiedCurrentPage = 1
+    } elseif ($script:examVerifiedCurrentPage -gt $totalPages) {
+        $script:examVerifiedCurrentPage = $totalPages
+    }
+
+    $startIndex  = ($script:examVerifiedCurrentPage - 1) * $pageSize
+    $countToTake = [Math]::Min($pageSize, [Math]::Max(0, $totalFiltered - $startIndex))
+
+    $pagedStudents = [System.Collections.ArrayList]@()
+    if ($totalFiltered -gt 0 -and $countToTake -gt 0) {
+        for ($i = 0; $i -lt $countToTake; $i++) {
+            $null = $pagedStudents.Add($filteredStudents[$startIndex + $i])
+        }
+    }
+
+    # 8. Pagination & search UI controls
+    $dash            = [char]0x2013
+    $txtRange        = $evv.FindName("TxtExamVerifiedPageRange")
+    $txtFooter       = $evv.FindName("TxtExamVerifiedFooterInfo")
+    $txtBadgePage    = $evv.FindName("TxtExamVerifiedPageBadge")
+    $btnPrev         = $evv.FindName("BtnExamVerifiedPrevPage")
+    $btnNext         = $evv.FindName("BtnExamVerifiedNextPage")
+    $txtSearch       = $evv.FindName("TxtExamVerifiedSearch")
+    $txtPlaceholder  = $evv.FindName("TxtExamVerifiedSearchPlaceholder")
+    $btnClearSearch  = $evv.FindName("BtnClearExamVerifiedSearch")
+
+    if ($txtRange) {
+        if ($totalFiltered -eq 0) {
+            $txtRange.Text = if ($filterTrimmed) { "(No students match search filter)" } else { "" }
+        } else {
+            $startNum = $startIndex + 1
+            $endNum   = $startIndex + $countToTake
+            if ($filterTrimmed) {
+                $txtRange.Text = "Showing $startNum$dash$endNum of $totalFiltered (filtered from $($verifiedStudents.Count))"
+            } else {
+                $txtRange.Text = "Showing $startNum$dash$endNum of $totalFiltered"
+            }
+        }
+    }
+    if ($txtFooter) {
+        $stWord = if ($totalFiltered -eq 1) { "student" } else { "students" }
+        $txtFooter.Text = "Page $($script:examVerifiedCurrentPage) of $totalPages ($totalFiltered $stWord)"
+    }
+    if ($txtBadgePage) { $txtBadgePage.Text = "$($script:examVerifiedCurrentPage) / $totalPages" }
+    if ($btnPrev)      { $btnPrev.IsEnabled = ($script:examVerifiedCurrentPage -gt 1) }
+    if ($btnNext)      { $btnNext.IsEnabled = ($script:examVerifiedCurrentPage -lt $totalPages) }
+
+    if ($txtSearch -and $txtSearch.Text -ne $script:examVerifiedSearchQuery) {
+        $txtSearch.Text = $script:examVerifiedSearchQuery
+    }
+    if ($txtPlaceholder) {
+        $txtPlaceholder.Visibility = if ([string]::IsNullOrEmpty($script:examVerifiedSearchQuery)) {
+            [System.Windows.Visibility]::Visible
+        } else {
+            [System.Windows.Visibility]::Collapsed
+        }
+    }
+    if ($btnClearSearch) {
+        $btnClearSearch.Visibility = if ([string]::IsNullOrEmpty($script:examVerifiedSearchQuery)) {
+            [System.Windows.Visibility]::Collapsed
+        } else {
+            [System.Windows.Visibility]::Visible
+        }
+    }
+
+    # 9. Build row cards
+    $hostPanel   = $evv.FindName("ExamVerifiedRowsHost")
+    $emptyNotice = $evv.FindName("ExamVerifiedEmptyStateNotice")
+    $txtEmptyTitle = $evv.FindName("TxtExamVerifiedEmptyTitle")
+    $txtEmptySub   = $evv.FindName("TxtExamVerifiedEmptySub")
+
+    if ($hostPanel) {
+        $hostPanel.Children.Clear()
+
+        if ($pagedStudents.Count -gt 0) {
+            if ($emptyNotice) { $emptyNotice.Visibility = [System.Windows.Visibility]::Collapsed }
+
+            foreach ($st in $pagedStudents) {
+                $stKey     = if ($st.RollNo) { [string]$st.RollNo } else { [string]$st.Email }
+                $isStaged  = $script:examVerifiedStagedUnapproved.ContainsKey($stKey)
+
+                # Passing rule: VerifiedExamMarks >= 30
+                $rawExamStr = if ($st.VerifiedExamMarks) { [string]$st.VerifiedExamMarks } else { "0" }
+                [double]$parsedExamVal = 0
+                $null = [double]::TryParse($rawExamStr, [System.Globalization.NumberStyles]::Any, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$parsedExamVal)
+                $isPassed = ($parsedExamVal -ge 30)
+
+                $cardBorder = New-Object System.Windows.Controls.Border
+                $cardBorder.Background = if ($isStaged) {
+                    [System.Windows.Application]::Current.FindResource("PanelModBrush")
+                } else {
+                    [System.Windows.Application]::Current.FindResource("Panel2Brush")
+                }
+                $cardBorder.BorderBrush = if ($isStaged) {
+                    [System.Windows.Application]::Current.FindResource("DangerBrush")
+                } elseif ($isPassed) {
+                    [System.Windows.Application]::Current.FindResource("SageBrush")
+                } else {
+                    [System.Windows.Application]::Current.FindResource("DangerBrush")
+                }
+                $cardBorder.BorderThickness = New-Object System.Windows.Thickness(1)
+                $cardBorder.CornerRadius    = New-Object System.Windows.CornerRadius(6)
+                $cardBorder.Padding         = New-Object System.Windows.Thickness(14, 10, 14, 10)
+                $cardBorder.Margin          = New-Object System.Windows.Thickness(0, 0, 0, 8)
+                $cardBorder.Cursor          = [System.Windows.Input.Cursors]::Hand
+                $cardBorder.Tag             = $st
+
+                $rowGrid = New-Object System.Windows.Controls.Grid
+                $col0 = New-Object System.Windows.Controls.ColumnDefinition
+                $col0.Width = New-Object System.Windows.GridLength(140)
+                $col1 = New-Object System.Windows.Controls.ColumnDefinition
+                $col1.Width = New-Object System.Windows.GridLength(180)
+                $col2 = New-Object System.Windows.Controls.ColumnDefinition
+                $col2.Width = New-Object System.Windows.GridLength(190)
+                $col3 = New-Object System.Windows.Controls.ColumnDefinition
+                $col3.Width = New-Object System.Windows.GridLength(190)
+                $col4 = New-Object System.Windows.Controls.ColumnDefinition
+                $col4.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+                $null = $rowGrid.ColumnDefinitions.Add($col0)
+                $null = $rowGrid.ColumnDefinitions.Add($col1)
+                $null = $rowGrid.ColumnDefinitions.Add($col2)
+                $null = $rowGrid.ColumnDefinitions.Add($col3)
+                $null = $rowGrid.ColumnDefinitions.Add($col4)
+
+                # Column 0: Roll Number
+                $txtRoll = New-Object System.Windows.Controls.TextBlock
+                $txtRoll.Text = if ($st.RollNo) { [string]$st.RollNo } else { "No Roll No" }
+                $txtRoll.FontFamily = New-Object System.Windows.Media.FontFamily("IBM Plex Mono, Consolas")
+                $txtRoll.FontSize   = 12
+                $txtRoll.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $txtRoll.Foreground = [System.Windows.Application]::Current.FindResource("TextBrush")
+                $txtRoll.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                [System.Windows.Controls.Grid]::SetColumn($txtRoll, 0)
+                $null = $rowGrid.Children.Add($txtRoll)
+
+                # Column 1: Student Name
+                $txtName = New-Object System.Windows.Controls.TextBlock
+                $txtName.Text = if ($st.Name) { [string]$st.Name } else { "Unnamed Student" }
+                $txtName.FontSize   = 12
+                $txtName.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $txtName.Foreground = [System.Windows.Application]::Current.FindResource("TextBrush")
+                $txtName.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+                $txtName.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $txtName.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+                [System.Windows.Controls.Grid]::SetColumn($txtName, 1)
+                $null = $rowGrid.Children.Add($txtName)
+
+                # Column 2: Certificate Marks (Assign / Exam / Total)
+                $certAssign = if ($st.VerifiedAssignmentMarks) { [string]$st.VerifiedAssignmentMarks } else { "-" }
+                $certExam   = if ($st.VerifiedExamMarks) { [string]$st.VerifiedExamMarks } else { "-" }
+                $certTotal  = if ($st.VerifiedTotalMarks) { [string]$st.VerifiedTotalMarks } else { "-" }
+                $txtCertMarks = New-Object System.Windows.Controls.TextBlock
+                $txtCertMarks.Text = "$certAssign / $certExam / $certTotal"
+                $txtCertMarks.FontFamily = New-Object System.Windows.Media.FontFamily("IBM Plex Mono, Consolas")
+                $txtCertMarks.FontSize   = 12
+                $txtCertMarks.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $txtCertMarks.Foreground = if ($isPassed) {
+                    [System.Windows.Application]::Current.FindResource("SageBrush")
+                } else {
+                    [System.Windows.Application]::Current.FindResource("DangerBrush")
+                }
+                $txtCertMarks.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $txtCertMarks.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+                $txtCertMarks.ToolTip = "Certificate Marks: Assignment: $certAssign, Exam: $certExam, Total: $certTotal"
+                [System.Windows.Controls.Grid]::SetColumn($txtCertMarks, 2)
+                $null = $rowGrid.Children.Add($txtCertMarks)
+
+                # Column 3: Submitted Marks (Assign / Exam / Total)
+                $declAssign = if ($st.DeclaredAssignmentMarks) { [string]$st.DeclaredAssignmentMarks } else { "-" }
+                $declExam   = if ($st.DeclaredExamMarks) { [string]$st.DeclaredExamMarks } else { "-" }
+                $declTotal  = if ($st.DeclaredTotalMarks) { [string]$st.DeclaredTotalMarks } else { "-" }
+                $txtDeclMarks = New-Object System.Windows.Controls.TextBlock
+                $txtDeclMarks.Text = "$declAssign / $declExam / $declTotal"
+                $txtDeclMarks.FontFamily = New-Object System.Windows.Media.FontFamily("IBM Plex Mono, Consolas")
+                $txtDeclMarks.FontSize   = 12
+                $txtDeclMarks.Foreground = [System.Windows.Application]::Current.FindResource("MutedBrush")
+                $txtDeclMarks.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $txtDeclMarks.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+                $txtDeclMarks.ToolTip = "Submitted Form Marks: Assignment: $declAssign, Exam: $declExam, Total: $declTotal"
+                [System.Windows.Controls.Grid]::SetColumn($txtDeclMarks, 3)
+                $null = $rowGrid.Children.Add($txtDeclMarks)
+
+                # Column 4: Status Pill + Unapprove Button + Open Student Button
+                $actionsPanel = New-Object System.Windows.Controls.StackPanel
+                $actionsPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+                $actionsPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+                $actionsPanel.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
+                [System.Windows.Controls.Grid]::SetColumn($actionsPanel, 4)
+
+                # Pass/Fail Pill
+                $pillBorder = New-Object System.Windows.Controls.Border
+                if ($isStaged) {
+                    $pillBorder.Background  = [System.Windows.Application]::Current.FindResource("DangerTintBrush")
+                    $pillBorder.BorderBrush = [System.Windows.Application]::Current.FindResource("DangerBrush")
+                } elseif ($isPassed) {
+                    $pillBorder.Background  = [System.Windows.Application]::Current.FindResource("SageTintBrush")
+                    $pillBorder.BorderBrush = [System.Windows.Application]::Current.FindResource("SageBrush")
+                } else {
+                    $pillBorder.Background  = [System.Windows.Application]::Current.FindResource("DangerTintBrush")
+                    $pillBorder.BorderBrush = [System.Windows.Application]::Current.FindResource("DangerBrush")
+                }
+                $pillBorder.BorderThickness = New-Object System.Windows.Thickness(1)
+                $pillBorder.CornerRadius    = New-Object System.Windows.CornerRadius(4)
+                $pillBorder.Padding         = New-Object System.Windows.Thickness(8, 4, 8, 4)
+                $pillBorder.Margin          = New-Object System.Windows.Thickness(0, 0, 8, 0)
+                $pillBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+                $pillTxt = New-Object System.Windows.Controls.TextBlock
+                $pillTxt.Text = if ($isStaged) { "UNAPPROVE STAGED" } elseif ($isPassed) { "PASSED" } else { "FAILED" }
+                $pillTxt.FontSize   = 10
+                $pillTxt.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $pillTxt.Foreground = if ($isStaged) {
+                    [System.Windows.Application]::Current.FindResource("DangerBrush")
+                } elseif ($isPassed) {
+                    [System.Windows.Application]::Current.FindResource("SageBrush")
+                } else {
+                    [System.Windows.Application]::Current.FindResource("DangerBrush")
+                }
+                $pillBorder.Child = $pillTxt
+                $null = $actionsPanel.Children.Add($pillBorder)
+
+                # Unapprove Button (to the left of Open Student)
+                $btnUnapproveRow = New-Object System.Windows.Controls.Button
+                $btnUnapproveRow.Style   = [System.Windows.Application]::Current.FindResource("BtnPrimary")
+                $btnUnapproveRow.Padding = New-Object System.Windows.Thickness(10, 4, 10, 4)
+                $btnUnapproveRow.FontSize = 11
+                $btnUnapproveRow.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $btnUnapproveRow.Cursor  = [System.Windows.Input.Cursors]::Hand
+                $btnUnapproveRow.Margin  = New-Object System.Windows.Thickness(0, 0, 6, 0)
+                $btnUnapproveRow.Tag     = $st
+
+                if ($isStaged) {
+                    $undoArrow = [char]0x21A9
+                    $btnUnapproveRow.Content    = "$undoArrow Undo"
+                    $btnUnapproveRow.Background = [System.Windows.Application]::Current.FindResource("DangerBrush")
+                    $btnUnapproveRow.Foreground = [System.Windows.Application]::Current.FindResource("BgBrush")
+                    $btnUnapproveRow.ToolTip    = "Cancel staged unapproval and restore status to Verified"
+                } else {
+                    $rotArrow = [char]0x21BA
+                    $btnUnapproveRow.Content    = "$rotArrow Unapprove"
+                    $btnUnapproveRow.Background = [System.Windows.Application]::Current.FindResource("SageBrush")
+                    $btnUnapproveRow.Foreground = [System.Windows.Application]::Current.FindResource("BgBrush")
+                    $btnUnapproveRow.ToolTip    = "Move this student back to Under Review and stage change"
+                }
+
+                $btnUnapproveRow.Add_Click({
+                    $targetSt = $this.Tag
+                    if (-not $targetSt -or -not $script:activeCourse) { return }
+
+                    $stKey  = if ($targetSt.RollNo) { [string]$targetSt.RollNo } else { [string]$targetSt.Email }
+                    $stName = if ($targetSt.Name) { [string]$targetSt.Name } else { "this student" }
+                    $stRoll = if ($targetSt.RollNo) { [string]$targetSt.RollNo } else { "No Roll No" }
+                    $alreadyStaged = $script:examVerifiedStagedUnapproved.ContainsKey($stKey)
+
+                    if ($alreadyStaged) {
+                        # Undo unapprove
+                        $null = $script:examVerifiedStagedUnapproved.Remove($stKey)
+                        $targetSt.ExamVerificationStatus = "Verified"
+                        Update-ExamVerifiedView -Course $script:activeCourse
+                    } else {
+                        # Prompt and stage unapprove
+                        $confirm = [System.Windows.MessageBox]::Show(
+                            "Stage unapproval for:`n`nName: $stName`nRoll No: $stRoll`n`nStatus will be changed to 'Under Review' when changes are pushed to the result sheet.",
+                            "Unapprove Student",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Question
+                        )
+                        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+                        $origStatus  = "Verified"
+                        $origRemarks = if ($targetSt.ExamVerificationRemarks) { [string]$targetSt.ExamVerificationRemarks } else { "" }
+                        $nowStr      = (Get-Date).ToString("dd/MM/yyyy HH:mm")
+                        $newRemarks  = "Unapproved (Coordinator Override on $nowStr)"
+
+                        $targetSt.ExamVerificationStatus  = "Unapprove Staged"
+                        $targetSt.ExamVerificationRemarks = $newRemarks
+
+                        $script:examVerifiedStagedUnapproved[$stKey] = @{
+                            Student         = $targetSt
+                            RollNo          = $targetSt.RollNo
+                            Email           = $targetSt.Email
+                            NewStatus       = "Under Review"
+                            NewRemarks      = $newRemarks
+                            OriginalStatus  = $origStatus
+                            OriginalRemarks = $origRemarks
+                        }
+
+                        Update-ExamVerifiedView -Course $script:activeCourse
+                    }
+                })
+                $null = $actionsPanel.Children.Add($btnUnapproveRow)
+
+                # Open Student button
+                $btnOpen = New-Object System.Windows.Controls.Button
+                $btnOpen.Content = "Open Student"
+                $btnOpen.Style   = [System.Windows.Application]::Current.FindResource("BtnSecondary")
+                $btnOpen.BorderBrush = [System.Windows.Application]::Current.FindResource("AccentBrush")
+                $btnOpen.Foreground  = [System.Windows.Application]::Current.FindResource("AccentBrush")
+                $btnOpen.Padding  = New-Object System.Windows.Thickness(10, 4, 10, 4)
+                $btnOpen.FontSize = 11
+                $btnOpen.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $btnOpen.Cursor   = [System.Windows.Input.Cursors]::Hand
+                $btnOpen.Tag      = $st
+                $btnOpen.ToolTip  = "Open split-screen inspection workspace for this verified student"
+                $btnOpen.Add_Click({
+                    $targetSt = $this.Tag
+                    if (-not $targetSt) { return }
+                    $evV = $script:views["ExamVerifiedView"]
+                    if (-not $evV) { return }
+
+                    $panelOverview = $evV.FindName("ExamVerifiedQueueOverviewPanel")
+                    $panelDetail   = $evV.FindName("ExamVerifiedStudentDetailPanel")
+
+                    if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Collapsed }
+                    if ($panelDetail)   { $panelDetail.Visibility   = [System.Windows.Visibility]::Visible }
+
+                    Show-ExamVerifiedStudentDetails -Student $targetSt
+                })
+                $null = $actionsPanel.Children.Add($btnOpen)
+
+                $null = $rowGrid.Children.Add($actionsPanel)
+                $cardBorder.Child = $rowGrid
+                $null = $hostPanel.Children.Add($cardBorder)
+            }
+        } else {
+            if ($emptyNotice) {
+                $emptyNotice.Visibility = [System.Windows.Visibility]::Visible
+                if ($verifiedStudents.Count -gt 0 -and $totalFiltered -eq 0) {
+                    if ($txtEmptyTitle) { $txtEmptyTitle.Text = "No Matching Students" }
+                    if ($txtEmptySub)   { $txtEmptySub.Text   = "No verified students match your search query." }
+                } else {
+                    if ($txtEmptyTitle) { $txtEmptyTitle.Text = "No Verified Students Yet" }
+                    if ($txtEmptySub)   { $txtEmptySub.Text   = "No students have been verified for this course. Complete the Exam Review Queue first." }
+                }
+            }
+        }
+    }
+}
+
+function Show-ExamVerifiedStudentDetails {
+    param(
+        $Student
+    )
+    if (-not $Student) { return }
+    $evv = Get-OrCreateView "ExamVerifiedView"
+    if (-not $evv) { return }
+
+    $panelOverview = $evv.FindName("ExamVerifiedQueueOverviewPanel")
+    $panelDetail   = $evv.FindName("ExamVerifiedStudentDetailPanel")
+    if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Collapsed }
+    if ($panelDetail)   { $panelDetail.Visibility   = [System.Windows.Visibility]::Visible }
+
+    $workspace = $evv.FindName("ExamVerifiedWorkspaceGrid")
+    if ($workspace) {
+        $workspace.Visibility = [System.Windows.Visibility]::Visible
+        $workspace.Tag = $Student
+    }
+
+    $dash = [char]0x2014
+
+    # 1. Header identity
+    $txtName   = $evv.FindName("TxtExamVerifiedDetailStudentName")
+    $txtRoll   = $evv.FindName("TxtExamVerifiedDetailStudentRoll")
+    $txtStatus = $evv.FindName("TxtExamVerifiedDetailStatus")
+    $badgeSt   = $evv.FindName("BadgeExamVerifiedDetailStatus")
+
+    if ($txtName) { $txtName.Text = if ($Student.Name) { [string]$Student.Name } else { "Unnamed Student" } }
+    if ($txtRoll) { $txtRoll.Text = if ($Student.RollNo) { "Roll No: $($Student.RollNo)" } else { "Roll No: Not Assigned" } }
+
+    $stKey     = if ($Student.RollNo) { [string]$Student.RollNo } else { [string]$Student.Email }
+    $isStaged  = $script:examVerifiedStagedUnapproved.ContainsKey($stKey)
+
+    $stVal = "VERIFIED"
+    if ($txtStatus) {
+        $txtStatus.Text = if ($isStaged) { "UNAPPROVE STAGED" } else { "VERIFIED" }
+        if ($badgeSt) {
+            if ($isStaged) {
+                $badgeSt.BorderBrush = [System.Windows.Application]::Current.FindResource("DangerBrush")
+                $badgeSt.Background  = [System.Windows.Application]::Current.FindResource("DangerTintBrush")
+                $txtStatus.Foreground = [System.Windows.Application]::Current.FindResource("DangerBrush")
+            } else {
+                $badgeSt.BorderBrush = [System.Windows.Application]::Current.FindResource("SageBrush")
+                $badgeSt.Background  = [System.Windows.Application]::Current.FindResource("SageTintBrush")
+                $txtStatus.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+            }
+        }
+    }
+
+    # 2. Unapprove button state
+    $btnUnapprove = $evv.FindName("BtnUnapproveFromExamVerifiedDetail")
+    if ($btnUnapprove) {
+        $btnUnapprove.Tag = $Student
+        if ($isStaged) {
+            $btnUnapprove.Content    = "Undo Unapprove"
+            $btnUnapprove.Background = [System.Windows.Application]::Current.FindResource("DangerBrush")
+            $btnUnapprove.Foreground = [System.Windows.Application]::Current.FindResource("BgBrush")
+            $btnUnapprove.IsEnabled  = $true
+        } else {
+            $rotArrow = [char]0x21BA
+            $btnUnapprove.Content    = "$rotArrow Unapprove Student"
+            $btnUnapprove.Background = [System.Windows.Application]::Current.FindResource("SageBrush")
+            $btnUnapprove.Foreground = [System.Windows.Application]::Current.FindResource("BgBrush")
+            $btnUnapprove.IsEnabled  = $true
+        }
+    }
+
+    # 3. Pass/Fail badge
+    $rawExamStr = if ($Student.VerifiedExamMarks) { [string]$Student.VerifiedExamMarks } else { "0" }
+    [double]$parsedExamVal = 0
+    $null = [double]::TryParse($rawExamStr, [System.Globalization.NumberStyles]::Any, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$parsedExamVal)
+    $isPassed = ($parsedExamVal -ge 30)
+
+    $badgePF  = $evv.FindName("BadgeExamVerifiedPassFail")
+    $txtPF    = $evv.FindName("TxtExamVerifiedPassFail")
+    if ($badgePF -and $txtPF) {
+        if ($isPassed) {
+            $badgePF.BorderBrush = [System.Windows.Application]::Current.FindResource("SageBrush")
+            $badgePF.Background  = [System.Windows.Application]::Current.FindResource("SageTintBrush")
+            $txtPF.Text          = "PASSED (Exam >= 30)"
+            $txtPF.Foreground    = [System.Windows.Application]::Current.FindResource("SageBrush")
+        } else {
+            $badgePF.BorderBrush = [System.Windows.Application]::Current.FindResource("DangerBrush")
+            $badgePF.Background  = [System.Windows.Application]::Current.FindResource("DangerTintBrush")
+            $txtPF.Text          = "FAILED (Exam < 30)"
+            $txtPF.Foreground    = [System.Windows.Application]::Current.FindResource("DangerBrush")
+        }
+    }
+
+    # 4. Comparison table
+    $certCourseVal = if ($Student.CertificateCourseName) {
+        [string]$Student.CertificateCourseName
+    } elseif ($script:activeCourse) {
+        [string]$script:activeCourse.Name
+    } else {
+        "$dash"
+    }
+    $certNameVal = if ($Student.CertificateCandidateName) {
+        [string]$Student.CertificateCandidateName
+    } elseif ($Student.Name) {
+        [string]$Student.Name
+    } else {
+        "$dash"
+    }
+
+    $txtDeclCourse  = $evv.FindName("TxtExamVerifiedDeclCourse")
+    $txtCertCourse  = $evv.FindName("TxtExamVerifiedCertCourse")
+    $txtDeclName    = $evv.FindName("TxtExamVerifiedDeclName")
+    $txtCertName    = $evv.FindName("TxtExamVerifiedCertName")
+    $txtDeclAssign  = $evv.FindName("TxtExamVerifiedDeclAssign")
+    $txtCertAssign  = $evv.FindName("TxtExamVerifiedCertAssign")
+    $txtDeclExam    = $evv.FindName("TxtExamVerifiedDeclExam")
+    $txtCertExam    = $evv.FindName("TxtExamVerifiedCertExam")
+    $txtDeclTotal   = $evv.FindName("TxtExamVerifiedDeclTotal")
+    $txtCertTotal   = $evv.FindName("TxtExamVerifiedCertTotal")
+    $txtCertRoll    = $evv.FindName("TxtExamVerifiedCertRoll")
+    $txtCertCredits = $evv.FindName("TxtExamVerifiedCertCredits")
+
+    if ($txtDeclCourse)  { $txtDeclCourse.Text  = if ($Student.Subject) { [string]$Student.Subject } elseif ($script:activeCourse) { [string]$script:activeCourse.Name } else { "$dash" } }
+    if ($txtCertCourse)  { $txtCertCourse.Text  = $certCourseVal }
+    if ($txtDeclName)    { $txtDeclName.Text    = if ($Student.Name) { [string]$Student.Name } else { "$dash" } }
+    if ($txtCertName)    { $txtCertName.Text    = $certNameVal }
+    if ($txtDeclAssign)  { $txtDeclAssign.Text  = if ($Student.DeclaredAssignmentMarks) { [string]$Student.DeclaredAssignmentMarks } else { "$dash" } }
+    if ($txtCertAssign)  {
+        $txtCertAssign.Text = if ($Student.VerifiedAssignmentMarks) { [string]$Student.VerifiedAssignmentMarks } else { "$dash" }
+        $txtCertAssign.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+    }
+    if ($txtDeclExam)    { $txtDeclExam.Text    = if ($Student.DeclaredExamMarks) { [string]$Student.DeclaredExamMarks } else { "$dash" } }
+    if ($txtCertExam)    {
+        $txtCertExam.Text = if ($Student.VerifiedExamMarks) { [string]$Student.VerifiedExamMarks } else { "$dash" }
+        $txtCertExam.Foreground = if ($isPassed) {
+            [System.Windows.Application]::Current.FindResource("SageBrush")
+        } else {
+            [System.Windows.Application]::Current.FindResource("DangerBrush")
+        }
+    }
+    if ($txtDeclTotal)   { $txtDeclTotal.Text   = if ($Student.DeclaredTotalMarks) { [string]$Student.DeclaredTotalMarks } else { "$dash" } }
+    if ($txtCertTotal)   {
+        $txtCertTotal.Text = if ($Student.VerifiedTotalMarks) { [string]$Student.VerifiedTotalMarks } else { "$dash" }
+        $txtCertTotal.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+    }
+    if ($txtCertRoll)    { $txtCertRoll.Text    = if ($Student.CertificateRollNo) { [string]$Student.CertificateRollNo } else { "$dash" } }
+    if ($txtCertCredits) { $txtCertCredits.Text = if ($Student.Credits) { "$($Student.Credits) Credits" } else { "$dash" } }
+
+    # 5. Submission record
+    $txtEmail = $evv.FindName("TxtExamVerifiedDetailEmail")
+    $txtTime  = $evv.FindName("TxtExamVerifiedDetailTimestamp")
+    if ($txtEmail) { $txtEmail.Text = if ($Student.Email) { [string]$Student.Email } else { "$dash" } }
+    if ($txtTime)  { $txtTime.Text  = if ($Student.Timestamp) { [string]$Student.Timestamp } else { "$dash" } }
+
+    # 6. Remarks
+    $txtRemarks = $evv.FindName("TxtExamVerifiedDetailRemarks")
+    if ($txtRemarks) {
+        $rem = if ($Student.ExamVerificationRemarks) { [string]$Student.ExamVerificationRemarks } else { "Student verified successfully. All certificate checks passed." }
+        $txtRemarks.Text = $rem
+    }
+
+    # 7. Certificate image viewer
+    $imgCert     = $evv.FindName("ImgExamVerifiedCertViewer")
+    $scrollViewer = $evv.FindName("ExamVerifiedCertScrollViewer")
+    $missingPanel = $evv.FindName("ExamVerifiedCertMissingPanel")
+    $txtBadge    = $evv.FindName("TxtExamVerifiedCertStatusBadge")
+    $btnOpenFile = $evv.FindName("BtnOpenExamVerifiedCertFile")
+    $zoomScale   = $evv.FindName("ExamVerifiedCertZoomScale")
+    $txtZoom     = $evv.FindName("TxtExamVerifiedZoomLevel")
+
+    if ($zoomScale) { $zoomScale.ScaleX = 1.0; $zoomScale.ScaleY = 1.0 }
+    if ($txtZoom)   { $txtZoom.Text = "100%" }
+
+    $certFile = Find-LocalCertificateFile -Course $script:activeCourse -Student $Student
+    $displayImgPath = $null
+
+    if ($certFile -and (Test-Path -LiteralPath $certFile)) {
+        $ext = [System.IO.Path]::GetExtension($certFile).ToLower()
+        if ($ext -eq ".pdf") {
+            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($certFile)
+            $certDir  = [System.IO.Path]::GetDirectoryName($certFile)
+            $expectedPng = Join-Path $certDir "${baseName}_page1.png"
+            if (Test-Path -LiteralPath $expectedPng) {
+                $displayImgPath = $expectedPng
+            } else {
+                try { $displayImgPath = ConvertTo-ReceiptImage -FilePath $certFile } catch { $displayImgPath = $null }
+            }
+        } elseif ($ext -in @('.png', '.jpg', '.jpeg', '.bmp', '.webp')) {
+            $displayImgPath = $certFile
+        }
+    }
+
+    if ($certFile -and $displayImgPath -and (Test-Path -LiteralPath $displayImgPath)) {
+        try {
+            if ($imgCert) { $imgCert.Source = $null }
+            $rawImgBytes = [System.IO.File]::ReadAllBytes($displayImgPath)
+            $memStream   = New-Object System.IO.MemoryStream( ,$rawImgBytes )
+            $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+            $bmp.BeginInit()
+            $bmp.CacheOption  = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bmp.StreamSource = $memStream
+            $bmp.EndInit()
+            $bmp.Freeze()
+            $memStream.Close()
+            $memStream.Dispose()
+
+            if ($imgCert)      { $imgCert.Source = $bmp }
+            if ($scrollViewer) { $scrollViewer.Visibility = [System.Windows.Visibility]::Visible }
+            if ($missingPanel) { $missingPanel.Visibility = [System.Windows.Visibility]::Collapsed }
+            if ($txtBadge) {
+                $extName = [System.IO.Path]::GetExtension($certFile).TrimStart('.').ToUpper()
+                $txtBadge.Text = "Saved ($extName)"
+                $txtBadge.Foreground = [System.Windows.Application]::Current.FindResource("SageBrush")
+            }
+            if ($btnOpenFile) {
+                $btnOpenFile.Tag       = $certFile
+                $btnOpenFile.IsEnabled = $true
+            }
+        } catch {
+            $displayImgPath = $null
+        }
+    }
+
+    if (-not $certFile -or -not $displayImgPath) {
+        if ($imgCert)      { $imgCert.Source = $null }
+        if ($scrollViewer) { $scrollViewer.Visibility = [System.Windows.Visibility]::Collapsed }
+        if ($missingPanel) { $missingPanel.Visibility = [System.Windows.Visibility]::Visible }
+        if ($txtBadge) {
+            $txtBadge.Text     = "Not Saved"
+            $txtBadge.Foreground = [System.Windows.Application]::Current.FindResource("MutedBrush")
+        }
+        if ($btnOpenFile) {
+            $btnOpenFile.Tag       = $null
+            $btnOpenFile.IsEnabled = $false
+        }
+    }
+}
+
+function Open-ExamVerifiedView {
+    if (-not $script:activeCourse) { return }
+    $evv = Get-OrCreateView "ExamVerifiedView"
+    if ($evv) {
+        $panelOverview = $evv.FindName("ExamVerifiedQueueOverviewPanel")
+        $panelDetail   = $evv.FindName("ExamVerifiedStudentDetailPanel")
+        if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Visible }
+        if ($panelDetail)   { $panelDetail.Visibility   = [System.Windows.Visibility]::Collapsed }
+    }
+    $script:examVerifiedCurrentPage = 1
+    Update-ExamVerifiedView -Course $script:activeCourse
+    Navigate-To "ExamVerifiedView"
 }
 
 # =====================================================================
@@ -5255,6 +5970,23 @@ function Wire-ViewEvents {
                     Open-ExamReviewView
                 })
             }
+
+            # Card: VERIFIED -> Open ExamVerifiedView
+            $cardExamVerified = $viewObj.FindName("CardExamStatVerified")
+            if ($cardExamVerified) {
+                $cardExamVerified.Add_MouseLeftButtonUp({
+                    if (-not $script:activeCourse) {
+                        [System.Windows.MessageBox]::Show(
+                            "Please select or register a course first.",
+                            "Notice",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Information
+                        )
+                        return
+                    }
+                    Open-ExamVerifiedView
+                })
+            }
         }
 
         "ReviewView" {
@@ -6440,6 +7172,327 @@ function Wire-ViewEvents {
             }
         }
 
+        "ExamVerifiedView" {
+            # Pagination: Prev Page
+            $btnPrevPageV = $viewObj.FindName("BtnExamVerifiedPrevPage")
+            if ($btnPrevPageV) {
+                $btnPrevPageV.Add_Click({
+                    if ($script:examVerifiedCurrentPage -gt 1) {
+                        $script:examVerifiedCurrentPage--
+                        if ($script:activeCourse) {
+                            Update-ExamVerifiedView -Course $script:activeCourse
+                        }
+                        $evv = $script:views["ExamVerifiedView"]
+                        $sv = if ($evv) { $evv.FindName("ExamVerifiedRowsScrollViewer") } else { $null }
+                        if ($sv) { $sv.ScrollToTop() }
+                    }
+                })
+            }
+
+            # Pagination: Next Page
+            $btnNextPageV = $viewObj.FindName("BtnExamVerifiedNextPage")
+            if ($btnNextPageV) {
+                $btnNextPageV.Add_Click({
+                    $script:examVerifiedCurrentPage++
+                    if ($script:activeCourse) {
+                        Update-ExamVerifiedView -Course $script:activeCourse
+                    }
+                    $evv = $script:views["ExamVerifiedView"]
+                    $sv = if ($evv) { $evv.FindName("ExamVerifiedRowsScrollViewer") } else { $null }
+                    if ($sv) { $sv.ScrollToTop() }
+                })
+            }
+
+            # Live Search Filter
+            $txtSearchV = $viewObj.FindName("TxtExamVerifiedSearch")
+            if ($txtSearchV) {
+                $txtSearchV.Add_TextChanged({
+                    $q = [string]$this.Text
+                    if ($q -ne $script:examVerifiedSearchQuery) {
+                        $script:examVerifiedSearchQuery = $q
+                        $script:examVerifiedCurrentPage = 1
+                        if ($script:activeCourse) {
+                            Update-ExamVerifiedView -Course $script:activeCourse
+                        }
+                    }
+                })
+            }
+
+            # Clear Search Button
+            $btnClearSearchV = $viewObj.FindName("BtnClearExamVerifiedSearch")
+            if ($btnClearSearchV) {
+                $btnClearSearchV.Add_Click({
+                    $evv = $script:views["ExamVerifiedView"]
+                    $txtSC = if ($evv) { $evv.FindName("TxtExamVerifiedSearch") } else { $null }
+                    if ($txtSC) {
+                        $txtSC.Text = ""
+                    } else {
+                        $script:examVerifiedSearchQuery = ""
+                        $script:examVerifiedCurrentPage = 1
+                        if ($script:activeCourse) {
+                            Update-ExamVerifiedView -Course $script:activeCourse
+                        }
+                    }
+                })
+            }
+
+            # Back to Stage 2
+            $btnBackV = $viewObj.FindName("BtnBackToStage2FromVerified")
+            if ($btnBackV) {
+                $btnBackV.Add_Click({
+                    if ($script:examVerifiedStagedUnapproved.Count -gt 0) {
+                        $ask = [System.Windows.MessageBox]::Show(
+                            "You have $($script:examVerifiedStagedUnapproved.Count) unpushed unapproval(s) staged in this session.`n`nDo you want to return to Stage 2 anyway?`n(Your unpushed changes will remain staged until you click Push or exit the app.)",
+                            "Unpushed Changes Staged",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Warning
+                        )
+                        if ($ask -ne [System.Windows.MessageBoxResult]::Yes) { return }
+                    }
+
+                    if ($script:activeCourse) {
+                        Select-Course $script:activeCourse -TargetView "Stage2View"
+                    } else {
+                        Navigate-To "CoursesView"
+                    }
+                })
+            }
+
+            # Back to Verified Table (Mode B -> Mode A)
+            $btnBackTableV = $viewObj.FindName("BtnBackToExamVerifiedTable")
+            if ($btnBackTableV) {
+                $btnBackTableV.Add_Click({
+                    $evv = $script:views["ExamVerifiedView"]
+                    if (-not $evv) { return }
+
+                    $panelOverview = $evv.FindName("ExamVerifiedQueueOverviewPanel")
+                    $panelDetail   = $evv.FindName("ExamVerifiedStudentDetailPanel")
+
+                    if ($panelDetail)   { $panelDetail.Visibility   = [System.Windows.Visibility]::Collapsed }
+                    if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Visible }
+
+                    if ($script:activeCourse) {
+                        Update-ExamVerifiedView -Course $script:activeCourse
+                    }
+                })
+            }
+
+            # Unapprove Button (from Mode B detail panel)
+            $btnUnapproveV = $viewObj.FindName("BtnUnapproveFromExamVerifiedDetail")
+            if ($btnUnapproveV) {
+                $btnUnapproveV.Add_Click({
+                    $evv = $script:views["ExamVerifiedView"]
+                    $ws  = if ($evv) { $evv.FindName("ExamVerifiedWorkspaceGrid") } else { $null }
+                    $st  = if ($ws) { $ws.Tag } else { $null }
+                    if (-not $st -or -not $script:activeCourse) { return }
+
+                    $stKey   = if ($st.RollNo) { [string]$st.RollNo } else { [string]$st.Email }
+                    $stName  = if ($st.Name) { [string]$st.Name } else { "this student" }
+                    $stRoll  = if ($st.RollNo) { [string]$st.RollNo } else { "No Roll No" }
+                    $isAlreadyStaged = $script:examVerifiedStagedUnapproved.ContainsKey($stKey)
+
+                    if ($isAlreadyStaged) {
+                        # Undo: remove from staged dict, restore status to Verified
+                        $null = $script:examVerifiedStagedUnapproved.Remove($stKey)
+                        $st.ExamVerificationStatus = "Verified"
+                        Update-ExamVerifiedView -Course $script:activeCourse
+                        Show-ExamVerifiedStudentDetails -Student $st
+                    } else {
+                        $rotArrow = [char]0x21BA
+                        $confirm = [System.Windows.MessageBox]::Show(
+                            "Stage unapproval for:`n`nName: $stName`nRoll No: $stRoll`n`nStatus will be reverted from 'Verified' to 'Under Review' when pushed to the result sheet.`nThis change will appear in NEW CHANGES until you click Push.",
+                            "Unapprove Verified Student",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Question
+                        )
+                        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+                        $origStatus  = "Verified"
+                        $origRemarks = if ($st.ExamVerificationRemarks) { [string]$st.ExamVerificationRemarks } else { "" }
+                        $nowStr      = (Get-Date).ToString("dd/MM/yyyy HH:mm")
+                        $newRemarks  = "Unapproved (Coordinator Override on $nowStr)"
+
+                        $st.ExamVerificationStatus  = "Unapprove Staged"
+                        $st.ExamVerificationRemarks = $newRemarks
+
+                        $script:examVerifiedStagedUnapproved[$stKey] = @{
+                            Student         = $st
+                            RollNo          = $st.RollNo
+                            Email           = $st.Email
+                            NewStatus       = "Under Review"
+                            NewRemarks      = $newRemarks
+                            OriginalStatus  = $origStatus
+                            OriginalRemarks = $origRemarks
+                        }
+
+                        $askReturn = [System.Windows.MessageBox]::Show(
+                            "Student '$stName' ($stRoll) staged for unapproval!`n`nWould you like to return to the Verified Students table now to push changes to the result sheet?",
+                            "Unapproval Staged",
+                            [System.Windows.MessageBoxButton]::YesNo,
+                            [System.Windows.MessageBoxImage]::Information
+                        )
+                        if ($askReturn -eq [System.Windows.MessageBoxResult]::Yes) {
+                            $panelOverview = $evv.FindName("ExamVerifiedQueueOverviewPanel")
+                            $panelDetail   = $evv.FindName("ExamVerifiedStudentDetailPanel")
+                            if ($panelDetail)   { $panelDetail.Visibility   = [System.Windows.Visibility]::Collapsed }
+                            if ($panelOverview) { $panelOverview.Visibility = [System.Windows.Visibility]::Visible }
+                            Update-ExamVerifiedView -Course $script:activeCourse
+                        } else {
+                            Show-ExamVerifiedStudentDetails -Student $st
+                        }
+                    }
+                })
+            }
+
+            # Push Unapproved Changes to Result Sheet
+            $btnPushV = $viewObj.FindName("BtnPushExamVerifiedChanges")
+            if ($btnPushV) {
+                $btnPushV.Add_Click({
+                    if (-not $script:activeCourse) { return }
+                    $stagedCount = $script:examVerifiedStagedUnapproved.Count
+                    if ($stagedCount -le 0) {
+                        [System.Windows.MessageBox]::Show("There are no pending unapproved changes to push.", "Notice", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                        return
+                    }
+
+                    $cName      = if ($script:activeCourse.Name) { [string]$script:activeCourse.Name } else { "Default" }
+                    $targetExcel = if ($script:activeCourse.ExamVerificationSheet) { [string]$script:activeCourse.ExamVerificationSheet } else { "Result Verification Sheet" }
+                    $plural     = if ($stagedCount -eq 1) { "1 unapproved student" } else { "$stagedCount unapproved students" }
+
+                    $confirm = [System.Windows.MessageBox]::Show(
+                        "Push $plural to Result Sheet?`n`nCourse: $cName`nTarget Sheet: $targetExcel`n`nThis will set these students back to 'Under Review' in the result sheet and refresh the Stage 2 panel counts.",
+                        "Push Unapproval Changes",
+                        [System.Windows.MessageBoxButton]::YesNo,
+                        [System.Windows.MessageBoxImage]::Question
+                    )
+                    if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+                    $origCursor = [System.Windows.Input.Mouse]::OverrideCursor
+                    try {
+                        [System.Windows.Input.Mouse]::OverrideCursor = [System.Windows.Input.Cursors]::Wait
+
+                        $store    = Get-CourseExamResultsStore -CourseId $script:activeCourse.Id -CourseName $cName -ExamResultsSheet $script:activeCourse.ExamResultsSheet
+                        $students = [System.Collections.ArrayList]@($store.Students)
+
+                        foreach ($entry in $script:examVerifiedStagedUnapproved.Values) {
+                            $eRoll  = if ($entry.RollNo) { [string]$entry.RollNo } else { "" }
+                            $eEmail = if ($entry.Email) { [string]$entry.Email } else { "" }
+
+                            foreach ($s in $students) {
+                                $match = $false
+                                if ($eRoll -and $s.RollNo -and ($s.RollNo.Trim().ToLower() -eq $eRoll.Trim().ToLower())) {
+                                    $match = $true
+                                } elseif ($eEmail -and $s.Email -and ($s.Email.Trim().ToLower() -eq $eEmail.Trim().ToLower())) {
+                                    $match = $true
+                                }
+                                if ($match) {
+                                    $s.ExamVerificationStatus  = $entry.NewStatus
+                                    $s.ExamVerificationRemarks = $entry.NewRemarks
+                                    break
+                                }
+                            }
+                        }
+
+                        $store.Students = $students
+                        $store.LastSync = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+                        Save-CourseExamResultsStore -Store $store -CourseId $script:activeCourse.Id -CourseName $cName
+
+                        $syncRes = Export-CourseExamVerificationSheetData -Course $script:activeCourse -Students $students
+
+                        $committedCount = $script:examVerifiedStagedUnapproved.Count
+                        $script:examVerifiedStagedUnapproved.Clear()
+                        $script:examVerifiedCurrentPage = 1
+
+                        Update-Stage2View -Course $script:activeCourse
+                        Update-ExamVerifiedView -Course $script:activeCourse -Students $students
+
+                        $pushMsg  = "Successfully pushed $committedCount unapproval(s) to Result Sheet!`n`n- Statuses reverted to 'Under Review' in $targetExcel`n- Stage 2 counts refreshed: Verified decreased, Under Review increased."
+                        $pushIcon = [System.Windows.MessageBoxImage]::Information
+                        if ($syncRes -and $syncRes.Error -eq "FILE_LOCKED") {
+                            $lName = if ($syncRes.FileName) { $syncRes.FileName } else { "Result Verification Sheet" }
+                            $pushMsg += "`n`n[!] Warning: `"$lName`" is currently open in Excel and could not be updated. Please close the file and click [Re-create Sheet] to sync Excel."
+                            $pushIcon = [System.Windows.MessageBoxImage]::Warning
+                        }
+                        [System.Windows.MessageBox]::Show($pushMsg, "Push Complete", [System.Windows.MessageBoxButton]::OK, $pushIcon)
+                    } catch {
+                        [System.Windows.MessageBox]::Show(
+                            "Failed to push changes to result sheet:`n$($_.Exception.Message)",
+                            "Push Error",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Error
+                        )
+                    } finally {
+                        [System.Windows.Input.Mouse]::OverrideCursor = $origCursor
+                    }
+                })
+            }
+
+            # Open Certificate in External Viewer
+            $btnOpenFileV = $viewObj.FindName("BtnOpenExamVerifiedCertFile")
+            if ($btnOpenFileV) {
+                $btnOpenFileV.Add_Click({
+                    $filePath = [string]$this.Tag
+                    if ($filePath -and (Test-Path -LiteralPath $filePath)) {
+                        try {
+                            [System.Diagnostics.Process]::Start([System.Diagnostics.ProcessStartInfo]@{
+                                FileName       = $filePath
+                                UseShellExecute = $true
+                            }) | Out-Null
+                        } catch {
+                            [System.Windows.MessageBox]::Show("Unable to open certificate file: $_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                        }
+                    }
+                })
+            }
+
+            # Zoom In
+            $btnZoomInV = $viewObj.FindName("BtnExamVerifiedZoomIn")
+            if ($btnZoomInV) {
+                $btnZoomInV.Add_Click({
+                    $evv   = $script:views["ExamVerifiedView"]
+                    $scale = if ($evv) { $evv.FindName("ExamVerifiedCertZoomScale") } else { $null }
+                    $lbl   = if ($evv) { $evv.FindName("TxtExamVerifiedZoomLevel") } else { $null }
+                    if ($scale) {
+                        $newVal = [Math]::Min(4.0, [Math]::Round($scale.ScaleX * 1.25, 2))
+                        $scale.ScaleX = $newVal
+                        $scale.ScaleY = $newVal
+                        if ($lbl) { $lbl.Text = "$([int]($newVal * 100))%" }
+                    }
+                })
+            }
+
+            # Zoom Out
+            $btnZoomOutV = $viewObj.FindName("BtnExamVerifiedZoomOut")
+            if ($btnZoomOutV) {
+                $btnZoomOutV.Add_Click({
+                    $evv   = $script:views["ExamVerifiedView"]
+                    $scale = if ($evv) { $evv.FindName("ExamVerifiedCertZoomScale") } else { $null }
+                    $lbl   = if ($evv) { $evv.FindName("TxtExamVerifiedZoomLevel") } else { $null }
+                    if ($scale) {
+                        $newVal = [Math]::Max(0.25, [Math]::Round($scale.ScaleX / 1.25, 2))
+                        $scale.ScaleX = $newVal
+                        $scale.ScaleY = $newVal
+                        if ($lbl) { $lbl.Text = "$([int]($newVal * 100))%" }
+                    }
+                })
+            }
+
+            # Zoom Fit (Reset to 100%)
+            $btnZoomFitV = $viewObj.FindName("BtnExamVerifiedZoomFit")
+            if ($btnZoomFitV) {
+                $btnZoomFitV.Add_Click({
+                    $evv   = $script:views["ExamVerifiedView"]
+                    $scale = if ($evv) { $evv.FindName("ExamVerifiedCertZoomScale") } else { $null }
+                    $lbl   = if ($evv) { $evv.FindName("TxtExamVerifiedZoomLevel") } else { $null }
+                    if ($scale) {
+                        $scale.ScaleX = 1.0
+                        $scale.ScaleY = 1.0
+                        if ($lbl) { $lbl.Text = "100%" }
+                    }
+                })
+            }
+        }
+
         "EmailView" {
             # 1. Back button -> Return to ReviewView or ExamReviewView
             $btnBack = $viewObj.FindName("BtnBackToReview")
@@ -6674,13 +7727,15 @@ function Navigate-To {
     $defaultStyle = [System.Windows.Application]::Current.FindResource("BtnNav")
 
     if ($NavBtnHome) { $NavBtnHome.Style = if ($ViewName -eq "HomeView") { $activeStyle } else { $defaultStyle } }
-    if ($NavBtnCourses) { $NavBtnCourses.Style = if ($ViewName -eq "CoursesView" -or $ViewName -eq "WorkspaceView" -or $ViewName -eq "Stage1View" -or $ViewName -eq "Stage2View" -or $ViewName -eq "ReviewView" -or $ViewName -eq "ExamReviewView" -or $ViewName -eq "EmailView") { $activeStyle } else { $defaultStyle } }
+    if ($NavBtnCourses) { $NavBtnCourses.Style = if ($ViewName -eq "CoursesView" -or $ViewName -eq "WorkspaceView" -or $ViewName -eq "Stage1View" -or $ViewName -eq "Stage2View" -or $ViewName -eq "ReviewView" -or $ViewName -eq "ExamReviewView" -or $ViewName -eq "EmailView" -or $ViewName -eq "ExamVerifiedView") { $activeStyle } else { $defaultStyle } }
     if ($NavBtnSettings) { $NavBtnSettings.Style = if ($ViewName -eq "SettingsView") { $activeStyle } else { $defaultStyle } }
 
     if ($ViewName -eq "Stage2View" -and $script:activeCourse) {
         Update-Stage2View -Course $script:activeCourse
     } elseif ($ViewName -eq "ExamReviewView" -and $script:activeCourse) {
         Update-ExamReviewView -Course $script:activeCourse
+    } elseif ($ViewName -eq "ExamVerifiedView" -and $script:activeCourse) {
+        Update-ExamVerifiedView -Course $script:activeCourse
     }
 
     Refresh-CourseLists
